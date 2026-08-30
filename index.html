@@ -1,0 +1,1092 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<title>周遭宮廟地圖｜福安 LINE</title>
+<style>/* Leaflet 1.9.4 */
+/* required styles */
+
+.leaflet-pane,
+.leaflet-tile,
+.leaflet-marker-icon,
+.leaflet-marker-shadow,
+.leaflet-tile-container,
+.leaflet-pane > svg,
+.leaflet-pane > canvas,
+.leaflet-zoom-box,
+.leaflet-image-layer,
+.leaflet-layer {
+	position: absolute;
+	left: 0;
+	top: 0;
+	}
+.leaflet-container {
+	overflow: hidden;
+	}
+.leaflet-tile,
+.leaflet-marker-icon,
+.leaflet-marker-shadow {
+	-webkit-user-select: none;
+	   -moz-user-select: none;
+	        user-select: none;
+	  -webkit-user-drag: none;
+	}
+/* Prevents IE11 from highlighting tiles in blue */
+.leaflet-tile::selection {
+	background: transparent;
+}
+/* Safari renders non-retina tile on retina better with this, but Chrome is worse */
+.leaflet-safari .leaflet-tile {
+	image-rendering: -webkit-optimize-contrast;
+	}
+/* hack that prevents hw layers "stretching" when loading new tiles */
+.leaflet-safari .leaflet-tile-container {
+	width: 1600px;
+	height: 1600px;
+	-webkit-transform-origin: 0 0;
+	}
+.leaflet-marker-icon,
+.leaflet-marker-shadow {
+	display: block;
+	}
+/* .leaflet-container svg: reset svg max-width decleration shipped in Joomla! (joomla.org) 3.x */
+/* .leaflet-container img: map is broken in FF if you have max-width: 100% on tiles */
+.leaflet-container .leaflet-overlay-pane svg {
+	max-width: none !important;
+	max-height: none !important;
+	}
+.leaflet-container .leaflet-marker-pane img,
+.leaflet-container .leaflet-shadow-pane img,
+.leaflet-container .leaflet-tile-pane img,
+.leaflet-container img.leaflet-image-layer,
+.leaflet-container .leaflet-tile {
+	max-width: none !important;
+	max-height: none !important;
+	width: auto;
+	padding: 0;
+	}
+
+.leaflet-container img.leaflet-tile {
+	/* See: https://bugs.chromium.org/p/chromium/issues/detail?id=600120 */
+	mix-blend-mode: plus-lighter;
+}
+
+.leaflet-container.leaflet-touch-zoom {
+	-ms-touch-action: pan-x pan-y;
+	touch-action: pan-x pan-y;
+	}
+.leaflet-container.leaflet-touch-drag {
+	-ms-touch-action: pinch-zoom;
+	/* Fallback for FF which doesn't support pinch-zoom */
+	touch-action: none;
+	touch-action: pinch-zoom;
+}
+.leaflet-container.leaflet-touch-drag.leaflet-touch-zoom {
+	-ms-touch-action: none;
+	touch-action: none;
+}
+.leaflet-container {
+	-webkit-tap-highlight-color: transparent;
+}
+.leaflet-container a {
+	-webkit-tap-highlight-color: rgba(51, 181, 229, 0.4);
+}
+.leaflet-tile {
+	filter: inherit;
+	visibility: hidden;
+	}
+.leaflet-tile-loaded {
+	visibility: inherit;
+	}
+.leaflet-zoom-box {
+	width: 0;
+	height: 0;
+	-moz-box-sizing: border-box;
+	     box-sizing: border-box;
+	z-index: 800;
+	}
+/* workaround for https://bugzilla.mozilla.org/show_bug.cgi?id=888319 */
+.leaflet-overlay-pane svg {
+	-moz-user-select: none;
+	}
+
+.leaflet-pane         { z-index: 400; }
+
+.leaflet-tile-pane    { z-index: 200; }
+.leaflet-overlay-pane { z-index: 400; }
+.leaflet-shadow-pane  { z-index: 500; }
+.leaflet-marker-pane  { z-index: 600; }
+.leaflet-tooltip-pane   { z-index: 650; }
+.leaflet-popup-pane   { z-index: 700; }
+
+.leaflet-map-pane canvas { z-index: 100; }
+.leaflet-map-pane svg    { z-index: 200; }
+
+.leaflet-vml-shape {
+	width: 1px;
+	height: 1px;
+	}
+.lvml {
+	behavior: url(#default#VML);
+	display: inline-block;
+	position: absolute;
+	}
+
+
+/* control positioning */
+
+.leaflet-control {
+	position: relative;
+	z-index: 800;
+	pointer-events: visiblePainted; /* IE 9-10 doesn't have auto */
+	pointer-events: auto;
+	}
+.leaflet-top,
+.leaflet-bottom {
+	position: absolute;
+	z-index: 1000;
+	pointer-events: none;
+	}
+.leaflet-top {
+	top: 0;
+	}
+.leaflet-right {
+	right: 0;
+	}
+.leaflet-bottom {
+	bottom: 0;
+	}
+.leaflet-left {
+	left: 0;
+	}
+.leaflet-control {
+	float: left;
+	clear: both;
+	}
+.leaflet-right .leaflet-control {
+	float: right;
+	}
+.leaflet-top .leaflet-control {
+	margin-top: 10px;
+	}
+.leaflet-bottom .leaflet-control {
+	margin-bottom: 10px;
+	}
+.leaflet-left .leaflet-control {
+	margin-left: 10px;
+	}
+.leaflet-right .leaflet-control {
+	margin-right: 10px;
+	}
+
+
+/* zoom and fade animations */
+
+.leaflet-fade-anim .leaflet-popup {
+	opacity: 0;
+	-webkit-transition: opacity 0.2s linear;
+	   -moz-transition: opacity 0.2s linear;
+	        transition: opacity 0.2s linear;
+	}
+.leaflet-fade-anim .leaflet-map-pane .leaflet-popup {
+	opacity: 1;
+	}
+.leaflet-zoom-animated {
+	-webkit-transform-origin: 0 0;
+	    -ms-transform-origin: 0 0;
+	        transform-origin: 0 0;
+	}
+svg.leaflet-zoom-animated {
+	will-change: transform;
+}
+
+.leaflet-zoom-anim .leaflet-zoom-animated {
+	-webkit-transition: -webkit-transform 0.25s cubic-bezier(0,0,0.25,1);
+	   -moz-transition:    -moz-transform 0.25s cubic-bezier(0,0,0.25,1);
+	        transition:         transform 0.25s cubic-bezier(0,0,0.25,1);
+	}
+.leaflet-zoom-anim .leaflet-tile,
+.leaflet-pan-anim .leaflet-tile {
+	-webkit-transition: none;
+	   -moz-transition: none;
+	        transition: none;
+	}
+
+.leaflet-zoom-anim .leaflet-zoom-hide {
+	visibility: hidden;
+	}
+
+
+/* cursors */
+
+.leaflet-interactive {
+	cursor: pointer;
+	}
+.leaflet-grab {
+	cursor: -webkit-grab;
+	cursor:    -moz-grab;
+	cursor:         grab;
+	}
+.leaflet-crosshair,
+.leaflet-crosshair .leaflet-interactive {
+	cursor: crosshair;
+	}
+.leaflet-popup-pane,
+.leaflet-control {
+	cursor: auto;
+	}
+.leaflet-dragging .leaflet-grab,
+.leaflet-dragging .leaflet-grab .leaflet-interactive,
+.leaflet-dragging .leaflet-marker-draggable {
+	cursor: move;
+	cursor: -webkit-grabbing;
+	cursor:    -moz-grabbing;
+	cursor:         grabbing;
+	}
+
+/* marker & overlays interactivity */
+.leaflet-marker-icon,
+.leaflet-marker-shadow,
+.leaflet-image-layer,
+.leaflet-pane > svg path,
+.leaflet-tile-container {
+	pointer-events: none;
+	}
+
+.leaflet-marker-icon.leaflet-interactive,
+.leaflet-image-layer.leaflet-interactive,
+.leaflet-pane > svg path.leaflet-interactive,
+svg.leaflet-image-layer.leaflet-interactive path {
+	pointer-events: visiblePainted; /* IE 9-10 doesn't have auto */
+	pointer-events: auto;
+	}
+
+/* visual tweaks */
+
+.leaflet-container {
+	background: #ddd;
+	outline-offset: 1px;
+	}
+.leaflet-container a {
+	color: #0078A8;
+	}
+.leaflet-zoom-box {
+	border: 2px dotted #38f;
+	background: rgba(255,255,255,0.5);
+	}
+
+
+/* general typography */
+.leaflet-container {
+	font-family: "Helvetica Neue", Arial, Helvetica, sans-serif;
+	font-size: 12px;
+	font-size: 0.75rem;
+	line-height: 1.5;
+	}
+
+
+/* general toolbar styles */
+
+.leaflet-bar {
+	box-shadow: 0 1px 5px rgba(0,0,0,0.65);
+	border-radius: 4px;
+	}
+.leaflet-bar a {
+	background-color: #fff;
+	border-bottom: 1px solid #ccc;
+	width: 26px;
+	height: 26px;
+	line-height: 26px;
+	display: block;
+	text-align: center;
+	text-decoration: none;
+	color: black;
+	}
+.leaflet-bar a,
+.leaflet-control-layers-toggle {
+	background-position: 50% 50%;
+	background-repeat: no-repeat;
+	display: block;
+	}
+.leaflet-bar a:hover,
+.leaflet-bar a:focus {
+	background-color: #f4f4f4;
+	}
+.leaflet-bar a:first-child {
+	border-top-left-radius: 4px;
+	border-top-right-radius: 4px;
+	}
+.leaflet-bar a:last-child {
+	border-bottom-left-radius: 4px;
+	border-bottom-right-radius: 4px;
+	border-bottom: none;
+	}
+.leaflet-bar a.leaflet-disabled {
+	cursor: default;
+	background-color: #f4f4f4;
+	color: #bbb;
+	}
+
+.leaflet-touch .leaflet-bar a {
+	width: 30px;
+	height: 30px;
+	line-height: 30px;
+	}
+.leaflet-touch .leaflet-bar a:first-child {
+	border-top-left-radius: 2px;
+	border-top-right-radius: 2px;
+	}
+.leaflet-touch .leaflet-bar a:last-child {
+	border-bottom-left-radius: 2px;
+	border-bottom-right-radius: 2px;
+	}
+
+/* zoom control */
+
+.leaflet-control-zoom-in,
+.leaflet-control-zoom-out {
+	font: bold 18px 'Lucida Console', Monaco, monospace;
+	text-indent: 1px;
+	}
+
+.leaflet-touch .leaflet-control-zoom-in, .leaflet-touch .leaflet-control-zoom-out  {
+	font-size: 22px;
+	}
+
+
+/* layers control */
+
+.leaflet-control-layers {
+	box-shadow: 0 1px 5px rgba(0,0,0,0.4);
+	background: #fff;
+	border-radius: 5px;
+	}
+.leaflet-control-layers-toggle {
+	background-image: url(images/layers.png);
+	width: 36px;
+	height: 36px;
+	}
+.leaflet-retina .leaflet-control-layers-toggle {
+	background-image: url(images/layers-2x.png);
+	background-size: 26px 26px;
+	}
+.leaflet-touch .leaflet-control-layers-toggle {
+	width: 44px;
+	height: 44px;
+	}
+.leaflet-control-layers .leaflet-control-layers-list,
+.leaflet-control-layers-expanded .leaflet-control-layers-toggle {
+	display: none;
+	}
+.leaflet-control-layers-expanded .leaflet-control-layers-list {
+	display: block;
+	position: relative;
+	}
+.leaflet-control-layers-expanded {
+	padding: 6px 10px 6px 6px;
+	color: #333;
+	background: #fff;
+	}
+.leaflet-control-layers-scrollbar {
+	overflow-y: scroll;
+	overflow-x: hidden;
+	padding-right: 5px;
+	}
+.leaflet-control-layers-selector {
+	margin-top: 2px;
+	position: relative;
+	top: 1px;
+	}
+.leaflet-control-layers label {
+	display: block;
+	font-size: 13px;
+	font-size: 1.08333em;
+	}
+.leaflet-control-layers-separator {
+	height: 0;
+	border-top: 1px solid #ddd;
+	margin: 5px -10px 5px -6px;
+	}
+
+/* Default icon URLs */
+.leaflet-default-icon-path { /* used only in path-guessing heuristic, see L.Icon.Default */
+	background-image: url(images/marker-icon.png);
+	}
+
+
+/* attribution and scale controls */
+
+.leaflet-container .leaflet-control-attribution {
+	background: #fff;
+	background: rgba(255, 255, 255, 0.8);
+	margin: 0;
+	}
+.leaflet-control-attribution,
+.leaflet-control-scale-line {
+	padding: 0 5px;
+	color: #333;
+	line-height: 1.4;
+	}
+.leaflet-control-attribution a {
+	text-decoration: none;
+	}
+.leaflet-control-attribution a:hover,
+.leaflet-control-attribution a:focus {
+	text-decoration: underline;
+	}
+.leaflet-attribution-flag {
+	display: inline !important;
+	vertical-align: baseline !important;
+	width: 1em;
+	height: 0.6669em;
+	}
+.leaflet-left .leaflet-control-scale {
+	margin-left: 5px;
+	}
+.leaflet-bottom .leaflet-control-scale {
+	margin-bottom: 5px;
+	}
+.leaflet-control-scale-line {
+	border: 2px solid #777;
+	border-top: none;
+	line-height: 1.1;
+	padding: 2px 5px 1px;
+	white-space: nowrap;
+	-moz-box-sizing: border-box;
+	     box-sizing: border-box;
+	background: rgba(255, 255, 255, 0.8);
+	text-shadow: 1px 1px #fff;
+	}
+.leaflet-control-scale-line:not(:first-child) {
+	border-top: 2px solid #777;
+	border-bottom: none;
+	margin-top: -2px;
+	}
+.leaflet-control-scale-line:not(:first-child):not(:last-child) {
+	border-bottom: 2px solid #777;
+	}
+
+.leaflet-touch .leaflet-control-attribution,
+.leaflet-touch .leaflet-control-layers,
+.leaflet-touch .leaflet-bar {
+	box-shadow: none;
+	}
+.leaflet-touch .leaflet-control-layers,
+.leaflet-touch .leaflet-bar {
+	border: 2px solid rgba(0,0,0,0.2);
+	background-clip: padding-box;
+	}
+
+
+/* popup */
+
+.leaflet-popup {
+	position: absolute;
+	text-align: center;
+	margin-bottom: 20px;
+	}
+.leaflet-popup-content-wrapper {
+	padding: 1px;
+	text-align: left;
+	border-radius: 12px;
+	}
+.leaflet-popup-content {
+	margin: 13px 24px 13px 20px;
+	line-height: 1.3;
+	font-size: 13px;
+	font-size: 1.08333em;
+	min-height: 1px;
+	}
+.leaflet-popup-content p {
+	margin: 17px 0;
+	margin: 1.3em 0;
+	}
+.leaflet-popup-tip-container {
+	width: 40px;
+	height: 20px;
+	position: absolute;
+	left: 50%;
+	margin-top: -1px;
+	margin-left: -20px;
+	overflow: hidden;
+	pointer-events: none;
+	}
+.leaflet-popup-tip {
+	width: 17px;
+	height: 17px;
+	padding: 1px;
+
+	margin: -10px auto 0;
+	pointer-events: auto;
+
+	-webkit-transform: rotate(45deg);
+	   -moz-transform: rotate(45deg);
+	    -ms-transform: rotate(45deg);
+	        transform: rotate(45deg);
+	}
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip {
+	background: white;
+	color: #333;
+	box-shadow: 0 3px 14px rgba(0,0,0,0.4);
+	}
+.leaflet-container a.leaflet-popup-close-button {
+	position: absolute;
+	top: 0;
+	right: 0;
+	border: none;
+	text-align: center;
+	width: 24px;
+	height: 24px;
+	font: 16px/24px Tahoma, Verdana, sans-serif;
+	color: #757575;
+	text-decoration: none;
+	background: transparent;
+	}
+.leaflet-container a.leaflet-popup-close-button:hover,
+.leaflet-container a.leaflet-popup-close-button:focus {
+	color: #585858;
+	}
+.leaflet-popup-scrolled {
+	overflow: auto;
+	}
+
+.leaflet-oldie .leaflet-popup-content-wrapper {
+	-ms-zoom: 1;
+	}
+.leaflet-oldie .leaflet-popup-tip {
+	width: 24px;
+	margin: 0 auto;
+
+	-ms-filter: "progid:DXImageTransform.Microsoft.Matrix(M11=0.70710678, M12=0.70710678, M21=-0.70710678, M22=0.70710678)";
+	filter: progid:DXImageTransform.Microsoft.Matrix(M11=0.70710678, M12=0.70710678, M21=-0.70710678, M22=0.70710678);
+	}
+
+.leaflet-oldie .leaflet-control-zoom,
+.leaflet-oldie .leaflet-control-layers,
+.leaflet-oldie .leaflet-popup-content-wrapper,
+.leaflet-oldie .leaflet-popup-tip {
+	border: 1px solid #999;
+	}
+
+
+/* div icon */
+
+.leaflet-div-icon {
+	background: #fff;
+	border: 1px solid #666;
+	}
+
+
+/* Tooltip */
+/* Base styles for the element that has a tooltip */
+.leaflet-tooltip {
+	position: absolute;
+	padding: 6px;
+	background-color: #fff;
+	border: 1px solid #fff;
+	border-radius: 3px;
+	color: #222;
+	white-space: nowrap;
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+	pointer-events: none;
+	box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+	}
+.leaflet-tooltip.leaflet-interactive {
+	cursor: pointer;
+	pointer-events: auto;
+	}
+.leaflet-tooltip-top:before,
+.leaflet-tooltip-bottom:before,
+.leaflet-tooltip-left:before,
+.leaflet-tooltip-right:before {
+	position: absolute;
+	pointer-events: none;
+	border: 6px solid transparent;
+	background: transparent;
+	content: "";
+	}
+
+/* Directions */
+
+.leaflet-tooltip-bottom {
+	margin-top: 6px;
+}
+.leaflet-tooltip-top {
+	margin-top: -6px;
+}
+.leaflet-tooltip-bottom:before,
+.leaflet-tooltip-top:before {
+	left: 50%;
+	margin-left: -6px;
+	}
+.leaflet-tooltip-top:before {
+	bottom: 0;
+	margin-bottom: -12px;
+	border-top-color: #fff;
+	}
+.leaflet-tooltip-bottom:before {
+	top: 0;
+	margin-top: -12px;
+	margin-left: -6px;
+	border-bottom-color: #fff;
+	}
+.leaflet-tooltip-left {
+	margin-left: -6px;
+}
+.leaflet-tooltip-right {
+	margin-left: 6px;
+}
+.leaflet-tooltip-left:before,
+.leaflet-tooltip-right:before {
+	top: 50%;
+	margin-top: -6px;
+	}
+.leaflet-tooltip-left:before {
+	right: 0;
+	margin-right: -12px;
+	border-left-color: #fff;
+	}
+.leaflet-tooltip-right:before {
+	left: 0;
+	margin-left: -12px;
+	border-right-color: #fff;
+	}
+
+/* Printing */
+
+@media print {
+	/* Prevent printers from removing background-images of controls. */
+	.leaflet-control {
+		-webkit-print-color-adjust: exact;
+		print-color-adjust: exact;
+		}
+	}
+
+</style>
+<style>
+:root{
+  --bg:#FBF7EE; --ink:#3A2E2A; --muted:#6B6560; --line:#E6DFD0;
+  --g:#0C8F3B; --gt:#E7F7EC; --red:#E05A4B; --gold:#F2B93E; --card:#fff;
+  --font:"Noto Sans TC","PingFang TC","Microsoft JhengHei",-apple-system,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden}
+body{font-family:var(--font);background:var(--bg);color:var(--ink)}
+
+#map{position:absolute;inset:0}
+.leaflet-container{background:#EDE7D9;font-family:var(--font)}
+/* 把 OSM 的冷灰底圖調成暖色，跟宮廟 pin 同一個色調 */
+/* 底圖調暖，跟宮廟 pin 同色調。太黃就把 sepia 調小，太冷就調大（0 ~ .35） */
+.leaflet-tile-pane{filter:sepia(.10) saturate(.95) brightness(1.02)}
+
+/* ---- 頂部篩選 ---- */
+.top{position:absolute;top:0;left:0;right:0;z-index:1000;padding:10px 12px 8px;
+     background:linear-gradient(to bottom,rgba(251,247,238,.97) 70%,rgba(251,247,238,0));
+     padding-top:calc(10px + env(safe-area-inset-top))}
+.title{font-size:15px;font-weight:800;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+/* 標題兩側的小燈籠，隨風輕晃 */
+.lantern{position:absolute;top:6px;width:21px;height:38px;z-index:-1;opacity:.92;
+  transform-origin:50% 0;animation:sway 3.6s ease-in-out infinite}
+.lantern svg{width:100%;height:100%}
+.lan-l{right:78px}
+.lan-r{right:28px;animation-delay:-1.8s}
+@keyframes sway{0%,100%{transform:rotate(-6deg)}50%{transform:rotate(6deg)}}
+@media (prefers-reduced-motion:reduce){.lantern{animation:none}}
+.title svg{width:20px;height:20px}
+.chips{display:flex;gap:7px;overflow-x:auto;padding-bottom:3px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;border:1.5px solid var(--line);background:#fff;border-radius:99px;
+      padding:7px 13px;font-size:13px;font-weight:700;color:var(--muted);white-space:nowrap}
+.chip.on{background:var(--g);border-color:var(--g);color:#fff}
+.cdot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;
+      vertical-align:1px}
+.chip.on .cdot{background:#fff !important}
+
+/* ---- 我的位置 ---- */
+.me{width:16px;height:16px;border-radius:50%;background:#2563EB;
+    border:3px solid #fff;box-shadow:0 0 0 6px rgba(37,99,235,.18)}
+
+/* ---- 宮廟標記 ---- */
+.pin{width:40px;height:50px;transform:translate(-50%,-100%);
+     filter:drop-shadow(0 3px 4px rgba(58,46,42,.32));
+     transform-origin:50% 100%;
+     animation:drop .42s cubic-bezier(.34,1.56,.64,1) backwards}
+@keyframes drop{
+  0%{transform:translate(-50%,-190%) scale(.55);opacity:0}
+  100%{transform:translate(-50%,-100%) scale(1);opacity:1}}
+.pin.dim{opacity:.34;transform:translate(-50%,-100%) scale(.86)}
+.pin.act{animation:pop .5s cubic-bezier(.34,1.56,.64,1);z-index:600}
+@keyframes pop{
+  0%{transform:translate(-50%,-100%) scale(1)}
+  45%{transform:translate(-50%,-118%) scale(1.22)}
+  100%{transform:translate(-50%,-100%) scale(1.14)}}
+.pin.act{transform:translate(-50%,-100%) scale(1.14)}
+/* 我的位置：呼吸光暈 */
+.me{position:relative}
+.me::after{content:"";position:absolute;inset:-9px;border-radius:50%;
+  border:2px solid rgba(37,99,235,.5);animation:ping 2.2s ease-out infinite}
+@keyframes ping{0%{transform:scale(.6);opacity:.9}100%{transform:scale(1.5);opacity:0}}
+@media (prefers-reduced-motion:reduce){
+  .pin,.pin.act,.me::after{animation:none}}
+
+/* ---- 底部清單 ---- */
+.sheet{position:absolute;left:0;right:0;bottom:0;z-index:1000;background:var(--card);
+       box-shadow:0 -3px 20px rgba(58,46,42,.16);
+       max-height:58%;display:flex;flex-direction:column;
+       padding-bottom:env(safe-area-inset-bottom);transition:transform .25s}
+.sheet.down{transform:translateY(calc(100% - 92px))}
+/* 廟簷造型的面板上緣 */
+.roof{position:absolute;top:-32px;left:0;right:0;height:34px;pointer-events:none}
+.roof svg{width:100%;height:100%;display:block;filter:drop-shadow(0 -2px 6px rgba(58,46,42,.10))}
+.grip{padding:9px 0 5px;display:flex;justify-content:center;flex:none;position:relative}
+.grip i{width:38px;height:4px;border-radius:99px;background:#DDD6C6;display:block}
+/* 屋脊上的寶珠 */
+.grip::before{content:"";position:absolute;top:-19px;left:50%;transform:translateX(-50%);
+  width:11px;height:11px;border-radius:50%;background:#F2B93E;
+  box-shadow:0 0 0 3px #fff}
+.shead{padding:0 16px 9px;display:flex;align-items:baseline;gap:8px;flex:none;
+       border-bottom:1px solid #F2EEE4}
+.shead b{font-size:15px;font-weight:800}
+.shead span{font-size:12px;color:var(--muted);margin-left:auto}
+.list{overflow-y:auto;-webkit-overflow-scrolling:touch;padding:4px 0 10px}
+.row{display:flex;align-items:center;gap:11px;padding:12px 16px;border-bottom:1px solid #F5F2EA;
+     position:relative}
+/* 雲紋分隔：宮廟彩繪常見的捲雲 */
+.row::after{content:"";position:absolute;left:16px;right:16px;bottom:-1px;height:3px;
+  background-image:radial-gradient(circle at 4px 3px, #EFE9DA 3px, transparent 3.5px);
+  background-size:12px 6px;background-repeat:repeat-x;opacity:.85}
+.row:last-child::after{display:none}
+.row:last-child{border-bottom:none}
+.row.sel{background:#F7FBF8}
+.rnum{width:26px;height:26px;border-radius:8px;background:var(--gt);color:var(--g);
+      display:grid;place-items:center;font-size:12px;font-weight:800;flex:none}
+.rmain{flex:1;min-width:0}
+.rname{font-size:14.5px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rsub{font-size:12px;color:var(--muted);margin-top:2px;
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tag{display:inline-block;background:var(--gt);color:var(--g);border-radius:5px;
+     padding:1.5px 7px;font-size:11px;font-weight:800;margin-right:5px}
+/* 清單編號改成小廟簷 */
+
+.rgo{flex:none;display:flex;flex-direction:column;align-items:center;gap:3px}
+.rdist{font-size:12px;font-weight:800;color:var(--ink)}
+.rbtn{background:var(--g);color:#fff;border:none;border-radius:8px;
+      padding:5px 10px;font-size:11.5px;font-weight:800;font-family:var(--font)}
+.empty{padding:22px 16px 30px;text-align:center;color:var(--muted);font-size:13px;line-height:1.75;
+       display:flex;flex-direction:column;align-items:center;gap:4px}
+.emptyart{width:104px;height:80px;opacity:.92;margin-bottom:6px}
+.empty b{font-size:14.5px;font-weight:800;color:var(--ink)}
+
+/* ---- 定位按鈕 ---- */
+.locate{position:absolute;right:12px;z-index:1000;width:42px;height:42px;border-radius:50%;
+        background:#fff;border:1px solid var(--line);box-shadow:0 2px 8px rgba(58,46,42,.16);
+        display:grid;place-items:center;bottom:calc(58% + 12px);transition:bottom .25s}
+.locate.down{bottom:116px}
+.locate svg{width:20px;height:20px;stroke:var(--g);fill:none;stroke-width:2;
+            stroke-linecap:round;stroke-linejoin:round}
+
+.toast{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:1200;
+       background:rgba(58,46,42,.92);color:#fff;padding:11px 18px;border-radius:10px;
+       font-size:13px;line-height:1.6;max-width:78%;text-align:center;display:none}
+</style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<div class="top">
+  <div class="lantern lan-l"><svg viewBox="0 0 26 46"><path d="M13 0v5" stroke="#C23B2E" stroke-width="2"/><rect x="7" y="5" width="12" height="4" rx="1" fill="#F2B93E"/><ellipse cx="13" cy="21" rx="10" ry="12" fill="#E05A4B"/><path d="M13 9c3.4 1.6 5.4 6 5.4 12S16.4 31.4 13 33M13 9c-3.4 1.6-5.4 6-5.4 12S9.6 31.4 13 33" stroke="#C23B2E" stroke-width="1.4" fill="none"/><rect x="8" y="33" width="10" height="4" rx="1" fill="#F2B93E"/><path d="M10 37v6M13 37v7M16 37v6" stroke="#C23B2E" stroke-width="1.8"/></svg></div>
+  <div class="lantern lan-r"><svg viewBox="0 0 26 46"><path d="M13 0v5" stroke="#C23B2E" stroke-width="2"/><rect x="7" y="5" width="12" height="4" rx="1" fill="#F2B93E"/><ellipse cx="13" cy="21" rx="10" ry="12" fill="#E05A4B"/><path d="M13 9c3.4 1.6 5.4 6 5.4 12S16.4 31.4 13 33M13 9c-3.4 1.6-5.4 6-5.4 12S9.6 31.4 13 33" stroke="#C23B2E" stroke-width="1.4" fill="none"/><rect x="8" y="33" width="10" height="4" rx="1" fill="#F2B93E"/><path d="M10 37v6M13 37v7M16 37v6" stroke="#C23B2E" stroke-width="1.8"/></svg></div>
+  <div class="title">
+    <svg viewBox="0 0 56 70"><path d="M28 2C14.7 2 4 12.7 4 26c0 16.8 20.2 38.3 22.6 40.8a2 2 0 0 0 2.8 0C31.8 64.3 52 42.8 52 26 52 12.7 41.3 2 28 2z" fill="#0C8F3B"/><g transform="translate(14 12) scale(.583)"><path d="M24 7.8C29.2 10.4 34.2 12.9 37.6 14.5C41.2 16.2 44.6 16 46.8 14.2C45.8 17.9 42.8 19.7 39.6 21.4L8.4 21.4C5.2 19.7 2.2 17.9 1.2 14.2C3.4 16 6.8 16.2 10.4 14.5C13.8 12.9 18.8 10.4 24 7.8Z" fill="#fff"/><rect x="10" y="23.4" width="28" height="15" rx="1.6" fill="#fff"/><rect x="6.5" y="38.4" width="35" height="4" rx="1.7" fill="#fff"/></g></svg>
+    周遭宮廟地圖
+  </div>
+  <div class="chips" id="chips"></div>
+</div>
+
+<button class="locate" id="locate" aria-label="回到我的位置">
+  <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+</button>
+
+<div class="sheet" id="sheet">
+  <div class="roof"><svg viewBox="0 0 390 34" preserveAspectRatio="none">
+    <path d="M0 34V30C4 16 14 6 26 8C46 12 72 20 108 22C140 24 170 24 195 24C220 24 250 24 282 22C318 20 344 12 364 8C376 6 386 16 390 30V34Z" fill="#fff"/>
+    <path d="M26 8C46 12 72 20 108 22C140 24 170 24 195 24C220 24 250 24 282 22C318 20 344 12 364 8" fill="none" stroke="#E8DFC8" stroke-width="1.6"/>
+  </svg></div>
+  <div class="grip" id="grip"><i></i></div>
+  <div class="shead"><b id="sTitle">附近的宮廟</b><span id="sMeta"></span></div>
+  <div class="list" id="list"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script src="temples.js"></script>
+<script>
+/* 依序嘗試多個來源載入 Leaflet；任一成功即繼續，全部失敗才顯示訊息 */
+(function(){
+  var SRC = [
+    'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js',
+    'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js',
+    'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
+    'leaflet.js'
+  ];
+  var i = 0;
+  function next(){
+    if (i >= SRC.length) return fail();
+    var sc = document.createElement('script');
+    sc.src = SRC[i++];
+    sc.onload = function(){ (typeof L !== 'undefined') ? boot() : next(); };
+    sc.onerror = next;
+    document.head.appendChild(sc);
+  }
+  function fail(){
+    document.body.insertAdjacentHTML('beforeend',
+      '<div style="position:absolute;inset:0;z-index:2000;background:#FBF7EE;padding:40px 28px;'
+    + 'font-family:sans-serif;color:#3A2E2A">'
+    + '<div style="font-size:17px;font-weight:800;margin-bottom:12px">地圖元件載入失敗</div>'
+    + '<div style="font-size:14px;line-height:1.9;color:#6B6560">'
+    + '網路可能擋住了外部資源。請把 <b>leaflet.js</b> 下載後放到與 index.html 同一層，再重新整理。'
+    + '</div></div>');
+  }
+  window.addEventListener('DOMContentLoaded', function(){
+    (typeof L !== 'undefined') ? boot() : next();
+  });
+})();
+
+function boot(){
+/* ===== 設定 ===== */
+const LIFF_ID = "YOUR_LIFF_ID";   // ← 到 LINE Developers 建好 LIFF 後填這裡
+const RADIUS_KM = 5;              // 搜尋半徑
+const MAX_PINS  = 60;             // 同時顯示的標記上限（資料量大時保護效能）
+const FALLBACK  = [25.0478, 121.5170];  // 拿不到定位時的預設中心（台北車站）
+
+/* ===== 地圖 ===== */
+const map = L.map('map', { zoomControl:false, attributionControl:true })
+             .setView(FALLBACK, 14);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+  maxZoom: 20, subdomains: 'abcd',
+  attribution: '© OpenStreetMap contributors © CARTO'
+}).addTo(map);
+
+/* ===== 工具 ===== */
+const toastEl = document.getElementById('toast');
+let toastTimer;
+function toast(msg, ms){
+  toastEl.textContent = msg; toastEl.style.display = 'block';
+  clearTimeout(toastTimer);
+  if(ms !== 0) toastTimer = setTimeout(()=>toastEl.style.display='none', ms || 2600);
+}
+function haversine(a, b, c, d){
+  const R = 6371, r = Math.PI/180;
+  const dLat = (c-a)*r, dLng = (d-b)*r;
+  const x = Math.sin(dLat/2)**2 + Math.cos(a*r)*Math.cos(c*r)*Math.sin(dLng/2)**2;
+  return R * 2 * Math.asin(Math.sqrt(x));
+}
+function fmtDist(km){
+  return km < 1 ? Math.round(km*1000) + ' 公尺' : km.toFixed(1) + ' 公里';
+}
+/* 依主祀神明所對應的需求，決定標記的顏色與符號 */
+const BADGE = {
+  // 銅錢：圓形方孔
+  "事業財運": { c:"#E8A33A", d:'<path fill-rule="evenodd" d="M12 4a8 8 0 1 0 0 16 8 8 0 0 0 0-16zm-2.7 5.3h5.4v5.4H9.3z"/>' },
+  // 書本：對開兩頁
+  "學業考試": { c:"#4A6E88", d:'<path d="M4.4 6.2c2.7-1.3 5.2-1.2 7.6.5v11.6c-2.4-1.7-4.9-1.8-7.6-.5z"/><path d="M19.6 6.2c-2.7-1.3-5.2-1.2-7.6.5v11.6c2.4-1.7 4.9-1.8 7.6-.5z"/>' },
+  // 愛心
+  "姻緣":     { c:"#E05A4B", d:'<path d="M12 19.2s-6.8-4.2-6.8-8.6A3.9 3.9 0 0 1 12 8.3a3.9 3.9 0 0 1 6.8 2.3c0 4.4-6.8 8.6-6.8 8.6z"/>' },
+  "求子":     { c:"#E05A4B", d:'<path d="M12 19.2s-6.8-4.2-6.8-8.6A3.9 3.9 0 0 1 12 8.3a3.9 3.9 0 0 1 6.8 2.3c0 4.4-6.8 8.6-6.8 8.6z"/>' },
+  // 平安符：吊牌加繩結
+  "平安健康": { c:"#0C8F3B", d:'<path d="M12 3.6a1.5 1.5 0 0 1 1.5 1.5v.7h-3v-.7A1.5 1.5 0 0 1 12 3.6z"/><rect x="6.4" y="5.8" width="11.2" height="14.6" rx="2.4"/>' }
+};
+const DEFAULT_C = "#C23B2E";
+
+function needOf(deity){
+  for(const k of ["姻緣","求子","學業考試","事業財運","平安健康"]){
+    if((window.NEEDS[k]||[]).some(w => (deity||"").includes(w))) return k;
+  }
+  return null;
+}
+function pinFor(deity){
+  const n = needOf(deity), b = n && BADGE[n];
+  const body = b
+    ? '<g transform="translate(14 11) scale(.62)" fill="#fff">' + b.d + '</g>'
+    : '<g transform="translate(14 12) scale(.583)">'
+      + '<circle cx="24" cy="5.4" r="2.1" fill="#F5C542"/>'
+      + '<path d="M24 7.8C29.2 10.4 34.2 12.9 37.6 14.5C41.2 16.2 44.6 16 46.8 14.2C45.8 17.9 42.8 19.7 39.6 21.4L8.4 21.4C5.2 19.7 2.2 17.9 1.2 14.2C3.4 16 6.8 16.2 10.4 14.5C13.8 12.9 18.8 10.4 24 7.8Z" fill="#E04B3C"/>'
+      + '<rect x="10" y="23.4" width="28" height="15" rx="1.6" fill="#F7EAD3"/>'
+      + '<path d="M18.8 38.4v-6.8a5.2 5.2 0 0 1 10.4 0v6.8z" fill="#C23B2E"/>'
+      + '<rect x="6.5" y="38.4" width="35" height="4" rx="1.7" fill="#E3D9C4"/></g>';
+  const fill = b ? b.c : "#fff";
+  const stroke = b ? "#fff" : "#DFDACE";
+  return '<svg class="pin" viewBox="0 0 56 70" xmlns="http://www.w3.org/2000/svg">'
+    + '<path d="M28 2C14.7 2 4 12.7 4 26c0 16.8 20.2 38.3 22.6 40.8a2 2 0 0 0 2.8 0C31.8 64.3 52 42.8 52 26 52 12.7 41.3 2 28 2z" fill="'+fill+'" stroke="'+stroke+'" stroke-width="2.4"/>'
+    + body + '</svg>';
+}
+
+/* ===== 狀態 ===== */
+let me = null, meMarker = null, activeNeed = null, markers = [], shown = [], selected = -1;
+
+/* ===== 篩選列 ===== */
+const chipBox = document.getElementById('chips');
+function buildChips(){
+  const all = ['全部', ...Object.keys(window.NEEDS)];
+  all.forEach(n=>{
+    const b = document.createElement('button');
+    b.className = 'chip' + (n === '全部' ? ' on' : '');
+    if(n === '全部'){ b.textContent = '全部'; }
+    else {
+      const c = (BADGE[n]||{}).c || DEFAULT_C;
+      b.innerHTML = '<i class="cdot" style="background:'+c+'"></i>求' + n;
+    }
+    b.onclick = ()=>{
+      activeNeed = (n === '全部') ? null : n;
+      [...chipBox.children].forEach(c=>c.classList.remove('on'));
+      b.classList.add('on');
+      render();
+    };
+    chipBox.appendChild(b);
+  });
+}
+function matchNeed(deity, need){
+  if(!need) return true;
+  return (window.NEEDS[need] || []).some(k => (deity||'').includes(k));
+}
+
+/* ===== 繪製 ===== */
+function render(){
+  markers.forEach(m=>map.removeLayer(m));
+  markers = [];
+  const origin = me || FALLBACK;
+
+  shown = window.TEMPLES
+    .map(t => Object.assign({}, t, { d: haversine(origin[0], origin[1], t.lat, t.lng) }))
+    .filter(t => matchNeed(t.deity, activeNeed))
+    .filter(t => !me || t.d <= RADIUS_KM)
+    .sort((a,b) => a.d - b.d)
+    .slice(0, MAX_PINS);
+
+  shown.forEach((t, i)=>{
+    const icon = L.divIcon({ html: pinFor(t.deity), className:'', iconSize:[40,50], iconAnchor:[20,50] });
+    const m = L.marker([t.lat, t.lng], { icon }).addTo(map);
+    const el = m.getElement() && m.getElement().querySelector('.pin');
+    if(el) el.style.animationDelay = Math.min(i*45, 700) + 'ms';
+    m.on('click', ()=>{ select(i); map.panTo([t.lat, t.lng]); });
+    markers.push(m);
+  });
+
+  document.getElementById('sTitle').textContent =
+    activeNeed ? ('求' + activeNeed + '｜附近的宮廟') : '附近的宮廟';
+  document.getElementById('sMeta').textContent =
+    me ? (shown.length + ' 間・' + RADIUS_KM + ' 公里內') : (shown.length + ' 間');
+
+  const list = document.getElementById('list');
+  list.innerHTML = '';
+  if(!shown.length){
+    list.innerHTML = '<div class="empty">'
+      + '<svg class="emptyart" viewBox="0 0 120 92">'
+      + '<ellipse cx="60" cy="84" rx="34" ry="5" fill="#EFE9DA"/>'
+      + '<circle cx="60" cy="14" r="4" fill="#F2B93E"/>'
+      + '<path d="M60 19c11 5 21 10 28 13 7 3 13 3 17-1-2 7-8 11-14 14H29c-6-3-12-7-14-14 4 4 10 4 17 1 7-3 17-8 28-13z" fill="#E05A4B"/>'
+      + '<rect x="26" y="47" width="68" height="32" rx="3" fill="#F7EAD3"/>'
+      + '<rect x="31" y="47" width="6" height="32" fill="#E0785F"/>'
+      + '<rect x="83" y="47" width="6" height="32" fill="#E0785F"/>'
+      + '<path d="M48 79V64a12 12 0 0 1 24 0v15z" fill="#C23B2E"/>'
+      + '<circle cx="60" cy="68" r="2.4" fill="#F2B93E"/>'
+      + '<path d="M18 30q6-5 12 0M90 30q6-5 12 0" stroke="#DDD6C6" stroke-width="2.4" fill="none" stroke-linecap="round"/>'
+      + '</svg>'
+      + '<b>這附近沒有符合的宮廟</b>'
+      + '<span>換一個上面的條件試試，<br>或把地圖拉遠一點。</span></div>';
+    return;
+  }
+  shown.forEach((t, i)=>{
+    const row = document.createElement('div');
+    row.className = 'row' + (i === selected ? ' sel' : '');
+    row.innerHTML =
+      '<div class="rnum">' + (i+1) + '</div>' +
+      '<div class="rmain"><div class="rname">' + t.name + '</div>' +
+      '<div class="rsub"><span class="tag" style="'+tagStyle(t.deity)+'">' + (t.deity || '—') + '</span>' + (t.dist || '') + '</div></div>' +
+      '<div class="rgo"><div class="rdist">' + fmtDist(t.d) + '</div>' +
+      '<button class="rbtn">導航</button></div>';
+    row.onclick = (e)=>{
+      if(e.target.classList.contains('rbtn')){ navigate(t); return; }
+      select(i); map.setView([t.lat, t.lng], 17);
+    };
+    list.appendChild(row);
+  });
+}
+function tagStyle(deity){
+  const n = needOf(deity);
+  if(!n) return '';
+  const c = BADGE[n].c;
+  return 'background:'+c+'1F;color:'+c;
+}
+function select(i){
+  selected = i;
+  markers.forEach((m, k)=>{
+    const el = m.getElement() && m.getElement().querySelector('.pin');
+    if(!el) return;
+    el.classList.toggle('dim', selected >= 0 && k !== selected);
+    if(k === selected){ el.classList.remove('act'); void el.offsetWidth; el.classList.add('act'); }
+    else el.classList.remove('act');
+  });
+  const rows = document.querySelectorAll('.row');
+  rows.forEach((r,k)=>r.classList.toggle('sel', k === i));
+  if(rows[i]) rows[i].scrollIntoView({ block:'nearest', behavior:'smooth' });
+}
+function navigate(t){
+  const url = 'https://www.google.com/maps/dir/?api=1&destination=' + t.lat + ',' + t.lng;
+  if(window.liff && liff.isInClient && liff.isInClient()){
+    liff.openWindow({ url: url, external: true });
+  } else {
+    window.open(url, '_blank');
+  }
+}
+
+/* ===== 定位 ===== */
+function locate(){
+  if(!navigator.geolocation){ toast('這個瀏覽器不支援定位'); return; }
+  toast('定位中…', 0);
+  navigator.geolocation.getCurrentPosition(pos=>{
+    me = [pos.coords.latitude, pos.coords.longitude];
+    if(meMarker) map.removeLayer(meMarker);
+    meMarker = L.marker(me, {
+      icon: L.divIcon({ html:'<div class="me"></div>', className:'', iconSize:[16,16], iconAnchor:[8,8] }),
+      zIndexOffset: 900
+    }).addTo(map);
+    map.setView(me, 15);
+    toastEl.style.display = 'none';
+    render();
+  }, err=>{
+    toast('拿不到你的位置（' + err.message + '）。\n已改用預設中心，你可以直接拖動地圖。', 4200);
+    render();
+  }, { enableHighAccuracy:true, timeout:10000, maximumAge:60000 });
+}
+document.getElementById('locate').onclick = locate;
+
+/* ===== 底部面板收合 ===== */
+const sheet = document.getElementById('sheet'), locBtn = document.getElementById('locate');
+document.getElementById('grip').onclick = ()=>{
+  sheet.classList.toggle('down');
+  locBtn.classList.toggle('down');
+  setTimeout(()=>map.invalidateSize(), 260);
+};
+
+/* ===== 啟動 ===== */
+buildChips();
+render();
+
+// LIFF 初始化：在 LINE 裡會成功；用一般瀏覽器直接開也不會壞
+if(window.liff && LIFF_ID !== 'YOUR_LIFF_ID'){
+  liff.init({ liffId: LIFF_ID }).then(locate).catch(()=>locate());
+} else {
+  locate();
+}
+}
+</script>
+</body>
+</html>
