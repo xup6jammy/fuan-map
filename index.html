@@ -922,6 +922,10 @@ const DEFAULT_D = '<path d="M12 3.4 20.6 7.6c.5.3.3 1.1-.3 1.1H3.7c-.6 0-.8-.8-.
 const DEFAULT_C = "#C23B2E";
 
 function needOf(deity){
+  /* 正在篩選某一類時，優先顯示「使用者正在找的那一類」的圖示。
+     例：土地公同時屬於「事業財運」和「地方守護」，
+     按了「求地方守護」就該看到盾牌，而不是銅錢。 */
+  if(activeNeed && matchNeed(deity, activeNeed)) return activeNeed;
   for(const k of ["姻緣","求子","學業考試","事業財運","平安健康","地方守護"]){
     if((window.NEEDS[k]||[]).some(w => (deity||"").includes(w))) return k;
   }
