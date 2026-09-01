@@ -689,30 +689,27 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink)}
      background:linear-gradient(to bottom,rgba(251,247,238,.97) 70%,rgba(251,247,238,0));
      padding-top:calc(10px + env(safe-area-inset-top))}
 .title{font-size:15px;font-weight:800;margin-bottom:8px;display:flex;align-items:center;gap:6px}
-/* 標題兩側的小燈籠，隨風輕晃 */
-.lantern{position:absolute;top:6px;width:21px;height:38px;z-index:-1;opacity:.92;
-  transform-origin:50% 0;animation:sway 3.6s ease-in-out infinite}
-.lantern svg{width:100%;height:100%}
-.lan-l{right:78px}
-.lan-r{right:28px;animation-delay:-1.8s}
-@keyframes sway{0%,100%{transform:rotate(-6deg)}50%{transform:rotate(6deg)}}
-@media (prefers-reduced-motion:reduce){.lantern{animation:none}}
 .title svg{width:20px;height:20px}
-.chips{display:flex;gap:7px;overflow-x:auto;padding-bottom:3px;scrollbar-width:none}
-.chips::-webkit-scrollbar{display:none}
+/* 七個心願全部攤在兩行，不再橫向捲動——最常用的「平安健康」
+   和「地方守護」佔了大半宮廟，藏起來等於把核心功能藏起來 */
+.chips{display:flex;flex-wrap:wrap;gap:7px;padding-bottom:2px}
 .chip{flex:none;border:1.5px solid var(--line);background:#fff;border-radius:99px;
-      padding:7px 13px;font-size:13px;font-weight:700;color:var(--muted);white-space:nowrap}
+      padding:6px 13px 6px 7px;font-size:13px;font-weight:700;color:var(--muted);
+      white-space:nowrap;display:inline-flex;align-items:center;gap:6px;
+      font-family:var(--font);transition:background .16s,border-color .16s,color .16s}
+.chip.plain{padding:6px 15px}
 .chip.on{background:var(--g);border-color:var(--g);color:#fff}
-.cdot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;
-      vertical-align:1px}
-.chip.on .cdot{background:#fff !important}
+/* 法器小圖：跟清單縮圖是同一張，使用者按下心願後看到清單也是同一個圖 */
+.cimg{width:20px;height:20px;border-radius:6px;object-fit:cover;flex:none;
+      background:#FAF5E6}
+.chip.on .cimg{box-shadow:0 0 0 1.5px rgba(255,255,255,.85)}
 
 /* ---- 我的位置 ---- */
 .me{width:16px;height:16px;border-radius:50%;background:#2563EB;
     border:3px solid #fff;box-shadow:0 0 0 6px rgba(37,99,235,.18)}
 
 /* ---- 宮廟標記 ---- */
-.pin{width:40px;height:50px;transform:translate(-50%,-100%);
+.pin{width:44px;height:53px;transform:translate(-50%,-100%);
      filter:drop-shadow(0 3px 4px rgba(58,46,42,.32));
      transform-origin:50% 100%;
      animation:drop .42s cubic-bezier(.34,1.56,.64,1) backwards}
@@ -731,6 +728,15 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink)}
 .me::after{content:"";position:absolute;inset:-9px;border-radius:50%;
   border:2px solid rgba(37,99,235,.5);animation:ping 2.2s ease-out infinite}
 @keyframes ping{0%{transform:scale(.6);opacity:.9}100%{transform:scale(1.5);opacity:0}}
+/* 圓形頭像標記：底層是類型圖示，上層蓋法器圖，載入失敗會自己移除 */
+.pdot{position:relative;width:44px;height:44px;border-radius:50%;overflow:hidden;
+      background:#FAF5E6;border:3px solid #fff;box-sizing:border-box;
+      display:grid;place-items:center}
+.pdot .picon{width:22px;height:22px;display:block}
+.pdot img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.ptail{display:block;width:0;height:0;margin:-2px auto 0;
+       border-left:6px solid transparent;border-right:6px solid transparent;
+       border-top:11px solid #fff}
 @media (prefers-reduced-motion:reduce){
   .pin,.pin.act,.me::after{animation:none}}
 
@@ -763,11 +769,11 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink)}
 .row:last-child::after{display:none}
 .row:last-child{border-bottom:none}
 .row.sel{background:#F7FBF8}
-.rthumb{position:relative;width:42px;height:42px;border-radius:12px;flex:none;
+.rthumb{position:relative;width:52px;height:52px;border-radius:15px;flex:none;
         display:grid;place-items:center}
-.rthumb .ticon{width:23px;height:23px;display:block}
-.rthumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:12px}
-.rnum{position:absolute;right:-4px;bottom:-4px;width:17px;height:17px;border-radius:50%;
+.rthumb .ticon{width:28px;height:28px;display:block}
+.rthumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:15px}
+.rnum{position:absolute;right:-3px;bottom:-3px;width:17px;height:17px;border-radius:50%;
       background:#fff;border:1.5px solid #F0EBDD;color:var(--muted);z-index:2;
       display:grid;place-items:center;font-size:10px;font-weight:800}
 .rmain{flex:1;min-width:0}
@@ -805,8 +811,6 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink)}
 <div id="map"></div>
 
 <div class="top">
-  <div class="lantern lan-l"><svg viewBox="0 0 26 46"><path d="M13 0v5" stroke="#C23B2E" stroke-width="2"/><rect x="7" y="5" width="12" height="4" rx="1" fill="#F2B93E"/><ellipse cx="13" cy="21" rx="10" ry="12" fill="#E05A4B"/><path d="M13 9c3.4 1.6 5.4 6 5.4 12S16.4 31.4 13 33M13 9c-3.4 1.6-5.4 6-5.4 12S9.6 31.4 13 33" stroke="#C23B2E" stroke-width="1.4" fill="none"/><rect x="8" y="33" width="10" height="4" rx="1" fill="#F2B93E"/><path d="M10 37v6M13 37v7M16 37v6" stroke="#C23B2E" stroke-width="1.8"/></svg></div>
-  <div class="lantern lan-r"><svg viewBox="0 0 26 46"><path d="M13 0v5" stroke="#C23B2E" stroke-width="2"/><rect x="7" y="5" width="12" height="4" rx="1" fill="#F2B93E"/><ellipse cx="13" cy="21" rx="10" ry="12" fill="#E05A4B"/><path d="M13 9c3.4 1.6 5.4 6 5.4 12S16.4 31.4 13 33M13 9c-3.4 1.6-5.4 6-5.4 12S9.6 31.4 13 33" stroke="#C23B2E" stroke-width="1.4" fill="none"/><rect x="8" y="33" width="10" height="4" rx="1" fill="#F2B93E"/><path d="M10 37v6M13 37v7M16 37v6" stroke="#C23B2E" stroke-width="1.8"/></svg></div>
   <div class="title">
     <svg viewBox="0 0 56 70"><path d="M28 2C14.7 2 4 12.7 4 26c0 16.8 20.2 38.3 22.6 40.8a2 2 0 0 0 2.8 0C31.8 64.3 52 42.8 52 26 52 12.7 41.3 2 28 2z" fill="#0C8F3B"/><g transform="translate(14 12) scale(.583)"><path d="M24 7.8C29.2 10.4 34.2 12.9 37.6 14.5C41.2 16.2 44.6 16 46.8 14.2C45.8 17.9 42.8 19.7 39.6 21.4L8.4 21.4C5.2 19.7 2.2 17.9 1.2 14.2C3.4 16 6.8 16.2 10.4 14.5C13.8 12.9 18.8 10.4 24 7.8Z" fill="#fff"/><rect x="10" y="23.4" width="28" height="15" rx="1.6" fill="#fff"/><rect x="6.5" y="38.4" width="35" height="4" rx="1.7" fill="#fff"/></g></svg>
     周遭宮廟地圖
@@ -931,6 +935,20 @@ function needOf(deity){
   }
   return null;
 }
+/* 六種需求各一張法器圖。圖是綁在「需求」上而不是「宮廟」上，
+   所以資料從 15 間變成幾千間也不用再加任何一張。
+   needOf() 會跟著篩選走，按「求地方守護」時土地公廟的圖示
+   會自動從元寶換成令旗。 */
+const NEED_IMG = {
+  "事業財運":"img/need/wealth.webp",
+  "學業考試":"img/need/study.webp",
+  "姻緣"    :"img/need/love.webp",
+  "求子"    :"img/need/child.webp",
+  "平安健康":"img/need/health.webp",
+  "地方守護":"img/need/guardian.webp"
+};
+function needImg(deity){ return NEED_IMG[needOf(deity)] || null; }
+
 /* 清單縮圖用：同一套 BADGE 圖示，改成單色 24×24。
    之後若某間廟在 temples.js 補上 img 欄位，照片會蓋在這張圖上面；
    照片載入失敗會自己移除，露出底下這張類型圖，不會開天窗。 */
@@ -944,20 +962,14 @@ function thumbBg(deity){
   return (b ? b.c : DEFAULT_C) + '1F';
 }
 function pinFor(deity){
-  const n = needOf(deity), b = n && BADGE[n];
-  const body = b
-    ? '<g transform="translate(28 26) scale(.62) translate(-12 -12)" fill="#fff">' + b.d + '</g>'
-    : '<g transform="translate(14 12) scale(.583)">'
-      + '<circle cx="24" cy="5.4" r="2.1" fill="#F5C542"/>'
-      + '<path d="M24 7.8C29.2 10.4 34.2 12.9 37.6 14.5C41.2 16.2 44.6 16 46.8 14.2C45.8 17.9 42.8 19.7 39.6 21.4L8.4 21.4C5.2 19.7 2.2 17.9 1.2 14.2C3.4 16 6.8 16.2 10.4 14.5C13.8 12.9 18.8 10.4 24 7.8Z" fill="#E04B3C"/>'
-      + '<rect x="10" y="23.4" width="28" height="15" rx="1.6" fill="#F7EAD3"/>'
-      + '<path d="M18.8 38.4v-6.8a5.2 5.2 0 0 1 10.4 0v6.8z" fill="#C23B2E"/>'
-      + '<rect x="6.5" y="38.4" width="35" height="4" rx="1.7" fill="#E3D9C4"/></g>';
-  const fill = b ? b.c : "#fff";
-  const stroke = b ? "#fff" : "#DFDACE";
-  return '<svg class="pin" viewBox="0 0 56 70" xmlns="http://www.w3.org/2000/svg">'
-    + '<path d="M28 2C14.7 2 4 12.7 4 26c0 16.8 20.2 38.3 22.6 40.8a2 2 0 0 0 2.8 0C31.8 64.3 52 42.8 52 26 52 12.7 41.3 2 28 2z" fill="'+fill+'" stroke="'+stroke+'" stroke-width="2.4"/>'
-    + body + '</svg>';
+  const b = BADGE[needOf(deity)];
+  const c = b ? b.c : DEFAULT_C;
+  const img = needImg(deity);
+  return '<div class="pin">'
+    + '<div class="pdot">'
+    +   '<svg class="picon" viewBox="0 0 24 24" fill="' + c + '">' + (b ? b.d : DEFAULT_D) + '</svg>'
+    +   (img ? '<img src="' + img + '" alt="" onerror="this.remove()">' : '')
+    + '</div><i class="ptail"></i></div>';
 }
 
 /* ===== 狀態 ===== */
@@ -970,10 +982,10 @@ function buildChips(){
   all.forEach(n=>{
     const b = document.createElement('button');
     b.className = 'chip' + (n === '全部' ? ' on' : '');
-    if(n === '全部'){ b.textContent = '全部'; }
+    if(n === '全部'){ b.classList.add('plain'); b.textContent = '全部'; }
     else {
-      const c = (BADGE[n]||{}).c || DEFAULT_C;
-      b.innerHTML = '<i class="cdot" style="background:'+c+'"></i>求' + n;
+      const img = NEED_IMG[n];
+      b.innerHTML = (img ? '<img class="cimg" src="' + img + '" alt="">' : '') + n;
     }
     b.onclick = ()=>{
       activeNeed = (n === '全部') ? null : n;
@@ -1003,7 +1015,7 @@ function render(){
     .slice(0, MAX_PINS);
 
   shown.forEach((t, i)=>{
-    const icon = L.divIcon({ html: pinFor(t.deity), className:'', iconSize:[40,50], iconAnchor:[20,50] });
+    const icon = L.divIcon({ html: pinFor(t.deity), className:'', iconSize:[44,53], iconAnchor:[22,53] });
     const m = L.marker([t.lat, t.lng], { icon }).addTo(map);
     const el = m.getElement() && m.getElement().querySelector('.pin');
     if(el) el.style.animationDelay = Math.min(i*45, 700) + 'ms';
@@ -1041,6 +1053,7 @@ function render(){
     row.innerHTML =
       '<div class="rthumb" style="background:' + thumbBg(t.deity) + '">' +
         typeIcon(t.deity) +
+        (needImg(t.deity) ? '<img src="' + needImg(t.deity) + '" alt="" loading="lazy" onerror="this.remove()">' : '') +
         (t.img ? '<img src="' + t.img + '" alt="" loading="lazy" onerror="this.remove()">' : '') +
         '<span class="rnum">' + (i+1) + '</span></div>' +
       '<div class="rmain"><div class="rname">' + t.name + '</div>' +
