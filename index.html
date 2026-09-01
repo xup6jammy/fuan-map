@@ -940,12 +940,12 @@ function needOf(deity){
    needOf() 會跟著篩選走，按「求地方守護」時土地公廟的圖示
    會自動從元寶換成令旗。 */
 const NEED_IMG = {
-  "事業財運":"img/need/wealth.webp",
-  "學業考試":"img/need/study.webp",
-  "姻緣"    :"img/need/love.webp",
-  "求子"    :"img/need/child.webp",
-  "平安健康":"img/need/health.webp",
-  "地方守護":"img/need/guardian.webp"
+  "事業財運":"wealth.webp",
+  "學業考試":"study.webp",
+  "姻緣"    :"love.webp",
+  "求子"    :"child.webp",
+  "平安健康":"health.webp",
+  "地方守護":"guardian.webp"
 };
 function needImg(deity){ return NEED_IMG[needOf(deity)] || null; }
 
