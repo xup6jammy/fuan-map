@@ -1018,14 +1018,61 @@ const FALLBACK  = [25.0478, 121.5170];  // 拿不到定位時的預設中心（�
 /* ===== 地圖 ===== */
 const map = L.map('map', { zoomControl:false, attributionControl:true })
              .setView(FALLBACK, 14);
-/* 圖磚來源：OpenStreetMap 官方，免金鑰。
-   （原本的 CartoCDN Voyager 現在需要 API key，沒帶金鑰整片會蓋上
-     「API KEY REQUIRED」浮水印。若日後流量變大，OSM 官方圖磚的使用政策
-     不適合正式營運，屆時再申請 Carto／MapTiler／Thunderforest 的金鑰換回來。） */
-L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  maxZoom: 19,
-  attribution: '© OpenStreetMap contributors'
-}).addTo(map);
+/* ===== 底圖：Google 優先，載不到就退回 OSM =====
+   Google 那條路走的是官方 Maps JavaScript API（透過 Leaflet.GoogleMutant 這個外掛
+   把 Google 的圖磚接進 Leaflet），所以圖釘、面板、獅仔那些 Leaflet 的程式一行都不用動。
+   金鑰是 Maps Demo Key：沒綁卡、額度用完當天暫停、不會產生費用。
+   純靜態網站藏不住金鑰，請到 Google Cloud Console 把它限制成只有 xup6jammy.github.io 能用。
+   退回 OSM 的三種情況：金鑰空白／Google 的 script 載不到（6 秒逾時）／Google 說金鑰無效。 */
+const GOOGLE_MAPS_KEY = "AIzaSyAVcgswe6P92LQYfSS56FVSBy2yLtYH_N4";
+let baseLayer = null, baseKind = null;
+
+function useOsm(reason){
+  if(baseKind === 'osm') return;
+  if(baseLayer) map.removeLayer(baseLayer);
+  baseKind = 'osm';
+  /* OSM 官方圖磚免金鑰，但使用政策不適合大流量正式營運；這裡只當退路。 */
+  baseLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19, attribution: '© OpenStreetMap contributors'
+  }).addTo(map);
+  if(reason) console.warn('底圖退回 OSM：' + reason);
+}
+function useGoogle(){
+  baseKind = 'google';
+  baseLayer = L.gridLayer.googleMutant({
+    type: 'roadmap', maxZoom: 20,
+    styles: [
+      /* 商家標籤太吵，關掉；Google 自己的寺廟標記也關掉，不然會跟法器圖釘打架 */
+      { featureType:'poi.business', stylers:[{ visibility:'off' }] },
+      { featureType:'poi.place_of_worship', elementType:'labels', stylers:[{ visibility:'off' }] }
+    ]
+  }).addTo(map);
+}
+/* Google 回報金鑰無效／未授權時會呼叫這個全域函式 */
+window.gm_authFailure = function(){ useOsm('Google 說金鑰無效或未授權'); };
+
+(function loadBasemap(){
+  if(!GOOGLE_MAPS_KEY) return useOsm('沒有金鑰');
+  let settled = false;
+  const settle = function(fn, why){ if(settled) return; settled = true; clearTimeout(timer); fn(why); };
+  const timer = setTimeout(function(){ settle(useOsm, 'Google 逾時'); }, 6000);
+
+  /* 先載外掛（跟 index.html 同一層），再載 Google API；任一步失敗就退回 OSM */
+  const plug = document.createElement('script');
+  plug.src = 'leaflet-googlemutant.js';
+  plug.onerror = function(){ settle(useOsm, '外掛載不到'); };
+  plug.onload = function(){
+    if(!(L.gridLayer && L.gridLayer.googleMutant)) return settle(useOsm, '外掛沒掛上');
+    const g = document.createElement('script');
+    g.src = 'https://maps.googleapis.com/maps/api/js?key=' + encodeURIComponent(GOOGLE_MAPS_KEY)
+          + '&loading=async&language=zh-TW&region=TW';
+    g.async = true;
+    g.onload  = function(){ settle(useGoogle); };   /* 外掛自己會等 google.maps.Map 準備好 */
+    g.onerror = function(){ settle(useOsm, 'Google script 載不到'); };
+    document.head.appendChild(g);
+  };
+  document.head.appendChild(plug);
+})();
 
 /* ===== 工具 ===== */
 const toastEl = document.getElementById('toast');
