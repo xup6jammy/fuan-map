@@ -824,6 +824,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink)}
 .cmeter i:nth-child(2){height:8px}
 .cmeter i:nth-child(3){height:11px}
 .cmeter i.on{background:#8A6A3C}
+.item{position:relative}
 .rgo{flex:none;display:flex;flex-direction:column;align-items:center;gap:3px}
 .rdist{font-size:12px;font-weight:800;color:var(--ink)}
 /* 導航改成圓形圖示鈕。視覺 36px，但用 padding 把可點範圍撐到 44px，
@@ -854,7 +855,17 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink)}
       background:#fff;border:1px solid var(--line);border-radius:14px;
       box-shadow:0 3px 12px rgba(58,46,42,.16);overflow:visible;
       padding:10px 30px 10px 62px;display:flex;align-items:center;min-height:46px}
-.bear.hide{opacity:0;transform:translateY(6px);pointer-events:none}
+.bear{transform:translate(var(--dx,0px), var(--dy,0px))}
+.bear.dragging{transition:none;cursor:grabbing}
+.bear.hide{opacity:0;transform:translate(var(--dx,0px), calc(var(--dy,0px) + 6px));pointer-events:none}
+/* 收起來之後的召喚鈕 */
+.bearcall{position:absolute;left:14px;z-index:1000;bottom:calc(58% + 14px);
+  width:46px;height:46px;border-radius:50%;border:2px solid #fff;background:#FAF5E6;
+  box-shadow:0 3px 10px rgba(58,46,42,.28);padding:0;overflow:hidden;cursor:pointer;
+  display:none;transition:bottom .25s, transform .12s}
+.bearcall.on{display:block}
+.bearcall:active{transform:scale(.94)}
+.bearcall img{width:100%;height:100%;object-fit:cover;object-position:50% 22%;display:block}
 /* 整隻站在對話框左邊、上緣浮出去，不做圓形裁切 */
 .bear .av{position:absolute;left:-10px;bottom:-3px;height:70px;width:auto;
           object-fit:contain;pointer-events:none;
@@ -867,6 +878,44 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink)}
         background:#fff;border:1px solid var(--line);box-shadow:0 2px 8px rgba(58,46,42,.16);
         display:grid;place-items:center;bottom:calc(58% + 12px);transition:bottom .25s}
 .locate.down{bottom:116px}
+/* 底部清單收起來時，浮在地圖上的東西一起往下移，不然會卡在半空中 */
+.bear.down,.bearcall.down{bottom:116px}
+
+/* ===== 宮廟面板：浮在地圖右側 =====
+   放右邊而不是清單下面，是因為點下去地圖會把那間廟移到中間，
+   面板就出現在旁邊，眼睛不用在地圖跟清單之間上下跳。
+   上卡是「這是哪間廟」，下卡是「你可以做什麼」，兩張分開才不會糊成一片。 */
+.tpanel{position:absolute;right:10px;top:92px;bottom:calc(58% + 12px);
+        z-index:1010;width:192px;display:none;flex-direction:column;gap:8px;
+        pointer-events:none;transition:bottom .25s}
+.tpanel.on{display:flex}
+.tpanel.down{bottom:116px}
+.tcard{background:#fff;border:1px solid var(--line);border-radius:14px;
+       box-shadow:0 4px 16px rgba(58,46,42,.20);pointer-events:auto;
+       animation:tin .22s cubic-bezier(.34,1.3,.64,1) backwards}
+@keyframes tin{from{opacity:0;transform:translateX(12px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.tcard{animation:none}}
+.tcard.head{flex:none;padding:10px 30px 11px 12px;position:relative}
+.tname{font-size:13.5px;font-weight:800;line-height:1.4;color:var(--ink)}
+.tsub{margin-top:6px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;
+      font-size:11px;color:var(--muted)}
+.tsub .tag{font-size:10.5px;padding:2px 7px}
+.tx{position:absolute;top:3px;right:3px;width:26px;height:26px;border:none;
+    background:transparent;color:#B3AB9E;font-size:16px;line-height:1;
+    cursor:pointer;font-family:var(--font)}
+.tcard.acts{padding:6px;display:flex;flex-direction:column;gap:5px;
+            overflow-y:auto;min-height:0;scrollbar-width:thin}
+/* 一顆一列，圖示在左、字在右。整顆 40px 高，符合觸控目標下限。 */
+.tact{display:flex;align-items:center;gap:9px;min-height:40px;
+      padding:8px 10px;border-radius:10px;box-sizing:border-box;width:100%;
+      background:#FCFAF4;border:1px solid #EDE7D8;color:#4A4038;
+      font-size:12.5px;font-weight:800;font-family:var(--font);
+      text-decoration:none;cursor:pointer;text-align:left;
+      transition:background .12s}
+.tact:active{background:#F1E9D7}
+.tact svg{width:16px;height:16px;fill:#A2926C;flex:none}
+.tact .sub{margin-left:auto;font-size:10px;font-weight:700;color:#9A938C;flex:none}
+.tnote{padding:2px 4px 4px;font-size:10.5px;line-height:1.6;color:#9A938C}
 .locate svg{width:20px;height:20px;stroke:var(--g);fill:none;stroke-width:2;
             stroke-linecap:round;stroke-linejoin:round}
 
@@ -876,6 +925,21 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink)}
 </style>
 </head>
 <body>
+
+<!-- 飲水機圖示的遮罩。整頁只定義一次，每個圖示用 url(#facWaterMask) 指過來，
+     不然清單有幾列就會有幾個同名 id。用 width:0 而不是 display:none，
+     是因為 iOS Safari（LINE 內建瀏覽器就是它）對 display:none 裡的 mask 有過問題。 -->
+<svg aria-hidden="true" focusable="false"
+     style="position:absolute;width:0;height:0;overflow:hidden">
+  <defs>
+    <mask id="facWaterMask">
+      <!-- 白 = 露出來的部分：水面那條波浪往下封成一塊面，杯子裡就是實心的水 -->
+      <path fill="#fff" d="M5 8.4h1c.6-.37 1.22-.67 2-.67c2 0 3 2 5 2c1.64 0 2.6-1.34 4-1.83h1V22H5Z"/>
+      <!-- 黑 = 蓋掉的部分：杯子以外整片，水才不會溢出杯壁 -->
+      <path d="M18 3l-2 18h-9l-2-18h-5v21h24v-20Z"/>
+    </mask>
+  </defs>
+</svg>
 
 <div id="map"></div>
 
@@ -887,7 +951,10 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink)}
   <div class="chipwrap" id="chipwrap"><div class="chips" id="chips"></div></div>
 </div>
 
-<div class="bear hide" id="bear"><img class="av" src="lion_full.webp" alt="" aria-hidden="true"><div class="msg" id="bearMsg"></div><button class="x" id="bearX" aria-label="關閉">×</button></div>
+<div class="bear hide" id="bear"><img class="av" src="lion_full.webp" alt="" aria-hidden="true"><div class="msg" id="bearMsg"></div><button class="x" id="bearX" aria-label="收起獅仔">×</button></div>
+  <button class="bearcall" id="bearCall" aria-label="叫出獅仔"><img src="lion_full.webp" alt=""></button>
+<div class="tpanel" id="tpanel" role="dialog" aria-label="宮廟資訊"></div>
+
 <button class="locate" id="locate" aria-label="回到我的位置">
   <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
 </button>
@@ -1075,21 +1142,23 @@ function nearestFac(t, type, maxKm){
 /* 設施圖示（透過 Iconify 的 JSON API 取得原始路徑，未經修改）
      廁所 wc・無障礙 accessible・親子廁所 baby_changing_station・停車 local_parking
        → Google Material Symbols，Apache License 2.0
-     飲水機 drinking-water
-       → Mapbox Maki，CC0-1.0（公眾領域）。這一組本來就是為 15px 地圖設計的 */
-const ICON_BOX = { water:'0 0 15 15' };   /* 沒列的一律 0 0 24 24 */
+     飲水機 → Iconify line-md（MIT License），取靜止狀態 */
 function iconSvg(k, cls){
-  return '<svg viewBox="' + (ICON_BOX[k] || '0 0 24 24') + '"'
+  return '<svg viewBox="0 0 24 24"'
        + (cls ? ' class="' + cls + '"' : '') + '>' + WALK_ICON[k] + '</svg>';
 }
 const WALK_ICON = {
   toilet: '<path fill="currentColor" d="M5.5 22v-7.5H4V9q0-.825.588-1.412T6 7h3q.825 0 1.413.588T11 9v5.5H9.5V22zm.588-16.588Q5.5 4.825 5.5 4t.588-1.412T7.5 2t1.413.588T9.5 4t-.587 1.413T7.5 6t-1.412-.587M15 22v-6h-3l2.55-7.65q.2-.65.738-1T16.5 7t1.213.35t.737 1L21 16h-3v6zm.088-16.588Q14.5 4.825 14.5 4t.588-1.412T16.5 2t1.413.588T18.5 4t-.587 1.413T16.5 6t-1.412-.587"/>',
   accessible: '<path fill="currentColor" d="M10.588 5.413Q10 4.825 10 4t.588-1.412T12 2t1.413.588T14 4t-.587 1.413T12 6t-1.412-.587M17 22v-5h-5q-.825 0-1.412-.587T10 15V9q0-.825.588-1.412T12 7q.6 0 1.038.263t.937.837q1.375 1.65 2.488 2.263T19 11v2q-1.325 0-2.675-.575T14 11.05v3.45h3q.825 0 1.413.588T19 16.5V22zm-7 0q-2.075 0-3.537-1.463T5 17q0-1.8 1.138-3.175T9 12.1v2.05q-.875.35-1.437 1.113T7 17q0 1.25.875 2.125T10 20q.975 0 1.738-.562T12.85 18h2.05q-.35 1.725-1.725 2.863T10 22"/>',
   nursery: '<path fill="currentColor" d="M3 22V12l1.575-4.625q.2-.65.75-1.012T6.5 6q.2 0 .4.038t.4.137L11.45 8H14v2h-3L8.3 8.825L7 12.75V22zm6-3v-2h12v2zm10.5-3q-.625 0-1.062-.437T18 14.5t.438-1.062T19.5 13t1.063.438T21 14.5t-.437 1.063T19.5 16M13 16q-.825 0-1.412-.587T11 14v-1H9v-2h3q.425 0 .713.288T13 12v1h2v-2h2v3q0 .825-.587 1.413T15 16zM8 5q-.825 0-1.412-.587T6 3t.588-1.412T8 1t1.413.588T10 3t-.587 1.413T8 5"/>',
-  /* 飲水機用 Mapbox Maki 的 drinking-water（水龍頭注入杯子），
-     它的 viewBox 是 15 而不是 24，所以要單獨標。
-     水滴只表示「水」，這一個才是「可以喝的水」。 */
-  water: '<path fill="currentColor" d="M6 1a2 2 0 0 0-2 2v3.5a.5.5 0 0 0 .5.5h2a.5.5 0 0 0 .5-.5v-2a.5.5 0 0 1 .5-.5H14V1Zm1 14H4a.5.5 0 0 1-.48-.38L2 8.62a.5.5 0 0 1 .365-.606A.6.6 0 0 1 2.5 8h6a.5.5 0 0 1 .514.485A.5.5 0 0 1 9 8.62l-1.5 6A.5.5 0 0 1 7 15m-3.35-4h3.71l.5-2H3.14Z"/>',
+  /* 飲水機：Iconify line-md 的水杯（MIT）。原圖是會倒水的動畫版，
+     這裡取動畫結束後的靜止狀態——旁邊三顆都是靜態，只有這顆在動會很吵，
+     而且清單一重畫九列會同時再播一次。
+     原圖杯裡只有一條水線，16px 下比旁邊三顆實心圖示輕，所以把水面往下封成
+     一塊實心的面。水的兩側會超出杯壁，靠 #facWaterMask 切掉（定義在 <body> 最上面）。 */
+  water: '<path fill="currentColor" d="M0 0h24v24H0z" mask="url(#facWaterMask)"/>'
+       + '<path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"'
+       + ' stroke-width="2" d="M18 3l-2 18h-9l-2-18Z"/>',
   parking: '<path fill="currentColor" d="M6 21V3h7q2.5 0 4.25 1.75T19 9t-1.75 4.25T13 15h-3v6zm4-10h3.2q.825 0 1.413-.587T15.2 9t-.587-1.412T13.2 7H10z"/>'
 };
 
@@ -1172,6 +1241,92 @@ function facHtml(t){
   return all.length ? '<div class="rfac">' + all.join('') + '</div>' : '';
 }
 
+/* ===== 宮廟面板（地圖右側） =====
+   按鈕只在真的有資料時出現：沒查到維基條目就沒有「看故事」，
+   沒有官網就沒有「官方網站」。點了沒反應比少一顆按鈕更糟。
+   只有官方 FB 粉專的廟會寫「官方粉專」，不冒充成官網。 */
+const P_ICON = {
+  story: '<path fill="currentColor" d="M5 3h9l5 5v13H5zm8 1.5V9h4.5z"/>',
+  tel:   '<path fill="currentColor" d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.2.4 2.4.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1A17 17 0 0 1 3 4c0-.6.4-1 1-1h3.4c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.4 0 .8-.2 1z"/>',
+  web:   '<path fill="currentColor" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20m0 2c1.1 0 2.4 1.9 3 5H9c.6-3.1 1.9-5 3-5M7 9h10c.1.6.1 1.3.1 2s0 1.4-.1 2H7c-.1-.6-.1-1.3-.1-2s0-1.4.1-2m0 6h6c-.6 3.1-1.9 5-3 5s-2.4-1.9-3-5"/>',
+  share: '<path fill="currentColor" d="M18 16.1c-.8 0-1.5.3-2 .8l-7.1-4.1c.1-.3.1-.5.1-.8s0-.5-.1-.8l7-4.1c.5.5 1.3.8 2.1.8a3 3 0 1 0-3-3c0 .3 0 .5.1.8L8 9.8a3 3 0 1 0 0 4.4l7.1 4.2c-.1.2-.1.5-.1.7a2.9 2.9 0 1 0 3-3"/>',
+  nav:   '<path fill="currentColor" d="M20.6 3.4 3.6 10.1c-.8.3-.8 1.4 0 1.7l6.3 2.3 2.3 6.3c.3.8 1.4.8 1.7 0l6.7-17c.3-.7-.4-1.4-1.1-1.1z"/>'
+};
+const tpanelEl = document.getElementById('tpanel');
+/* 在 LINE 裡用 liff.openWindow 開外部瀏覽器，一般瀏覽器就開新分頁 */
+function openUrl(url){
+  if(window.liff && liff.isInClient && liff.isInClient()) liff.openWindow({ url:url, external:true });
+  else window.open(url, '_blank', 'noopener');
+}
+function wikiUrl(t){ return 'https://zh.wikipedia.org/wiki/' + encodeURIComponent(t.wiki); }
+
+function closePanel(restore){
+  const wasOpen = tpanelEl.classList.contains('on');
+  tpanelEl.classList.remove('on');
+  tpanelEl.innerHTML = '';
+  if(wasOpen) releaseBear();
+  if(wasOpen && restore) setSheet(false);
+}
+function openPanel(i){
+  const t = shown[i];
+  if(!t) return;
+  const a = [];
+  if(t.wiki)
+    a.push('<button class="tact" data-go="' + esc(wikiUrl(t)) + '"><svg viewBox="0 0 24 24">'
+      + P_ICON.story + '</svg>看故事<span class="sub">維基</span></button>');
+  if(t.url)
+    a.push('<button class="tact" data-go="' + esc(t.url) + '"><svg viewBox="0 0 24 24">'
+      + P_ICON.web + '</svg>' + (t.urlKind === 'fb' ? '官方粉專' : '官方網站') + '</button>');
+  a.push('<button class="tact js-nav"><svg viewBox="0 0 24 24">'
+    + P_ICON.nav + '</svg>導航過去</button>');
+  if(t.tel)
+    a.push('<a class="tact" href="tel:' + String(t.tel).replace(/[^0-9+]/g,'') + '"><svg viewBox="0 0 24 24">'
+      + P_ICON.tel + '</svg>打電話</a>');
+  if(window.liff && liff.isApiAvailable && liff.isApiAvailable('shareTargetPicker'))
+    a.push('<button class="tact js-share"><svg viewBox="0 0 24 24">'
+      + P_ICON.share + '</svg>分享給朋友</button>');
+
+  tpanelEl.innerHTML =
+    '<div class="tcard head"><button class="tx js-close" aria-label="關閉">×</button>'
+    + '<div class="tname">' + esc(t.name) + '</div>'
+    + '<div class="tsub"><span class="tag" style="' + tagStyle(t.deity) + '">'
+    + esc(t.deity || '—') + '</span><span>' + fmtDist(t.d) + '</span></div></div>'
+    + '<div class="tcard acts">' + a.join('')
+    + (t.wiki ? '' : '<div class="tnote">這間還沒查到維基百科條目</div>')
+    + '</div>';
+  tpanelEl.classList.add('on');
+  hideBear();            /* 面板打開時獅仔先退場，不然右邊會擠成一團 */
+  /* 地圖只佔上面 42%，塞不下四五顆按鈕。選了一間廟就把清單收起來，
+     地圖變大、面板也放得完整；要看清單再拉一下把手就回來。 */
+  setSheet(true);
+  /* 清單收起來會改變地圖大小，等版面定了再對焦。
+     對完焦再往右推半個面板寬，廟才會落在左半邊而不是被面板蓋住。 */
+  setTimeout(function(){
+    map.invalidateSize();
+    map.setView([t.lat, t.lng], Math.max(map.getZoom(), 16), { animate:false });
+    map.panBy([ (tpanelEl.offsetWidth + 20) / 2, 0 ], { animate:false });
+  }, 300);
+
+  tpanelEl.onclick = function(e){
+    const el = e.target.closest ? e.target : null; if(!el) return;
+    if(el.closest('.js-close')){ closePanel(true); return; }
+    if(el.closest('.js-nav')){ navigate(t); return; }
+    if(el.closest('.js-share')){ shareTemple(t); return; }
+    const go = el.closest('[data-go]');
+    if(go){ openUrl(go.getAttribute('data-go')); }
+  };
+}
+function esc(x){
+  return String(x).replace(/&/g,'&amp;').replace(/</g,'&lt;')
+                  .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function shareTemple(t){
+  const url = 'https://liff.line.me/' + LIFF_ID;
+  liff.shareTargetPicker([{ type:'text',
+    text:'我在「周遭宮廟地圖」找到' + t.name + '（' + (t.deity || '') + '）\n' + url }])
+    .catch(function(){ toast('分享取消了'); });
+}
+
 /* ===== 狀態 ===== */
 let me = null, meMarker = null, activeNeed = null, markers = [], shown = [], selected = -1;
 
@@ -1214,6 +1369,8 @@ function matchNeed(deity, need){
 function render(){
   markers.forEach(m=>map.removeLayer(m));
   markers = [];
+  /* 清單重排之後 index 就不是原來那間廟了，面板先關掉比指錯廟好 */
+  selected = -1; closePanel();
   const origin = me || FALLBACK;
 
   shown = window.TEMPLES
@@ -1228,7 +1385,7 @@ function render(){
     const m = L.marker([t.lat, t.lng], { icon }).addTo(map);
     const el = m.getElement() && m.getElement().querySelector('.pin');
     if(el) el.style.animationDelay = Math.min(i*45, 700) + 'ms';
-    m.on('click', ()=>{ select(i); map.panTo([t.lat, t.lng]); });
+    m.on('click', ()=>{ select(i); });
     markers.push(m);
   });
 
@@ -1273,14 +1430,20 @@ function render(){
       '<button class="rbtn" aria-label="導航到' + t.name + '"><i>'
       + '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.6 3.4 3.6 10.1c-.8.3-.8 1.4 0 1.7'
       + 'l6.3 2.3 2.3 6.3c.3.8 1.4.8 1.7 0l6.7-17c.3-.7-.4-1.4-1.1-1.1z"/></svg></i></button></div>';
-    row.onclick = (e)=>{
-      if(e.target.closest && e.target.closest('.js-todo')){
+    const item = document.createElement('div');
+    item.className = 'item';
+    item.appendChild(row);
+
+    item.onclick = (e)=>{
+      const el = e.target.closest ? e.target : null;
+      if(el && el.closest('.js-todo')){
         toast('飲水機還沒有開放資料，之後由廟方自己回報'); return;
       }
-      if(e.target.closest && e.target.closest('.rbtn')){ navigate(t); return; }
-      select(i); map.setView([t.lat, t.lng], 17);
+      if(el && el.closest('.rbtn')){ navigate(t); return; }
+      /* 點列本身：選取，面板開在地圖右邊（鏡頭由 openPanel 統一處理） */
+      select(i);
     };
-    list.appendChild(row);
+    list.appendChild(item);
   });
 }
 function tagStyle(deity){
@@ -1300,6 +1463,7 @@ function select(i){
   const rows = document.querySelectorAll('.row');
   rows.forEach((r,k)=>r.classList.toggle('sel', k === i));
   if(rows[i]) rows[i].scrollIntoView({ block:'nearest', behavior:'smooth' });
+  openPanel(i);
 }
 function navigate(t){
   const url = 'https://www.google.com/maps/dir/?api=1&destination=' + t.lat + ',' + t.lng;
@@ -1390,8 +1554,11 @@ function bearLines(){
   return out;
 }
 let bearIdx = 0, bearTimer = null, bearOff = false;
+/* bearOff = 使用者按 × 關掉的（要按召喚鈕才回來）
+   bearHold = 面板打開時暫時讓位的（面板關掉就自己回來） */
+let bearHold = false;
 function bearTick(){
-  if(bearOff) return;
+  if(bearOff || bearHold) return;
   const lines = bearLines();
   const el = document.getElementById('bear'), msg = document.getElementById('bearMsg');
   if(!lines.length){ el.classList.add('hide'); return; }
@@ -1404,10 +1571,75 @@ function bearStart(){
   bearTick();
   bearTimer = setInterval(bearTick, 7000);
 }
-document.getElementById('bearX').onclick = ()=>{
+const bearEl = document.getElementById('bear');
+const bearCall = document.getElementById('bearCall');
+document.getElementById('bearX').onclick = (e)=>{
+  e.stopPropagation();
   bearOff = true; clearInterval(bearTimer);
-  document.getElementById('bear').classList.add('hide');
+  bearEl.classList.add('hide');
+  bearCall.classList.add('on');
 };
+/* 面板打開時把獅仔收起來換成召喚鈕。這不算使用者主動關掉，
+   所以不動 bearOff——關掉面板之後獅仔還會自己回來。 */
+function hideBear(){
+  bearHold = true;
+  if(bearEl.classList.contains('hide')) return;
+  bearEl.classList.add('hide');
+  bearCall.classList.add('on');
+}
+/* 面板關掉之後獅仔自己回來——除非使用者本來就按 × 把它關了 */
+function releaseBear(){
+  if(!bearHold) return;
+  bearHold = false;
+  if(bearOff) return;
+  bearCall.classList.remove('on');
+  bearEl.classList.remove('hide');
+  bearStart();
+}
+bearCall.onclick = ()=>{
+  bearOff = false; bearHold = false;
+  bearCall.classList.remove('on');
+  bearEl.classList.remove('hide');
+  bearStart();
+};
+
+/* 獅仔可以拖著走。用 transform 位移而不是改 left/top，
+   這樣不會跟原本 bottom:58% 那個跟著面板連動的定位打架。 */
+(function(){
+  let dragging = false, sx = 0, sy = 0, ox = 0, oy = 0, moved = false;
+  const clamp = (v, lo, hi)=> Math.max(lo, Math.min(hi, v));
+  bearEl.addEventListener('pointerdown', (e)=>{
+    moved = false;                       /* 先歸零：不然上一次拖曳的狀態會把關閉鈕吃掉 */
+    if(e.target.closest('.x')) return;
+    dragging = true;
+    sx = e.clientX; sy = e.clientY;
+    ox = parseFloat(getComputedStyle(bearEl).getPropertyValue('--dx')) || 0;
+    oy = parseFloat(getComputedStyle(bearEl).getPropertyValue('--dy')) || 0;
+    bearEl.classList.add('dragging');
+    bearEl.setPointerCapture(e.pointerId);
+  });
+  bearEl.addEventListener('pointermove', (e)=>{
+    if(!dragging) return;
+    const dx = e.clientX - sx, dy = e.clientY - sy;
+    if(Math.abs(dx) > 3 || Math.abs(dy) > 3) moved = true;
+    const r = bearEl.getBoundingClientRect();
+    /* 留 32px 不讓它整個被拖出畫面 */
+    const nx = clamp(ox + dx, -(r.left - (ox)) - r.width + 60, window.innerWidth - (r.left - ox) - 60);
+    const ny = clamp(oy + dy, -(r.top - oy) + 8, window.innerHeight - (r.top - oy) - r.height - 8);
+    bearEl.style.setProperty('--dx', nx + 'px');
+    bearEl.style.setProperty('--dy', ny + 'px');
+  });
+  const end = (e)=>{
+    if(!dragging) return;
+    dragging = false;
+    bearEl.classList.remove('dragging');
+    try { bearEl.releasePointerCapture(e.pointerId); } catch(_){}
+  };
+  bearEl.addEventListener('pointerup', end);
+  bearEl.addEventListener('pointercancel', end);
+  /* 拖完不要順便觸發點擊 */
+  bearEl.addEventListener('click', (e)=>{ if(moved){ e.preventDefault(); e.stopPropagation(); } }, true);
+})();
 
 /* ===== 定位 ===== */
 function locate(){
@@ -1430,12 +1662,22 @@ function locate(){
 }
 document.getElementById('locate').onclick = locate;
 
-/* ===== 底部面板收合 ===== */
+/* ===== 底部面板收合 =====
+   收合時，浮在地圖上的東西（定位鈕、獅仔、右側面板）一起往下移，
+   不然它們會停在原本 58% 的高度，卡在地圖中間。 */
 const sheet = document.getElementById('sheet'), locBtn = document.getElementById('locate');
-document.getElementById('grip').onclick = ()=>{
-  sheet.classList.toggle('down');
-  locBtn.classList.toggle('down');
-  setTimeout(()=>map.invalidateSize(), 260);
+function setSheet(down){
+  [sheet, locBtn, tpanelEl, bearEl, bearCall].forEach(function(el){
+    el.classList.toggle('down', down);
+  });
+  setTimeout(function(){ map.invalidateSize(); }, 260);
+}
+document.getElementById('grip').onclick = function(){
+  const down = !sheet.classList.contains('down');
+  /* 清單跟右側面板是兩種模式：把清單拉回來就等於離開單一宮廟的畫面。
+     不收掉的話面板會被清單擠到只剩一半，按鈕看不完。 */
+  if(!down) closePanel(false);
+  setSheet(down);
 };
 
 /* ===== 啟動 ===== */
