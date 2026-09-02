@@ -1144,6 +1144,25 @@ function nearestFac(t, type, maxKm){
   }
   return best;
 }
+/* 範圍內某類設施有幾個。停車場只講「幾個」不講「幾格」：
+   格數是各停車場自己的總車位，拿最近一間的格數當附近的停車狀況會誤導
+   （行天宮最近一間 9 格，但 500 公尺內有 23 間、兩千多格）。 */
+function countFac(t, type, maxKm){
+  const list = window.FACILITIES || [];
+  let n = 0;
+  for(const f of list)
+    if(f.type === type && haversine(t.lat, t.lng, f.lat, f.lng) <= maxKm) n++;
+  return n;
+}
+/* 停車場開放資料目前只有臺北市（facilities.js 開頭有寫）。
+   新北的廟算出 0 個不是「沒有停車場」而是「資料沒涵蓋」，兩件事要分開講。 */
+const PARKING_DATA_CITIES = ['台北市', '臺北市'];
+function parkingCovered(t){
+  const a = String(t.addr || '');
+  return PARKING_DATA_CITIES.some(function(c){ return a.indexOf(c) === 0; });
+}
+const PARK_KM = 0.5;   /* 「附近」的半徑，跟 facilities.js 保留的範圍一致 */
+
 /* 設施圖示（透過 Iconify 的 JSON API 取得原始路徑，未經修改）
      廁所 wc・無障礙 accessible・親子廁所 baby_changing_station・停車 local_parking
        → Google Material Symbols，Apache License 2.0
@@ -1181,18 +1200,16 @@ function nearHtml(t){
     out.push('<span class="npill ico" title="' + cfg[1] + '：' + hit.f.name + '" aria-label="' + cfg[1] + '">'
       + iconSvg(cfg[0]) + '</span>');
   });
-  const pk = nearestFac(t, 'parking', 0.5);
+  const pk = nearestFac(t, 'parking', PARK_KM);
   if(pk){
-    const free = pk.f.free;
-    let txt = '停車場', cls = '';
-    if(typeof free === 'number'){          /* 有即時資料時顯示剩餘 */
+    const free = pk.f.free, n = countFac(t, 'parking', PARK_KM);
+    let txt = '<b>' + n + '</b> 個', cls = '';   /* 附近有幾個停車場，不講格數 */
+    if(typeof free === 'number'){          /* 之後接上即時空位再顯示剩餘 */
       if(free > 0) txt = '剩 <b>' + free + '</b> 位';
       else { txt = '<b>已滿</b>'; cls = ' full'; }
-    } else if(typeof pk.f.total === 'number' && pk.f.total > 0){
-      txt = '<b>' + pk.f.total + '</b> 格';   /* 只有總車位數 */
     }
-    out.push('<span class="npill' + cls + '" title="附近停車場：' + pk.f.name + '">'
-      + iconSvg('parking') + txt + '</span>');
+    out.push('<span class="npill' + cls + '" title="' + Math.round(PARK_KM*1000) + ' 公尺內有 ' + n
+      + ' 個停車場，最近：' + pk.f.name + '">' + iconSvg('parking') + txt + '</span>');
   }
   return out;
 }
@@ -1314,7 +1331,7 @@ function openPanel(i){
       + P_ICON.web + '</svg>' + (t.urlKind === 'fb' ? '官方粉專' : '官方網站') + '</button>');
   a.push('<button class="tact js-nav"><svg viewBox="0 0 24 24">'
     + P_ICON.nav + '</svg>導航過去</button>');
-  /* 每一間都給「周遭停車場」：開放資料只有格數沒有位置，真的要找還是得看地圖 */
+  /* 每一間都給「周遭停車場」：開放資料只有點位跟數量，真的要找還是得看地圖 */
   a.push('<button class="tact" data-go="' + esc(parkMapUrl(t)) + '"><svg viewBox="0 0 24 24">'
       + WALK_ICON.parking + '</svg>周遭停車場<span class="sub">Google</span></button>');
   if(t.tel)
@@ -1551,7 +1568,7 @@ function birthdayHit(offsetDays){
    跟 bearLines() 的差別：那邊講的是清單第一間（最近的那間），
    這邊講的是使用者剛剛點開的那間。規則由上往下試，缺資料就降一級，
    沒有一句是編的；連「沒有資料」本身都直接講出來。 */
-const FEW_SLOTS      = 20;    /* 少於這個格數就不建議開車 */
+const FEW_LOTS       = 2;     /* 附近停車場少於這個數量就提醒別開車 */
 /* 開放資料裡沒有這一帶的停車場時講的話。「內部提供」指廟方填報（目前還沒有），
    「周遭」交給 Google 地圖搜尋，連結由 bearEl 的 click 事件接手。 */
 const NO_PARK_LINE = '沒有廟方的停車資訊，周遭停車場我可以推薦，';
@@ -1559,8 +1576,9 @@ const PARK_LINK    = '<a class="lnk js-parkmap" href="#">看周遭停車場 ↗<
 const WALKABLE_MAX_M = 1500;  /* 超過這個距離就別再講「走路幾分鐘」 */
 
 function templeTip(t){
-  const pk    = nearestFac(t, 'parking', 0.5);
-  const slots = (pk && typeof pk.f.total === 'number') ? pk.f.total : null;
+  /* 停車場只講「附近有幾個」，不講幾格（見 countFac 的說明）。
+     lots = null 代表開放資料沒涵蓋這一區（目前只有臺北市），跟 0 個是兩回事。 */
+  const lots  = parkingCovered(t) ? countFac(t, 'parking', PARK_KM) : null;
   /* 沒定位時 t.d 是用 FALLBACK 算的，那不是「離你多遠」，所以一個字都不能講 */
   const dist  = me ? fmtDist(t.d) : null;
   const walk  = me ? Math.max(1, Math.round(t.d * 1000 / WALK_M_PER_MIN)) : null;
@@ -1571,22 +1589,23 @@ function templeTip(t){
 
   if(t.parking === true){            /* 廟方填報有停車場（最準的一層），但沒有即時空位 */
     s = nm + '有停車場，但沒有即時空位資訊，'
-      + (slots !== null ? '附近公共停車場另有 <b>' + slots + '</b> 格，' : '');
+      + (lots ? '附近另有 <b>' + lots + '</b> 個公共停車場，' : '');
     mrt = '或搭捷運也行。';
   }
-  else if(slots !== null && slots < FEW_SLOTS){
-    s = '開車來' + nm + '要注意，最近的停車場只有 <b>' + slots + '</b> 格，';
+  else if(lots !== null && lots < FEW_LOTS){
+    s = '開車來' + nm + '要注意，附近'
+      + (lots === 0 ? '沒有公共停車場，' : '只有 <b>' + lots + '</b> 個停車場，');
     mrt = '建議搭捷運。';
   }
   else if(dist && t.d * 1000 <= WALKABLE_MAX_M){
     s = nm + '離你 <b>' + dist + '</b>，走路約 ' + walk + ' 分鐘，不用找車位。';
     walkable = true;
   }
-  else if(dist && slots !== null)
-    s = nm + '離你 <b>' + dist + '</b>，附近停車場有 <b>' + slots + '</b> 格。';
+  else if(dist && lots !== null)
+    s = nm + '離你 <b>' + dist + '</b>，附近有 <b>' + lots + '</b> 個停車場。';
   else if(dist){ s = nm + '離你 <b>' + dist + '</b>。' + NO_PARK_LINE; mrt = '或搭捷運也行。'; }
-  else if(slots !== null)
-    s = nm + '附近停車場有 <b>' + slots + '</b> 格。';
+  else if(lots !== null)
+    s = nm + '附近有 <b>' + lots + '</b> 個停車場。';
   else { s = nm + '主祀' + esc(t.deity || '—') + '。' + NO_PARK_LINE; mrt = '或搭捷運也行。'; }
 
   /* 人潮句：只接一句，全部都是日曆事實（神明聖誕、初一十五、週末），
@@ -1632,12 +1651,12 @@ function bearLines(){
     const fac = near.fac || [];
     if(fac.indexOf('accessible') >= 0)
       out.push('<b>' + near.name + '</b>有無障礙廁所，帶長輩或推車來比較方便。');
-    const pk = nearestFac(near, 'parking', 0.5);
-    if(pk && typeof pk.f.total === 'number'){
-      if(pk.f.total < 20)
-        out.push('開車來<b>' + near.name + '</b>要注意，最近的停車場只有 ' + pk.f.total + ' 格，建議搭捷運。');
+    if(parkingCovered(near)){            /* 只講幾個停車場，不講幾格 */
+      const n = countFac(near, 'parking', PARK_KM);
+      if(n < FEW_LOTS)
+        out.push('開車來<b>' + near.name + '</b>要注意，附近' + (n ? '只有 ' + n + ' 個' : '沒有公共') + '停車場，建議搭捷運。');
       else
-        out.push('<b>' + near.name + '</b>附近有停車場，' + pk.f.total + ' 格，開車來還算方便。');
+        out.push('<b>' + near.name + '</b>附近有 ' + n + ' 個停車場。');
     }
   }
   if(activeNeed){
