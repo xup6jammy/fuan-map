@@ -690,9 +690,18 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink)}
      padding-top:calc(10px + env(safe-area-inset-top))}
 .title{font-size:15px;font-weight:800;margin-bottom:8px;display:flex;align-items:center;gap:6px}
 .title svg{width:20px;height:20px}
-/* 七個心願全部攤在兩行，不再橫向捲動——最常用的「平安健康」
-   和「地方守護」佔了大半宮廟，藏起來等於把核心功能藏起來 */
-.chips{display:flex;flex-wrap:wrap;gap:7px;padding-bottom:2px}
+/* 七個心願改回一行左右滑。右邊留一道漸層淡出，暗示後面還有；
+   滑到底時 JS 會把漸層關掉，才不會一直假裝有東西沒看完。 */
+.chipwrap{position:relative}
+.chipwrap::after{content:"";position:absolute;top:0;bottom:0;right:0;width:34px;
+  background:linear-gradient(to right, rgba(251,247,238,0), var(--bg,#FBF7EE) 78%);
+  pointer-events:none;opacity:1;transition:opacity .2s}
+.chipwrap.end::after{opacity:0}
+.chips{display:flex;flex-wrap:nowrap;gap:7px;padding-bottom:2px;
+       overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;
+       scroll-snap-type:x proximity}
+.chips::-webkit-scrollbar{display:none}
+.chip{scroll-snap-align:start}
 .chip{flex:none;border:1.5px solid var(--line);background:#fff;border-radius:99px;
       padding:6px 13px 6px 7px;font-size:13px;font-weight:700;color:var(--muted);
       white-space:nowrap;display:inline-flex;align-items:center;gap:6px;
@@ -709,52 +718,42 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink)}
     border:3px solid #fff;box-shadow:0 0 0 6px rgba(37,99,235,.18)}
 
 /* ---- 宮廟標記 ---- */
-.pin{width:44px;height:53px;transform:translate(-50%,-100%);
-     filter:drop-shadow(0 3px 4px rgba(58,46,42,.32));
-     transform-origin:50% 100%;
+/* 標記就是圖片本身：沒有白圈、沒有尖角，錨點在正中央 */
+.pin{width:44px;height:44px;transform:translate(-50%,-50%);
+     filter:drop-shadow(0 2px 4px rgba(58,46,42,.34));
+     transform-origin:50% 50%;
      animation:drop .42s cubic-bezier(.34,1.56,.64,1) backwards}
 @keyframes drop{
-  0%{transform:translate(-50%,-190%) scale(.55);opacity:0}
-  100%{transform:translate(-50%,-100%) scale(1);opacity:1}}
-.pin.dim{opacity:.34;transform:translate(-50%,-100%) scale(.86)}
+  0%{transform:translate(-50%,-130%) scale(.55);opacity:0}
+  100%{transform:translate(-50%,-50%) scale(1);opacity:1}}
 .pin.act{animation:pop .5s cubic-bezier(.34,1.56,.64,1);z-index:600}
 @keyframes pop{
-  0%{transform:translate(-50%,-100%) scale(1)}
-  45%{transform:translate(-50%,-118%) scale(1.22)}
-  100%{transform:translate(-50%,-100%) scale(1.14)}}
-.pin.act{transform:translate(-50%,-100%) scale(1.14)}
+  0%{transform:translate(-50%,-50%) scale(1)}
+  45%{transform:translate(-50%,-62%) scale(1.24)}
+  100%{transform:translate(-50%,-50%) scale(1.16)}}
+.pin.act{transform:translate(-50%,-50%) scale(1.16)}
 /* 我的位置：呼吸光暈 */
 .me{position:relative}
 .me::after{content:"";position:absolute;inset:-9px;border-radius:50%;
   border:2px solid rgba(37,99,235,.5);animation:ping 2.2s ease-out infinite}
 @keyframes ping{0%{transform:scale(.6);opacity:.9}100%{transform:scale(1.5);opacity:0}}
 /* 圓形頭像標記：底層是類型圖示，上層蓋法器圖，載入失敗會自己移除 */
-.pdot{position:relative;width:44px;height:44px;border-radius:50%;overflow:hidden;
-      background:#FAF5E6;border:3px solid #fff;box-sizing:border-box;
-      display:grid;place-items:center}
+.pdot{position:relative;width:44px;height:44px;border-radius:11px;overflow:hidden;
+      background:#FAF5E6;box-sizing:border-box;display:grid;place-items:center}
 .pdot .picon{width:22px;height:22px;display:block}
 .pdot img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-.ptail{display:block;width:0;height:0;margin:-2px auto 0;
-       border-left:6px solid transparent;border-right:6px solid transparent;
-       border-top:11px solid #fff}
 @media (prefers-reduced-motion:reduce){
   .pin,.pin.act,.me::after{animation:none}}
 
 /* ---- 底部清單 ---- */
 .sheet{position:absolute;left:0;right:0;bottom:0;z-index:1000;background:var(--card);
+       border-radius:18px 18px 0 0;
        box-shadow:0 -3px 20px rgba(58,46,42,.16);
        max-height:58%;display:flex;flex-direction:column;
        padding-bottom:env(safe-area-inset-bottom);transition:transform .25s}
 .sheet.down{transform:translateY(calc(100% - 92px))}
-/* 廟簷造型的面板上緣 */
-.roof{position:absolute;top:-32px;left:0;right:0;height:34px;pointer-events:none}
-.roof svg{width:100%;height:100%;display:block;filter:drop-shadow(0 -2px 6px rgba(58,46,42,.10))}
 .grip{padding:9px 0 5px;display:flex;justify-content:center;flex:none;position:relative}
 .grip i{width:38px;height:4px;border-radius:99px;background:#DDD6C6;display:block}
-/* 屋脊上的寶珠 */
-.grip::before{content:"";position:absolute;top:-19px;left:50%;transform:translateX(-50%);
-  width:11px;height:11px;border-radius:50%;background:#F2B93E;
-  box-shadow:0 0 0 3px #fff}
 .shead{padding:0 16px 9px;display:flex;align-items:baseline;gap:8px;flex:none;
        border-bottom:1px solid #F2EEE4}
 .shead b{font-size:15px;font-weight:800}
@@ -784,16 +783,86 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink)}
      padding:1.5px 7px;font-size:11px;font-weight:800;margin-right:5px}
 /* 清單編號改成小廟簷 */
 
+/* 第三行：設施與開放時間。沒有資料就整行不出現，所以還沒調查的宮廟
+   高度跟原本一樣，不會出現一排空欄位 */
+.rfac{display:flex;align-items:center;flex-wrap:wrap;gap:5px;margin-top:5px}
+/* 廟內設施：實心底色的圖示。跟「附近」的外框圖示成對比，
+   一眼分得出「廟裡就有」和「附近有」。 */
+.fpill{display:inline-flex;align-items:center;justify-content:center;
+       background:#E6EFE9;border:1px solid #D3E2D9;border-radius:4px;
+       padding:2px 6px;color:#3F6B52;line-height:0}
+.fpill svg{width:13px;height:13px;fill:currentColor;display:block}
+.fopen{font-size:11px;font-weight:700;display:inline-flex;align-items:center;gap:4px}
+.fopen i{width:6px;height:6px;border-radius:50%;flex:none}
+.fopen.yes{color:#127A3E} .fopen.yes i{background:#17A34A}
+.fopen.no{color:#9A938C}  .fopen.no i{background:#C6BFB6}
+.fpeak{font-size:10.5px;color:#9A938C}
+/* 附近設施用外框，跟「廟內設施」的實心藥丸在視覺上分開，
+   不然使用者會以為廁所在廟裡面 */
+.npill{font-size:10.5px;font-weight:700;color:#5A6E86;background:transparent;
+       border:1px solid #CFDAE6;border-radius:4px;padding:1px 6px;line-height:1.6;
+       display:inline-flex;align-items:center;gap:4px}
+.npill svg{width:11px;height:11px;flex:none}
+.npill b{font-weight:800}
+.npill.full{color:#B0603A;border-color:#E8CDBC}
+.npill.ico{padding:2px 5px}
+.npill.ico svg{width:13px;height:13px}
+/* 第三種狀態：還沒有任何來源，等廟方自己補。
+   看得清楚，但用問號和不同色系表明「這是待確認」而不是「已經有」——
+   點下去會說明，這一格本身就是廟方回報功能的入口。 */
+.npill.todo{border-color:#CDBFA4;background:#FBF7EC;color:#8A7C5E;cursor:pointer;
+            font-family:var(--font)}
+.npill.todo:active{background:#F3ECDC}
+/* 人潮：用「填滿幾格」表示多寡，不用顏色分級。
+   紅綠色盲看不出綠↔琥珀的差別（實測 ΔE 3.1 遠低於可辨識門檻），
+   所以份量交給格數與文字，顏色只留一種。 */
+.crowd{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;
+       font-weight:700;color:#7A6E5F}
+.cmeter{display:inline-flex;align-items:flex-end;gap:2px;height:11px}
+.cmeter i{width:3.5px;background:#E2DBCB;border-radius:1px;display:block}
+.cmeter i:nth-child(1){height:5px}
+.cmeter i:nth-child(2){height:8px}
+.cmeter i:nth-child(3){height:11px}
+.cmeter i.on{background:#8A6A3C}
 .rgo{flex:none;display:flex;flex-direction:column;align-items:center;gap:3px}
 .rdist{font-size:12px;font-weight:800;color:var(--ink)}
-.rbtn{background:var(--g);color:#fff;border:none;border-radius:8px;
-      padding:5px 10px;font-size:11.5px;font-weight:800;font-family:var(--font)}
+/* 導航改成圓形圖示鈕。視覺 36px，但用 padding 把可點範圍撐到 44px，
+   因為使用者偏年長，觸控目標不能小於 44。 */
+.rbtn{background:transparent;border:none;padding:4px;margin:-4px;
+      display:grid;place-items:center;cursor:pointer;line-height:0}
+/* 導航鈕：白底、暖色邊框與箭頭同色（#A2926C），圓角 15px 跟左邊的宮廟縮圖同弧度。
+   邊框與箭頭刻意用同一個顏色，整顆才會讀成「一組」而不是「空圈裡裝了東西」。
+   #A2926C 對白底的對比是 3.06:1，剛好跨過圖形元件的 3:1 門檻——
+   再淡一階（#BCAF8E 2.17:1）在戶外陽光下就看不見了。 */
+.rbtn i{width:36px;height:36px;border-radius:15px;background:#fff;
+        border:1.5px solid #A2926C;box-sizing:border-box;
+        display:grid;place-items:center;transition:transform .12s,background .12s}
+.rbtn:active i{transform:scale(.92);background:#F6F2E7}
+.rbtn svg{width:17px;height:17px;fill:#A2926C;pointer-events:none}
+.rbtn:focus-visible i{outline:2px solid var(--g);outline-offset:3px}
 .empty{padding:22px 16px 30px;text-align:center;color:var(--muted);font-size:13px;line-height:1.75;
        display:flex;flex-direction:column;align-items:center;gap:4px}
 .emptyart{width:104px;height:80px;opacity:.92;margin-bottom:6px}
 .empty b{font-size:14.5px;font-weight:800;color:var(--ink)}
 
 /* ---- 定位按鈕 ---- */
+/* 熊爸：地圖上的浮動提示。內容全部從「已經知道的事實」生成——
+   使用者選的心願、最近的宮廟與距離、真實停車位、目前時段。
+   不編造「最近很多人在求姻緣」這種沒有資料支撐的話。 */
+.bear{position:absolute;left:16px;right:64px;z-index:1000;
+      bottom:calc(58% + 14px);transition:bottom .25s, opacity .3s, transform .3s;
+      background:#fff;border:1px solid var(--line);border-radius:14px;
+      box-shadow:0 3px 12px rgba(58,46,42,.16);overflow:visible;
+      padding:10px 30px 10px 62px;display:flex;align-items:center;min-height:46px}
+.bear.hide{opacity:0;transform:translateY(6px);pointer-events:none}
+/* 整隻站在對話框左邊、上緣浮出去，不做圓形裁切 */
+.bear .av{position:absolute;left:-10px;bottom:-3px;height:70px;width:auto;
+          object-fit:contain;pointer-events:none;
+          filter:drop-shadow(0 2px 3px rgba(58,46,42,.28))}
+.bear .msg{font-size:12.5px;line-height:1.55;color:var(--ink);font-weight:500}
+.bear .msg b{font-weight:800}
+.bear .x{position:absolute;top:5px;right:6px;width:22px;height:22px;border:none;
+         background:transparent;color:#B3AB9E;font-size:15px;line-height:1;cursor:pointer}
 .locate{position:absolute;right:12px;z-index:1000;width:42px;height:42px;border-radius:50%;
         background:#fff;border:1px solid var(--line);box-shadow:0 2px 8px rgba(58,46,42,.16);
         display:grid;place-items:center;bottom:calc(58% + 12px);transition:bottom .25s}
@@ -815,18 +884,15 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink)}
     <svg viewBox="0 0 56 70"><path d="M28 2C14.7 2 4 12.7 4 26c0 16.8 20.2 38.3 22.6 40.8a2 2 0 0 0 2.8 0C31.8 64.3 52 42.8 52 26 52 12.7 41.3 2 28 2z" fill="#0C8F3B"/><g transform="translate(14 12) scale(.583)"><path d="M24 7.8C29.2 10.4 34.2 12.9 37.6 14.5C41.2 16.2 44.6 16 46.8 14.2C45.8 17.9 42.8 19.7 39.6 21.4L8.4 21.4C5.2 19.7 2.2 17.9 1.2 14.2C3.4 16 6.8 16.2 10.4 14.5C13.8 12.9 18.8 10.4 24 7.8Z" fill="#fff"/><rect x="10" y="23.4" width="28" height="15" rx="1.6" fill="#fff"/><rect x="6.5" y="38.4" width="35" height="4" rx="1.7" fill="#fff"/></g></svg>
     周遭宮廟地圖
   </div>
-  <div class="chips" id="chips"></div>
+  <div class="chipwrap" id="chipwrap"><div class="chips" id="chips"></div></div>
 </div>
 
+<div class="bear hide" id="bear"><img class="av" src="lion_full.webp" alt="" aria-hidden="true"><div class="msg" id="bearMsg"></div><button class="x" id="bearX" aria-label="關閉">×</button></div>
 <button class="locate" id="locate" aria-label="回到我的位置">
   <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
 </button>
 
 <div class="sheet" id="sheet">
-  <div class="roof"><svg viewBox="0 0 390 34" preserveAspectRatio="none">
-    <path d="M0 34V30C4 16 14 6 26 8C46 12 72 20 108 22C140 24 170 24 195 24C220 24 250 24 282 22C318 20 344 12 364 8C376 6 386 16 390 30V34Z" fill="#fff"/>
-    <path d="M26 8C46 12 72 20 108 22C140 24 170 24 195 24C220 24 250 24 282 22C318 20 344 12 364 8" fill="none" stroke="#E8DFC8" stroke-width="1.6"/>
-  </svg></div>
   <div class="grip" id="grip"><i></i></div>
   <div class="shead"><b id="sTitle">附近的宮廟</b><span id="sMeta"></span></div>
   <div class="list" id="list"></div>
@@ -836,6 +902,8 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink)}
 
 <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <script src="temples.js"></script>
+<script src="facilities.js"></script>
+<script src="lunar.js"></script>
 <script>
 /* 依序嘗試多個來源載入 Leaflet；任一成功即繼續，全部失敗才顯示訊息 */
 (function(){
@@ -969,7 +1037,139 @@ function pinFor(deity){
     + '<div class="pdot">'
     +   '<svg class="picon" viewBox="0 0 24 24" fill="' + c + '">' + (b ? b.d : DEFAULT_D) + '</svg>'
     +   (img ? '<img src="' + img + '" alt="" onerror="this.remove()">' : '')
-    + '</div><i class="ptail"></i></div>';
+    + '</div></div>';
+}
+
+/* ===== 設施與開放時間 =====
+   資料模型刻意用「只列確定有的」而不是 true/false，
+   因為「沒調查過」和「確定沒有」是兩件事，不能混為一談。
+   沒列出來只代表還不知道，畫面上就不會宣稱這間廟沒有廁所。 */
+const FAC_LABEL = { toilet:"廁所", water:"飲水", parking:"停車", accessible:"無障礙", nursery:"親子廁所" };
+
+/* open 支援 "06:00-21:00"、"24h"、跨午夜的 "22:00-02:00" */
+function openState(open){
+  if(!open) return null;
+  if(open === '24h') return { on:true, text:'24 小時開放' };
+  const m = String(open).match(/(\d{1,2}):(\d{2})\s*[-–~]\s*(\d{1,2}):(\d{2})/);
+  if(!m) return { on:null, text:open };
+  const now = new Date(), cur = now.getHours()*60 + now.getMinutes();
+  const a = (+m[1])*60 + (+m[2]), b = (+m[3])*60 + (+m[4]);
+  const on = (a <= b) ? (cur >= a && cur < b) : (cur >= a || cur < b);
+  return { on:on, text:open.replace(/\s*-\s*/,'–') };
+}
+
+/* 從 facilities.js 找出離這間廟最近的某類設施。
+   maxKm 之外就不顯示——與其給一個 800 公尺外的廁所，不如什麼都不說。 */
+/* 80 公尺/分 ≈ 時速 4.8 公里，是都市步行的常見估算值，不是實測 */
+const WALK_M_PER_MIN = 80;
+function nearestFac(t, type, maxKm){
+  const list = window.FACILITIES || [];
+  let best = null;
+  for(const f of list){
+    if(f.type !== type) continue;
+    const d = haversine(t.lat, t.lng, f.lat, f.lng);
+    if(d <= maxKm && (!best || d < best.d)) best = { d:d, f:f };
+  }
+  return best;
+}
+/* 設施圖示（透過 Iconify 的 JSON API 取得原始路徑，未經修改）
+     廁所 wc・無障礙 accessible・親子廁所 baby_changing_station・停車 local_parking
+       → Google Material Symbols，Apache License 2.0
+     飲水機 drinking-water
+       → Mapbox Maki，CC0-1.0（公眾領域）。這一組本來就是為 15px 地圖設計的 */
+const ICON_BOX = { water:'0 0 15 15' };   /* 沒列的一律 0 0 24 24 */
+function iconSvg(k, cls){
+  return '<svg viewBox="' + (ICON_BOX[k] || '0 0 24 24') + '"'
+       + (cls ? ' class="' + cls + '"' : '') + '>' + WALK_ICON[k] + '</svg>';
+}
+const WALK_ICON = {
+  toilet: '<path fill="currentColor" d="M5.5 22v-7.5H4V9q0-.825.588-1.412T6 7h3q.825 0 1.413.588T11 9v5.5H9.5V22zm.588-16.588Q5.5 4.825 5.5 4t.588-1.412T7.5 2t1.413.588T9.5 4t-.587 1.413T7.5 6t-1.412-.587M15 22v-6h-3l2.55-7.65q.2-.65.738-1T16.5 7t1.213.35t.737 1L21 16h-3v6zm.088-16.588Q14.5 4.825 14.5 4t.588-1.412T16.5 2t1.413.588T18.5 4t-.587 1.413T16.5 6t-1.412-.587"/>',
+  accessible: '<path fill="currentColor" d="M10.588 5.413Q10 4.825 10 4t.588-1.412T12 2t1.413.588T14 4t-.587 1.413T12 6t-1.412-.587M17 22v-5h-5q-.825 0-1.412-.587T10 15V9q0-.825.588-1.412T12 7q.6 0 1.038.263t.937.837q1.375 1.65 2.488 2.263T19 11v2q-1.325 0-2.675-.575T14 11.05v3.45h3q.825 0 1.413.588T19 16.5V22zm-7 0q-2.075 0-3.537-1.463T5 17q0-1.8 1.138-3.175T9 12.1v2.05q-.875.35-1.437 1.113T7 17q0 1.25.875 2.125T10 20q.975 0 1.738-.562T12.85 18h2.05q-.35 1.725-1.725 2.863T10 22"/>',
+  nursery: '<path fill="currentColor" d="M3 22V12l1.575-4.625q.2-.65.75-1.012T6.5 6q.2 0 .4.038t.4.137L11.45 8H14v2h-3L8.3 8.825L7 12.75V22zm6-3v-2h12v2zm10.5-3q-.625 0-1.062-.437T18 14.5t.438-1.062T19.5 13t1.063.438T21 14.5t-.437 1.063T19.5 16M13 16q-.825 0-1.412-.587T11 14v-1H9v-2h3q.425 0 .713.288T13 12v1h2v-2h2v3q0 .825-.587 1.413T15 16zM8 5q-.825 0-1.412-.587T6 3t.588-1.412T8 1t1.413.588T10 3t-.587 1.413T8 5"/>',
+  /* 飲水機用 Mapbox Maki 的 drinking-water（水龍頭注入杯子），
+     它的 viewBox 是 15 而不是 24，所以要單獨標。
+     水滴只表示「水」，這一個才是「可以喝的水」。 */
+  water: '<path fill="currentColor" d="M6 1a2 2 0 0 0-2 2v3.5a.5.5 0 0 0 .5.5h2a.5.5 0 0 0 .5-.5v-2a.5.5 0 0 1 .5-.5H14V1Zm1 14H4a.5.5 0 0 1-.48-.38L2 8.62a.5.5 0 0 1 .365-.606A.6.6 0 0 1 2.5 8h6a.5.5 0 0 1 .514.485A.5.5 0 0 1 9 8.62l-1.5 6A.5.5 0 0 1 7 15m-3.35-4h3.71l.5-2H3.14Z"/>',
+  parking: '<path fill="currentColor" d="M6 21V3h7q2.5 0 4.25 1.75T19 9t-1.75 4.25T13 15h-3v6zm4-10h3.2q.825 0 1.413-.587T15.2 9t-.587-1.412T13.2 7H10z"/>'
+};
+
+function nearHtml(t){
+  const out = [];
+  /* 廟裡自己就有的，就不再顯示附近的——同一個圖示在一列出現兩次
+     會讓人以為是重複，而且「廟裡有廁所」的時候，三百公尺外那間也不重要了 */
+  const own = t.fac || [];
+  /* 廁所和飲水機只要知道「有沒有」，所以只給圖示；
+     停車位的數量會影響要不要開車過去，所以要寫出來 */
+  [['toilet','附近有公廁',0.35], ['water','附近有飲水台',0.35]].forEach(function(cfg){
+    if(own.indexOf(cfg[0]) >= 0) return;
+    const hit = nearestFac(t, cfg[0], cfg[2]);
+    if(!hit) return;
+    out.push('<span class="npill ico" title="' + cfg[1] + '：' + hit.f.name + '" aria-label="' + cfg[1] + '">'
+      + iconSvg(cfg[0]) + '</span>');
+  });
+  const pk = nearestFac(t, 'parking', 0.5);
+  if(pk){
+    const free = pk.f.free;
+    let txt = '停車場', cls = '';
+    if(typeof free === 'number'){          /* 有即時資料時顯示剩餘 */
+      if(free > 0) txt = '剩 <b>' + free + '</b> 位';
+      else { txt = '<b>已滿</b>'; cls = ' full'; }
+    } else if(typeof pk.f.total === 'number' && pk.f.total > 0){
+      txt = '<b>' + pk.f.total + '</b> 格';   /* 只有總車位數 */
+    }
+    out.push('<span class="npill' + cls + '" title="附近停車場：' + pk.f.name + '">'
+      + iconSvg('parking') + txt + '</span>');
+  }
+  return out;
+}
+
+/* 依過去紀錄推估目前人潮。
+   crowd.wd / crowd.we 各是 24 個字元，第 h 個字元代表該小時的相對人潮，
+   0=沒資料或極少、1=人少、2=普通、3=人多。
+   這是「推估」不是即時，所以畫面上一定要寫「推估」兩個字。 */
+function crowdNow(t){
+  if(!t.crowd) return null;
+  const now = new Date(), h = now.getHours(), day = now.getDay();
+  const pat = (day === 0 || day === 6) ? (t.crowd.we || t.crowd.wd) : t.crowd.wd;
+  if(!pat || pat.length < 24) return null;
+  const lv = parseInt(pat.charAt(h), 10);
+  if(!lv) return null;
+  return { lv:lv, label:['', '人少', '普通', '人多'][lv], src:t.crowd.src || '' };
+}
+function crowdHtml(t){
+  const c = crowdNow(t);
+  if(!c) return '';
+  let bars = '';
+  for(let i = 1; i <= 3; i++) bars += '<i' + (i <= c.lv ? ' class="on"' : '') + '></i>';
+  return '<span class="crowd" title="依過去紀錄推估' + (c.src ? '，來源：' + c.src : '') + '">'
+       + '<span class="cmeter">' + bars + '</span>推估人潮 ' + c.label + '</span>';
+}
+
+function facHtml(t){
+  const parts = [];
+  const st = openState(t.open);
+  if(st){
+    if(st.on === null) parts.push('<span class="fpeak">' + st.text + '</span>');
+    else parts.push('<span class="fopen ' + (st.on ? 'yes' : 'no') + '"><i></i>'
+                  + (st.on ? '開放中' : '已休息') + '　' + st.text + '</span>');
+  }
+  (t.fac || []).forEach(function(k){
+    if(!FAC_LABEL[k] || !WALK_ICON[k]) return;
+    parts.push('<span class="fpill" title="廟內設施：' + FAC_LABEL[k] + '" aria-label="廟內有'
+      + FAC_LABEL[k] + '">' + iconSvg(k) + '</span>');
+  });
+  /* 飲水機目前沒有任何開放資料來源，一律顯示成「待廟方確認」。
+     這一格空著本身就在說明產品的下一步：廟方登入後自己補。 */
+  if((t.fac || []).indexOf('water') < 0){
+    parts.push('<button class="npill ico todo js-todo" title="飲水機：還沒有資料，之後開放廟方回報"'
+      + ' aria-label="飲水機資料待補">'
+      + iconSvg('water') + '</button>');
+  }
+  if(t.peak) parts.push('<span class="fpeak">' + t.peak + '</span>');
+  const near = nearHtml(t);
+  const cw = crowdHtml(t);
+  const all = parts.concat(near, cw ? [cw] : []);
+  return all.length ? '<div class="rfac">' + all.join('') + '</div>' : '';
 }
 
 /* ===== 狀態 ===== */
@@ -995,6 +1195,15 @@ function buildChips(){
     };
     chipBox.appendChild(b);
   });
+  /* 滑到最右邊就把漸層收起來 */
+  const wrap = document.getElementById('chipwrap');
+  const sync = ()=>{
+    const atEnd = chipBox.scrollLeft + chipBox.clientWidth >= chipBox.scrollWidth - 2;
+    wrap.classList.toggle('end', atEnd);
+  };
+  chipBox.addEventListener('scroll', sync, { passive:true });
+  window.addEventListener('resize', sync);
+  sync();
 }
 function matchNeed(deity, need){
   if(!need) return true;
@@ -1015,7 +1224,7 @@ function render(){
     .slice(0, MAX_PINS);
 
   shown.forEach((t, i)=>{
-    const icon = L.divIcon({ html: pinFor(t.deity), className:'', iconSize:[44,53], iconAnchor:[22,53] });
+    const icon = L.divIcon({ html: pinFor(t.deity), className:'', iconSize:[44,44], iconAnchor:[22,22] });
     const m = L.marker([t.lat, t.lng], { icon }).addTo(map);
     const el = m.getElement() && m.getElement().querySelector('.pin');
     if(el) el.style.animationDelay = Math.min(i*45, 700) + 'ms';
@@ -1023,6 +1232,7 @@ function render(){
     markers.push(m);
   });
 
+  if(typeof bearStart === 'function'){ bearIdx = 0; bearStart(); }
   document.getElementById('sTitle').textContent =
     activeNeed ? ('求' + activeNeed + '｜附近的宮廟') : '附近的宮廟';
   document.getElementById('sMeta').textContent =
@@ -1057,11 +1267,17 @@ function render(){
         (t.img ? '<img src="' + t.img + '" alt="" loading="lazy" onerror="this.remove()">' : '') +
         '<span class="rnum">' + (i+1) + '</span></div>' +
       '<div class="rmain"><div class="rname">' + t.name + '</div>' +
-      '<div class="rsub"><span class="tag" style="'+tagStyle(t.deity)+'">' + (t.deity || '—') + '</span>' + (t.dist || '') + '</div></div>' +
+      '<div class="rsub"><span class="tag" style="'+tagStyle(t.deity)+'">' + (t.deity || '—') + '</span>' + (t.dist || '') + '</div>' +
+      facHtml(t) + '</div>' +
       '<div class="rgo"><div class="rdist">' + fmtDist(t.d) + '</div>' +
-      '<button class="rbtn">導航</button></div>';
+      '<button class="rbtn" aria-label="導航到' + t.name + '"><i>'
+      + '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.6 3.4 3.6 10.1c-.8.3-.8 1.4 0 1.7'
+      + 'l6.3 2.3 2.3 6.3c.3.8 1.4.8 1.7 0l6.7-17c.3-.7-.4-1.4-1.1-1.1z"/></svg></i></button></div>';
     row.onclick = (e)=>{
-      if(e.target.classList.contains('rbtn')){ navigate(t); return; }
+      if(e.target.closest && e.target.closest('.js-todo')){
+        toast('飲水機還沒有開放資料，之後由廟方自己回報'); return;
+      }
+      if(e.target.closest && e.target.closest('.rbtn')){ navigate(t); return; }
       select(i); map.setView([t.lat, t.lng], 17);
     };
     list.appendChild(row);
@@ -1078,7 +1294,6 @@ function select(i){
   markers.forEach((m, k)=>{
     const el = m.getElement() && m.getElement().querySelector('.pin');
     if(!el) return;
-    el.classList.toggle('dim', selected >= 0 && k !== selected);
     if(k === selected){ el.classList.remove('act'); void el.offsetWidth; el.classList.add('act'); }
     else el.classList.remove('act');
   });
@@ -1094,6 +1309,105 @@ function navigate(t){
     window.open(url, '_blank');
   }
 }
+
+/* ===== 農曆 =====
+   從 lunar.js 的初一對照表回推今天的農曆日期。
+   初一、十五是宮廟人潮的主要節奏，這是日曆事實不是猜的。 */
+function lunarOf(date){
+  const tbl = window.LUNAR_NEW_MONTH || [];
+  const iso = date.getFullYear() + '-' + String(date.getMonth()+1).padStart(2,'0')
+            + '-' + String(date.getDate()).padStart(2,'0');
+  let hit = null;
+  for(const row of tbl){ if(row[0] <= iso) hit = row; else break; }
+  if(!hit) return null;
+  const a = new Date(hit[0] + 'T00:00:00'), b = new Date(iso + 'T00:00:00');
+  const day = Math.round((b - a) / 86400000) + 1;
+  if(day < 1 || day > 30) return null;
+  return { month:hit[1], day:day, leap:!!hit[2] };
+}
+const LUNAR_DAY_NAME = ['','初一','初二','初三','初四','初五','初六','初七','初八','初九','初十',
+  '十一','十二','十三','十四','十五','十六','十七','十八','十九','二十',
+  '廿一','廿二','廿三','廿四','廿五','廿六','廿七','廿八','廿九','三十'];
+/* 找出「今天或明天」是哪位神明的聖誕，且該神明在目前清單裡有對應的宮廟 */
+function birthdayHit(offsetDays){
+  const d = new Date(); d.setDate(d.getDate() + offsetDays);
+  const l = lunarOf(d);
+  if(!l || l.leap) return null;
+  const md = l.month + '.' + l.day;
+  for(const b of (window.GOD_BIRTHDAY || [])){
+    if(b.md !== md) continue;
+    const t = shown.filter(x => (x.deity || '').indexOf(b.key) >= 0);
+    if(t.length) return { info:b, temples:t };
+  }
+  return null;
+}
+
+/* ===== 熊爸 =====
+   每一句都由「現在真的知道的事」組出來，沒有一句是編的：
+     · 使用者選的心願與篩選結果數
+     · 最近的宮廟名稱與實際距離
+     · 開放資料裡的停車位數
+     · 從 temples.js 讀到的廟內設施
+     · 系統時間
+   之後接上農曆與打卡紀錄，才會有「初一十五人多」「最近很多人求姻緣」那種句子。 */
+function bearLines(){
+  const out = [];
+  const near = shown[0];
+  if(near){
+    const m = Math.max(1, Math.round(near.d * 1000 / 80));
+    out.push('你附近 <b>' + fmtDist(near.d) + '</b> 就有<b>' + near.name + '</b>，走路大約 ' + m + ' 分鐘。');
+    const fac = near.fac || [];
+    if(fac.indexOf('accessible') >= 0)
+      out.push('<b>' + near.name + '</b>有無障礙廁所，帶長輩或推車來比較方便。');
+    const pk = nearestFac(near, 'parking', 0.5);
+    if(pk && typeof pk.f.total === 'number'){
+      if(pk.f.total < 20)
+        out.push('開車來<b>' + near.name + '</b>要注意，最近的停車場只有 ' + pk.f.total + ' 格，建議搭捷運。');
+      else
+        out.push('<b>' + near.name + '</b>附近有停車場，' + pk.f.total + ' 格，開車來還算方便。');
+    }
+  }
+  if(activeNeed){
+    if(shown.length)
+      out.push('想<b>求' + activeNeed + '</b>的話，這附近有 <b>' + shown.length + '</b> 間可以拜。');
+    else
+      out.push('這附近 ' + RADIUS_KM + ' 公里內沒有主祀「' + activeNeed
+             + '」的宮廟，把地圖拉遠一點也許找得到。');
+  }
+  /* 農曆：初一、十五，以及神明聖誕。這幾句是日曆算出來的，不是編的 */
+  const l = lunarOf(new Date());
+  if(l && (l.day === 1 || l.day === 15))
+    out.unshift('今天是農曆<b>' + LUNAR_DAY_NAME[l.day] + '</b>，宮廟通常比平常熱鬧一些。');
+  const today = birthdayHit(0), tmr = birthdayHit(1);
+  if(today)
+    out.unshift('今天是<b>' + today.info.name + '</b>，附近的<b>' + today.temples[0].name + '</b>應該很熱鬧。');
+  else if(tmr)
+    out.unshift('<b>明天</b>是' + tmr.info.name + '，<b>' + tmr.temples[0].name + '</b>今天就開始準備了。');
+
+  const h = new Date().getHours();
+  if(h < 7)       out.push('這麼早就出門，很多宮廟這時候剛開門，人也少。');
+  else if(h >= 20) out.push('晚上了，出門前先確認一下宮廟的開放時間。');
+  return out;
+}
+let bearIdx = 0, bearTimer = null, bearOff = false;
+function bearTick(){
+  if(bearOff) return;
+  const lines = bearLines();
+  const el = document.getElementById('bear'), msg = document.getElementById('bearMsg');
+  if(!lines.length){ el.classList.add('hide'); return; }
+  el.classList.remove('hide');
+  msg.innerHTML = lines[bearIdx % lines.length];
+  bearIdx++;
+}
+function bearStart(){
+  clearInterval(bearTimer);
+  bearTick();
+  bearTimer = setInterval(bearTick, 7000);
+}
+document.getElementById('bearX').onclick = ()=>{
+  bearOff = true; clearInterval(bearTimer);
+  document.getElementById('bear').classList.add('hide');
+};
 
 /* ===== 定位 ===== */
 function locate(){
