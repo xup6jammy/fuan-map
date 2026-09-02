@@ -872,6 +872,8 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink)}
           filter:drop-shadow(0 2px 3px rgba(58,46,42,.28))}
 .bear .msg{font-size:12.5px;line-height:1.55;color:var(--ink);font-weight:500}
 .bear .msg b{font-weight:800}
+.bear .msg a.lnk{color:var(--g);font-weight:700;text-decoration:underline;
+                 text-underline-offset:2px;white-space:nowrap}
 .bear .x{position:absolute;top:5px;right:6px;width:22px;height:22px;border:none;
          background:transparent;color:#B3AB9E;font-size:15px;line-height:1;cursor:pointer}
 .locate{position:absolute;right:12px;z-index:1000;width:42px;height:42px;border-radius:50%;
@@ -890,6 +892,9 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink)}
         pointer-events:none;transition:bottom .25s}
 .tpanel.on{display:flex}
 .tpanel.down{bottom:116px}
+/* 貼著圖釘的模式：位置由 placePanel() 算，不再固定在右上角 */
+.tpanel.pinned{right:auto;bottom:auto;transition:none}
+.tpanel.pinned .tcard{animation:none}
 .tcard{background:#fff;border:1px solid var(--line);border-radius:14px;
        box-shadow:0 4px 16px rgba(58,46,42,.20);pointer-events:auto;
        animation:tin .22s cubic-bezier(.34,1.3,.64,1) backwards}
@@ -1259,10 +1264,40 @@ function openUrl(url){
   else window.open(url, '_blank', 'noopener');
 }
 function wikiUrl(t){ return 'https://zh.wikipedia.org/wiki/' + encodeURIComponent(t.wiki); }
+/* 沒有停車場開放資料時，把「宮廟周遭的停車場」交給 Google 地圖搜尋：
+   純網址、不用 API key、不計費，點下去開使用者手機的 Google Maps。 */
+function parkMapUrl(t){
+  return 'https://www.google.com/maps/search/' + encodeURIComponent('停車場')
+       + '/@' + t.lat + ',' + t.lng + ',17z';
+}
+
+/* ===== 面板貼著圖釘 =====
+   面板放在被點的那顆圖釘旁邊（預設右邊，右邊放不下就換左邊），
+   上下以圖釘為中心，超出地圖範圍就往內夾。地圖一動就重算。 */
+let panelTarget = null;
+function placePanel(t){
+  if(!tpanelEl.classList.contains('on')) return;
+  const pt = map.latLngToContainerPoint([t.lat, t.lng]);
+  const W  = map.getContainer().clientWidth, H = map.getContainer().clientHeight;
+  tpanelEl.classList.add('pinned');
+  const pw = tpanelEl.offsetWidth, ph = tpanelEl.offsetHeight;
+  const GAP = 30, TOP_SAFE = 100;      /* 100 = 上方標題列 + 篩選 chips 的高度 */
+  let left = pt.x + GAP;
+  if(left + pw > W - 10) left = pt.x - GAP - pw;
+  left = Math.max(10, Math.min(W - pw - 10, left));
+  let top = pt.y - ph / 2;
+  top = Math.max(TOP_SAFE, Math.min(H - ph - 10, top));
+  tpanelEl.style.left = left + 'px';
+  tpanelEl.style.top  = top  + 'px';
+}
+function panelFollow(){ if(panelTarget) placePanel(panelTarget); }
 
 function closePanel(restore){
   const wasOpen = tpanelEl.classList.contains('on');
-  tpanelEl.classList.remove('on');
+  tpanelEl.classList.remove('on', 'pinned');
+  tpanelEl.style.left = tpanelEl.style.top = '';
+  if(typeof map !== 'undefined' && map && map.off) map.off('move zoom', panelFollow);
+  panelTarget = null;
   tpanelEl.innerHTML = '';
   if(wasOpen) releaseBear();
   if(wasOpen && restore) setSheet(false);
@@ -1279,6 +1314,9 @@ function openPanel(i){
       + P_ICON.web + '</svg>' + (t.urlKind === 'fb' ? '官方粉專' : '官方網站') + '</button>');
   a.push('<button class="tact js-nav"><svg viewBox="0 0 24 24">'
     + P_ICON.nav + '</svg>導航過去</button>');
+  /* 每一間都給「周遭停車場」：開放資料只有格數沒有位置，真的要找還是得看地圖 */
+  a.push('<button class="tact" data-go="' + esc(parkMapUrl(t)) + '"><svg viewBox="0 0 24 24">'
+      + WALK_ICON.parking + '</svg>周遭停車場<span class="sub">Google</span></button>');
   if(t.tel)
     a.push('<a class="tact" href="tel:' + String(t.tel).replace(/[^0-9+]/g,'') + '"><svg viewBox="0 0 24 24">'
       + P_ICON.tel + '</svg>打電話</a>');
@@ -1295,7 +1333,7 @@ function openPanel(i){
     + (t.wiki ? '' : '<div class="tnote">這間還沒查到維基百科條目</div>')
     + '</div>';
   tpanelEl.classList.add('on');
-  hideBear();            /* 面板打開時獅仔先退場，不然右邊會擠成一團 */
+  bearFocus(t);          /* 獅仔留在原位，改講「你點的這一間」；輪播先停 */
   /* 地圖只佔上面 42%，塞不下四五顆按鈕。選了一間廟就把清單收起來，
      地圖變大、面板也放得完整；要看清單再拉一下把手就回來。 */
   setSheet(true);
@@ -1305,7 +1343,10 @@ function openPanel(i){
     map.invalidateSize();
     map.setView([t.lat, t.lng], Math.max(map.getZoom(), 16), { animate:false });
     map.panBy([ (tpanelEl.offsetWidth + 20) / 2, 0 ], { animate:false });
+    placePanel(t);                      /* 面板貼到圖釘旁邊，而不是固定在右上角 */
+    map.on('move zoom', panelFollow);   /* 使用者拖地圖、縮放時面板跟著圖釘走 */
   }, 300);
+  panelTarget = t;
 
   tpanelEl.onclick = function(e){
     const el = e.target.closest ? e.target : null; if(!el) return;
@@ -1506,6 +1547,69 @@ function birthdayHit(offsetDays){
   return null;
 }
 
+/* ===== 獅仔對「使用者點的這一間」講的話 =====
+   跟 bearLines() 的差別：那邊講的是清單第一間（最近的那間），
+   這邊講的是使用者剛剛點開的那間。規則由上往下試，缺資料就降一級，
+   沒有一句是編的；連「沒有資料」本身都直接講出來。 */
+const FEW_SLOTS      = 20;    /* 少於這個格數就不建議開車 */
+/* 開放資料裡沒有這一帶的停車場時講的話。「內部提供」指廟方填報（目前還沒有），
+   「周遭」交給 Google 地圖搜尋，連結由 bearEl 的 click 事件接手。 */
+const NO_PARK_LINE = '沒有廟方的停車資訊，周遭停車場我可以推薦，';
+const PARK_LINK    = '<a class="lnk js-parkmap" href="#">看周遭停車場 ↗</a>';
+const WALKABLE_MAX_M = 1500;  /* 超過這個距離就別再講「走路幾分鐘」 */
+
+function templeTip(t){
+  const pk    = nearestFac(t, 'parking', 0.5);
+  const slots = (pk && typeof pk.f.total === 'number') ? pk.f.total : null;
+  /* 沒定位時 t.d 是用 FALLBACK 算的，那不是「離你多遠」，所以一個字都不能講 */
+  const dist  = me ? fmtDist(t.d) : null;
+  const walk  = me ? Math.max(1, Math.round(t.d * 1000 / WALK_M_PER_MIN)) : null;
+  const nm    = '<b>' + esc(t.name) + '</b>';
+  /* s 是主句；mrt 是這句想接的「搭車」尾巴（人潮句講過就不重複）；
+     walkable 表示走得到，那就不要再勸人搭車。字要少，泡泡只有兩三行。 */
+  let s = null, mrt = '', walkable = false;
+
+  if(t.parking === true){            /* 廟方填報有停車場（最準的一層），但沒有即時空位 */
+    s = nm + '有停車場，但沒有即時空位資訊，'
+      + (slots !== null ? '附近公共停車場另有 <b>' + slots + '</b> 格，' : '');
+    mrt = '或搭捷運也行。';
+  }
+  else if(slots !== null && slots < FEW_SLOTS){
+    s = '開車來' + nm + '要注意，最近的停車場只有 <b>' + slots + '</b> 格，';
+    mrt = '建議搭捷運。';
+  }
+  else if(dist && t.d * 1000 <= WALKABLE_MAX_M){
+    s = nm + '離你 <b>' + dist + '</b>，走路約 ' + walk + ' 分鐘，不用找車位。';
+    walkable = true;
+  }
+  else if(dist && slots !== null)
+    s = nm + '離你 <b>' + dist + '</b>，附近停車場有 <b>' + slots + '</b> 格。';
+  else if(dist){ s = nm + '離你 <b>' + dist + '</b>。' + NO_PARK_LINE; mrt = '或搭捷運也行。'; }
+  else if(slots !== null)
+    s = nm + '附近停車場有 <b>' + slots + '</b> 格。';
+  else { s = nm + '主祀' + esc(t.deity || '—') + '。' + NO_PARK_LINE; mrt = '或搭捷運也行。'; }
+
+  /* 人潮句：只接一句，全部都是日曆事實（神明聖誕、初一十五、週末），
+     不是統計出來的「過往人潮」——打卡資料接上之前不能那樣講。 */
+  const now = new Date();
+  const bd  = birthdayHit(0);
+  const l   = lunarOf(now);
+  const wk  = now.getDay() === 0 || now.getDay() === 6;
+  let crowd = null;
+  if(bd && bd.temples.some(function(x){ return x.name === t.name; }))
+    crowd = '今天是<b>' + bd.info.name + '</b>，人車都多';
+  else if(l && (l.day === 1 || l.day === 15))
+    crowd = '今天農曆<b>' + LUNAR_DAY_NAME[l.day] + '</b>，香客多';
+  else if(wk)
+    crowd = '週末香客通常較多';
+
+  if(crowd)      s += crowd + (walkable ? '。' : '，建議搭大眾運輸。');
+  else if(mrt)   s += mrt;
+  else if((t.fac || []).indexOf('accessible') >= 0)
+    s += '有無障礙廁所。';
+  return s + ' ' + PARK_LINK;   /* 每一間都給「看周遭停車場」，交給 Google 地圖 */
+}
+
 /* ===== 熊爸 =====
    每一句都由「現在真的知道的事」組出來，沒有一句是編的：
      · 使用者選的心願與篩選結果數
@@ -1518,8 +1622,13 @@ function bearLines(){
   const out = [];
   const near = shown[0];
   if(near){
-    const m = Math.max(1, Math.round(near.d * 1000 / 80));
-    out.push('你附近 <b>' + fmtDist(near.d) + '</b> 就有<b>' + near.name + '</b>，走路大約 ' + m + ' 分鐘。');
+    /* 沒拿到定位時 near.d 是用 FALLBACK 算的，講「你附近幾公尺」就是編的，所以改講別的 */
+    if(me){
+      const m = Math.max(1, Math.round(near.d * 1000 / WALK_M_PER_MIN));
+      out.push('你附近 <b>' + fmtDist(near.d) + '</b> 就有<b>' + near.name + '</b>，走路大約 ' + m + ' 分鐘。');
+    } else {
+      out.push('還沒拿到你的位置，距離先不算。清單上第一間是<b>' + near.name + '</b>。');
+    }
     const fac = near.fac || [];
     if(fac.indexOf('accessible') >= 0)
       out.push('<b>' + near.name + '</b>有無障礙廁所，帶長輩或推車來比較方便。');
@@ -1579,7 +1688,22 @@ document.getElementById('bearX').onclick = (e)=>{
   bearEl.classList.add('hide');
   bearCall.classList.add('on');
 };
-/* 面板打開時把獅仔收起來換成召喚鈕。這不算使用者主動關掉，
+/* 面板打開時獅仔不退場，改講使用者點的那一間；輪播先停，這句話要停在畫面上。
+   bearHold 照樣設起來，關面板時 releaseBear() 會把輪播接回去。
+   使用者按 × 關掉的（bearOff）還是尊重他，不硬跳出來。 */
+let bearFocusT = null;   /* 獅仔現在講的是哪間廟（泡泡裡的連結要用） */
+function bearFocus(t){
+  bearFocusT = t;
+  clearInterval(bearTimer);
+  bearHold = true;
+  if(bearOff) return;
+  const line = templeTip(t);
+  bearCall.classList.remove('on');
+  bearEl.classList.remove('hide');
+  document.getElementById('bearMsg').innerHTML = line;
+}
+/* （目前沒有人呼叫；留著給之後版面真的擠不下時用）
+   把獅仔收起來換成召喚鈕。這不算使用者主動關掉，
    所以不動 bearOff——關掉面板之後獅仔還會自己回來。 */
 function hideBear(){
   bearHold = true;
@@ -1639,6 +1763,12 @@ bearCall.onclick = ()=>{
   bearEl.addEventListener('pointercancel', end);
   /* 拖完不要順便觸發點擊 */
   bearEl.addEventListener('click', (e)=>{ if(moved){ e.preventDefault(); e.stopPropagation(); } }, true);
+  /* 泡泡裡「看周遭停車場」的連結 */
+  bearEl.addEventListener('click', (e)=>{
+    const a = e.target.closest('.js-parkmap'); if(!a) return;
+    e.preventDefault();
+    if(bearFocusT) openUrl(parkMapUrl(bearFocusT));
+  });
 })();
 
 /* ===== 定位 ===== */
