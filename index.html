@@ -893,6 +893,30 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink)}
 .bear .msg b{font-weight:800}
 .bear .msg a.lnk{color:var(--g);font-weight:700;text-decoration:underline;
                  text-underline-offset:2px;white-space:nowrap}
+.bear .msg .src{display:block;margin-top:3px;font-size:10.5px;color:#A29C8C;font-weight:600}
+/* 四段小簡介：標籤用綠色小字靠左對齊，內文接在後面 */
+.bear .msg .sec{margin:2px 0;line-height:1.5}
+/* 看故事的四段簡介：兩欄對齊（標籤一欄、內文一欄），眼睛沿左邊掃就能找到要的那段。
+   「適合」是分類 → chip，跟上方篩選列同一種語言；「近期活動」有三層資訊 → 日曆小卡。
+   小卡的日期方塊用米白底（#F6F4ED），不用紅——紅在介面上是警告，這裡只是日曆。 */
+.bear .msg .brief{width:100%}
+.bear .msg .bh{display:flex;align-items:center;gap:7px;margin-bottom:6px;padding-bottom:6px;border-bottom:1px solid #F0EBE0}
+.bear .msg .bh b{font-size:13.5px}
+.bear .msg .brow{display:grid;grid-template-columns:52px 1fr;gap:6px;margin:5px 0;align-items:start}   /* 不叫 .row，清單列已經用掉了 */
+.bear .msg .bk{font-size:10.5px;font-weight:800;color:#8C7A5A;letter-spacing:.06em;padding-top:2px}
+.bear .msg .bv{line-height:1.5}
+.bear .msg .muted{color:#9A938C}
+.bear .msg .chip{display:inline-block;background:#FBF3E4;color:#7A5A2B;border:1px solid #EFDFC2;border-radius:8px;   /* 跟日曆小卡同一種圓角，不用膠囊 */
+                 padding:1px 8px;font-size:11px;font-weight:800;margin:0 4px 2px 0}
+.bear .msg .cal{display:inline-flex;align-items:center;gap:7px;background:#F6F4ED;border-radius:8px;padding:3px 9px 3px 4px}
+.bear .msg .cal i{display:grid;place-items:center;width:28px;height:28px;border-radius:6px;background:#FFFDF7;
+                  border:1px solid #E3DCCB;color:#5C5340;font-style:normal;font-size:9px;line-height:1.05;text-align:center;font-weight:800}
+.bear .msg .cal small{display:block;font-size:10px;color:#8C8778;font-weight:600}
+.bear .msg .btns{display:flex;gap:6px;margin-top:8px}
+.bear .msg .bbtn{flex:1;font:inherit;font-size:11.5px;font-weight:800;padding:6px 0;border-radius:8px;cursor:pointer;
+                 border:1px solid #DDD3BF;background:#FBF9F4;color:#5C5340}
+.bear .msg .bbtn.pri{background:var(--g);border-color:var(--g);color:#fff}
+.bear .msg .lnks{margin-top:4px;display:flex;gap:12px}
 .bear .x{position:absolute;top:5px;right:6px;width:22px;height:22px;border:none;
          background:transparent;color:#B3AB9E;font-size:15px;line-height:1;cursor:pointer}
 .locate{position:absolute;right:12px;z-index:1000;width:42px;height:42px;border-radius:50%;
@@ -992,8 +1016,8 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink)}
 <div class="toast" id="toast"></div>
 
 <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-<script src="temples.js"></script>
-<script src="facilities.js"></script>
+<!-- 宮廟與設施資料改放 data/*.json，由下面的 loadData() 抓；
+     temples.js / facilities.js 只當 JSON 抓不到時的退路（例如直接用 file:// 打開）。 -->
 <script src="lunar.js"></script>
 <script>
 /* 依序嘗試多個來源載入 Leaflet；任一成功即繼續，全部失敗才顯示訊息 */
@@ -1022,8 +1046,31 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink)}
     + '網路可能擋住了外部資源。請把 <b>leaflet.js</b> 下載後放到與 index.html 同一層，再重新整理。'
     + '</div></div>');
   }
+  /* 資料層：先抓 data/temples.json、data/facilities.json；
+     抓不到（file:// 打開、或資料夾上傳時被壓平）就依序退回根目錄的 JSON、再退回舊的 .js。
+     資料齊了才 boot，render() 不用再判斷「資料到了沒」。 */
+  function fetchJson(u){
+    return fetch(u, { cache:'no-cache' }).then(function(r){ return r.ok ? r.json() : Promise.reject(r.status); });
+  }
+  function loadScript(u){
+    return new Promise(function(res, rej){
+      var sc = document.createElement('script'); sc.src = u; sc.onload = res; sc.onerror = rej; document.head.appendChild(sc);
+    });
+  }
+  function loadData(){
+    var t = fetchJson('data/temples.json').catch(function(){ return fetchJson('temples.json'); })
+      .then(function(j){ window.TEMPLES = j.temples || j; if(j.needs) window.NEEDS = j.needs; window.DATA_META = j; })
+      .catch(function(){ return loadScript('temples.js'); });
+    var f = fetchJson('data/facilities.json').catch(function(){ return fetchJson('facilities.json'); })
+      .then(function(j){ window.FACILITIES = j.facilities || j; })
+      .catch(function(){ return loadScript('facilities.js').catch(function(){ window.FACILITIES = []; }); });
+    return Promise.all([t, f]);
+  }
   window.addEventListener('DOMContentLoaded', function(){
-    (typeof L !== 'undefined') ? boot() : next();
+    loadData().then(function(){
+      if(!window.TEMPLES){ window.TEMPLES = []; window.NEEDS = window.NEEDS || {}; }
+      (typeof L !== 'undefined') ? boot() : next();
+    });
   });
 })();
 
@@ -1466,6 +1513,103 @@ function parkMapUrl(t){
        + '/@' + t.lat + ',' + t.lng + ',17z';
 }
 
+/* ===== 看故事：先讓獅仔講維基的摘要，想看更多再開條目 =====
+   用 Wikimedia REST 的 page/summary（條目第一段），Accept-Language 要 zh-TW 才會是台灣正體。
+   字是維基的，我們只裁不改，所以泡泡裡標「摘自維基百科」；抓不到就照舊直接開條目。 */
+const wikiCache = {};
+function wikiSummary(title){
+  if(wikiCache[title]) return Promise.resolve(wikiCache[title]);
+  const url = 'https://zh.wikipedia.org/api/rest_v1/page/summary/' + encodeURIComponent(title);
+  return fetch(url, { headers:{ 'Accept-Language':'zh-TW' } })
+    .then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(j){
+      const txt = j && j.extract ? String(j.extract).trim() : '';
+      if(txt) wikiCache[title] = txt;
+      return txt || null;
+    }).catch(function(){ return null; });
+}
+/* ===== 獅仔的四段小簡介 =====
+   起源／特色：維基第一段裁句，原文不改；適合：主祀神 → temples.js 的需求對照表；
+   近期：lunar.js 的神明聖誕算出下一次。每一段都有來源，泡泡底下標出來。
+   沒有後端就沒有真的 AI 改寫，所以不叫「AI 總結」——叫獅仔幫你整理，字是維基的。 */
+function splitSentences(txt){
+  return String(txt).split('。').map(function(x){ return x.trim(); }).filter(Boolean)
+    .map(function(x){ return x + '。'; });
+}
+function clampText(x, n){ return x.length > n ? x.slice(0, n - 1) + '…' : x; }
+function briefFromWiki(txt){
+  const ss = splitSentences(txt);
+  const yr   = /(\d{3,4}\s*年|[康乾嘉道咸同光宣]\S{0,3}年|清[代朝領]|明[代朝鄭]|日治|創建|建於|興建|建立|奠基|落成)/;
+  const feat = /(古蹟|建築|雕|藝術|三大|最|著名|聞名|香火|祭|遶境|特色|列為|保存|格局|殿)/;
+  const oi = ss.findIndex(function(x){ return yr.test(x); });
+  const origin = oi >= 0 ? ss[oi] : (ss[0] || '');
+  /* 特色優先挑「起源」之後的句子（第一句多半只是在說它在哪、是什麼古蹟） */
+  const after  = ss.slice(oi + 1), before = ss.slice(0, Math.max(oi, 0));
+  const feature = after.find(function(x){ return feat.test(x); })
+               || before.find(function(x){ return feat.test(x); })
+               || after[0] || before[0] || '';
+  return { origin: clampText(origin, 72), feature: clampText(feature, 72) };
+}
+function allNeeds(deity){
+  return Object.keys(window.NEEDS || {}).filter(function(k){ return matchNeed(deity, k); });
+}
+/* 這間廟主祀神的下一個聖誕（含今天）；400 天內找不到就 null */
+function nextBirthday(t){
+  const hits = (window.GOD_BIRTHDAY || []).filter(function(b){ return (t.deity || '').indexOf(b.key) >= 0; });
+  if(!hits.length) return null;
+  const d = new Date();
+  for(let i = 0; i < 400; i++){
+    const l = lunarOf(d);
+    if(l && !l.leap){
+      const md = l.month + '.' + l.day;
+      const b = hits.find(function(x){ return x.md === md; });
+      if(b) return { b:b, days:i, mon: LUNAR_MONTH_NAME[l.month] + '月', day: LUNAR_DAY_NAME[l.day],
+                     lunar:'農曆' + LUNAR_MONTH_NAME[l.month] + '月' + LUNAR_DAY_NAME[l.day] };
+    }
+    d.setDate(d.getDate() + 1);
+  }
+  return null;
+}
+function briefHtml(t, wikiTxt){
+  const w = wikiTxt ? briefFromWiki(wikiTxt) : null;
+  const needs = allNeeds(t.deity);
+  const nb = nextBirthday(t);
+  const row = function(k, v){ return '<div class="brow"><div class="bk">' + k + '</div><div class="bv">' + v + '</div></div>'; };
+  let h = '<div class="brief">'
+        + '<div class="bh"><b>' + esc(t.name) + '</b>'
+        + (t.deity ? '<span class="tag" style="' + tagStyle(t.deity) + '">' + esc(t.deity) + '</span>' : '') + '</div>';
+  if(w && w.origin)  h += row('起源', esc(w.origin));
+  if(w && w.feature) h += row('特色', esc(w.feature));
+  h += row('適合', (needs.length ? needs : ['平安']).map(function(n){ return '<span class="chip">求' + n + '</span>'; }).join(''));
+  if(nb) h += row('近期活動',
+      '<span class="cal"><i>' + nb.mon + '<br>' + nb.day + '</i><span>' + esc(nb.b.name)
+    + '<small>' + nb.lunar + '・' + (nb.days === 0 ? '就是今天' : nb.days + ' 天後') + '</small></span></span>');
+  else   h += row('近期活動', '<span class="muted">活動請看廟方公告</span>');
+  /* 主要動作實色、次要空心；沒維基就讓官網當主要 */
+  const btns = [];
+  if(t.wiki) btns.push('<button type="button" class="bbtn pri js-wiki">看完整故事</button>');
+  if(t.url)  btns.push('<button type="button" class="bbtn ' + (t.wiki ? '' : 'pri ') + 'js-site">'
+                       + (t.urlKind === 'fb' ? '官方粉專' : '官方網站') + '</button>');
+  if(btns.length) h += '<div class="btns">' + btns.join('') + '</div>';
+  h += '<span class="src">' + (w ? '起源、特色摘自維基百科；' : '') + '聖誕日期為民間通行說法</span></div>';
+  return h;
+}
+function tellStory(t){
+  /* 四段簡介會把泡泡撐高，跟面板疊在一起；使用者按了看故事，面板的任務就結束了，先收起來。
+     closePanel 會順手把輪播接回去，所以要在它之後再把輪播停掉、寫進故事。 */
+  closePanel(false);
+  bearOff = false; bearHold = true; clearInterval(bearTimer);
+  bearCall.classList.remove('on'); bearEl.classList.remove('hide');
+  bearFocusT = t;
+  const msg = document.getElementById('bearMsg');
+  msg.innerHTML = '<b>' + esc(t.name) + '</b>，我翻一下書…';
+  const p = t.wiki ? wikiSummary(t.wiki) : Promise.resolve(null);
+  p.then(function(txt){
+    if(bearFocusT !== t) return;                  /* 使用者已經換別間了 */
+    msg.innerHTML = briefHtml(t, txt);
+  });
+}
+
 /* ===== YouBike 即時站點 =====
    來源：臺北市交通局 YouBike2.0 即時資料（tcgbusfs blob）、新北市政府資料開放平臺 YouBike2.0。
    兩邊欄位不同，抓下來先轉成同一個形狀：{ name, lat, lng, rent, ret, total, at }。
@@ -1564,9 +1708,8 @@ function openPanel(i){
   const t = shown[i];
   if(!t) return;
   const a = [];
-  if(t.wiki)
-    a.push('<button class="tact" data-go="' + esc(wikiUrl(t)) + '"><svg viewBox="0 0 24 24">'
-      + P_ICON.story + '</svg>看故事<span class="sub">維基</span></button>');   /* 按鈕寫「要什麼」，小字寫「誰給的」；之後換廟方資料只改小字 */
+  a.push('<button class="tact js-story"><svg viewBox="0 0 24 24">'
+      + P_ICON.story + '</svg>看故事<span class="sub">' + (t.wiki ? '維基' : '') + '</span></button>');   /* 按鈕寫「要什麼」，小字寫「誰給的」；之後換廟方資料只改小字 */
   if(t.url)
     /* 官網那顆用線稿小廟當 icon，跟同一排的其他圖示同一套（單色 Material 線稿） */
     a.push('<button class="tact" data-go="' + esc(t.url) + '"><svg viewBox="0 0 24 24">'
@@ -1631,6 +1774,7 @@ function openPanel(i){
     if(el.closest('.js-nav')){ navigate(t); return; }
     if(el.closest('.js-yb')){ const yb = ybNearest(t); if(yb) navigate(yb.s); return; }
     if(el.closest('.js-share')){ shareTemple(t); return; }
+    if(el.closest('.js-story')){ tellStory(t); return; }
     const go = el.closest('[data-go]');
     if(go){ openUrl(go.getAttribute('data-go')); }
   };
@@ -1808,6 +1952,7 @@ function lunarOf(date){
   if(day < 1 || day > 30) return null;
   return { month:hit[1], day:day, leap:!!hit[2] };
 }
+const LUNAR_MONTH_NAME = ['','正','二','三','四','五','六','七','八','九','十','十一','十二'];
 const LUNAR_DAY_NAME = ['','初一','初二','初三','初四','初五','初六','初七','初八','初九','初十',
   '十一','十二','十三','十四','十五','十六','十七','十八','十九','二十',
   '廿一','廿二','廿三','廿四','廿五','廿六','廿七','廿八','廿九','三十'];
@@ -2053,9 +2198,12 @@ bearCall.onclick = ()=>{
   bearEl.addEventListener('click', (e)=>{ if(moved){ e.preventDefault(); e.stopPropagation(); } }, true);
   /* 泡泡裡「看周遭停車場」的連結 */
   bearEl.addEventListener('click', (e)=>{
-    const a = e.target.closest('.js-parkmap'); if(!a) return;
+    const a = e.target.closest('.js-parkmap, .js-wiki, .js-site'); if(!a) return;
     e.preventDefault();
-    if(bearFocusT) openUrl(parkMapUrl(bearFocusT));
+    if(!bearFocusT) return;
+    if(a.classList.contains('js-wiki'))      openUrl(wikiUrl(bearFocusT));
+    else if(a.classList.contains('js-site')) { if(bearFocusT.url) openUrl(bearFocusT.url); }
+    else openUrl(parkMapUrl(bearFocusT));
   });
 })();
 
