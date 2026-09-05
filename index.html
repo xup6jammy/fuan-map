@@ -720,9 +720,12 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink)}
 /* ---- 宮廟標記 ---- */
 /* 標記就是圖片本身：沒有白圈、沒有尖角，錨點在正中央 */
 .pin{width:44px;height:44px;transform:translate(-50%,-50%);
-     filter:drop-shadow(0 2px 4px rgba(58,46,42,.34));
-     transform-origin:50% 50%;
+     transform-origin:50% 50%;position:relative;
      animation:drop .42s cubic-bezier(.34,1.56,.64,1) backwards}
+/* 立體感：像桌遊棋子。底下一片地面陰影 + 磁磚厚邊 + 小廟本身再浮一層 */
+.pin::after{content:"";position:absolute;left:50%;bottom:-7px;width:34px;height:9px;
+  transform:translateX(-50%);border-radius:50%;
+  background:radial-gradient(ellipse at center, rgba(58,46,42,.38) 0%, rgba(58,46,42,0) 72%)}
 @keyframes drop{
   0%{transform:translate(-50%,-130%) scale(.55);opacity:0}
   100%{transform:translate(-50%,-50%) scale(1);opacity:1}}
@@ -737,11 +740,26 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink)}
 .me::after{content:"";position:absolute;inset:-9px;border-radius:50%;
   border:2px solid rgba(37,99,235,.5);animation:ping 2.2s ease-out infinite}
 @keyframes ping{0%{transform:scale(.6);opacity:.9}100%{transform:scale(1.5);opacity:0}}
-/* 圓形頭像標記：底層是類型圖示，上層蓋法器圖，載入失敗會自己移除 */
-.pdot{position:relative;width:44px;height:44px;border-radius:11px;overflow:hidden;
-      background:#FAF5E6;box-sizing:border-box;display:grid;place-items:center}
-.pdot .picon{width:22px;height:22px;display:block}
-.pdot img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+/* 圖釘：圓角白底上一座統一的小廟（大富翁風），底圖再花也看得出來是廟 */
+.pdot{position:relative;width:44px;height:44px;border-radius:12px;overflow:hidden;
+      background:linear-gradient(180deg,#FFFCF3 0%,#F4EBD5 100%);
+      box-sizing:border-box;display:grid;place-items:center;
+      /* 上緣一道亮邊、下面一塊 3px 厚邊（磁磚的側面）、再一層柔和投影 */
+      box-shadow:inset 0 1px 0 #fff, inset 0 -1px 0 rgba(58,46,42,.10),
+                 0 3px 0 #D6C9AD, 0 6px 10px rgba(58,46,42,.26)}
+.pin.act .pdot{box-shadow:inset 0 1px 0 #fff, inset 0 -1px 0 rgba(58,46,42,.10),
+                 0 5px 0 #D6C9AD, 0 11px 16px rgba(58,46,42,.30)}   /* 選到的那顆抬高一點 */
+.pin.act::after{width:40px;height:11px;bottom:-11px;opacity:.9}
+/* 停車場圖釘：只在點了一間廟之後出現，範圍跟獅仔講的「附近」一樣（500 公尺）。
+   比宮廟小一號、沒有落下動畫的彈跳，才不會搶戲。 */
+.pin.ppin{width:30px;height:30px;animation-duration:.3s}
+.pin.ppin .pdot{width:30px;height:30px;border-radius:9px;
+  box-shadow:inset 0 1px 0 #fff, 0 2px 0 #D6C9AD, 0 4px 7px rgba(58,46,42,.22)}
+.pin.ppin .temple{width:26px;height:26px}
+.pin.ppin::after{width:22px;height:6px;bottom:-5px}
+.pdot .temple{width:40px;height:40px;display:block;object-fit:contain;
+              transform:translateY(-1px);
+              filter:drop-shadow(0 2px 1.5px rgba(58,46,42,.28))}   /* 小廟本身再浮出磁磚一點 */
 @media (prefers-reduced-motion:reduce){
   .pin,.pin.act,.me::after{animation:none}}
 
@@ -1042,9 +1060,26 @@ function useGoogle(){
   baseLayer = L.gridLayer.googleMutant({
     type: 'roadmap', maxZoom: 20,
     styles: [
-      /* 商家標籤太吵，關掉；Google 自己的寺廟標記也關掉，不然會跟法器圖釘打架 */
-      { featureType:'poi.business', stylers:[{ visibility:'off' }] },
-      { featureType:'poi.place_of_worship', elementType:'labels', stylers:[{ visibility:'off' }] }
+      /* 乾淨版：只留路網、水、綠地、行政區名、捷運站。POI 全關（宮廟由我們自己的圖釘標） */
+      { featureType:'poi', stylers:[{ visibility:'off' }] },
+      { featureType:'transit.station.bus', stylers:[{ visibility:'off' }] },
+      { featureType:'transit.line', stylers:[{ visibility:'off' }] },
+      { featureType:'road', elementType:'labels.icon', stylers:[{ visibility:'off' }] },     /* 路牌盾形 */
+      { featureType:'road.local', elementType:'labels', stylers:[{ visibility:'off' }] },   /* 巷弄名 */
+      { featureType:'administrative.land_parcel', stylers:[{ visibility:'off' }] },
+      { featureType:'administrative.neighborhood', stylers:[{ visibility:'off' }] },
+      /* 配色：暖紙底、淡水藍、白路面，跟法器色調同一系 */
+      { featureType:'landscape', stylers:[{ color:'#F3EFE6' }] },
+      { featureType:'landscape.man_made', stylers:[{ color:'#EFEAE0' }] },
+      { featureType:'poi.park', stylers:[{ visibility:'on' }, { color:'#DCE6CF' }] },
+      { featureType:'poi.park', elementType:'labels', stylers:[{ visibility:'off' }] },
+      { featureType:'water', stylers:[{ color:'#CBDDE6' }] },
+      { featureType:'road', elementType:'geometry.fill', stylers:[{ color:'#FFFFFF' }] },
+      { featureType:'road', elementType:'geometry.stroke', stylers:[{ color:'#DDD6C8' }] },
+      { featureType:'road.highway', elementType:'geometry.fill', stylers:[{ color:'#F2E4C4' }] },
+      { featureType:'road.highway', elementType:'geometry.stroke', stylers:[{ color:'#D9C89F' }] },
+      { elementType:'labels.text.fill', stylers:[{ color:'#6B6250' }] },
+      { elementType:'labels.text.stroke', stylers:[{ color:'#FFFFFF' }, { weight: 2 }] }
     ]
   }).addTo(map);
 }
@@ -1148,16 +1183,68 @@ function thumbBg(deity){
   const b = BADGE[needOf(deity)];
   return (b ? b.c : DEFAULT_C) + '1F';
 }
-function pinFor(deity){
-  const b = BADGE[needOf(deity)];
-  const c = b ? b.c : DEFAULT_C;
-  const img = needImg(deity);
-  return '<div class="pin">'
-    + '<div class="pdot">'
-    +   '<svg class="picon" viewBox="0 0 24 24" fill="' + c + '">' + (b ? b.d : DEFAULT_D) + '</svg>'
-    +   (img ? '<img src="' + img + '" alt="" onerror="this.remove()">' : '')
+/* 地圖上的圖釘：每間廟都用同一個「大富翁風」的小廟，不再依主祀神明換法器圖。
+   法器圖還留在篩選 chips 和清單縮圖上，那邊需要分辨「求什麼」；地圖上只要看得出「這裡有廟」。 */
+const TEMPLE_SVG =
+  '<svg class="temple" viewBox="0 0 48 48" aria-hidden="true">'
+  + '<rect x="7" y="40" width="34" height="4" rx="1.2" fill="#D9CDB4" stroke="#3A2E2A" stroke-width="1.4"/>'   /* 台基 */
+  + '<rect x="10" y="24" width="28" height="16" fill="#F5E4B6" stroke="#3A2E2A" stroke-width="1.4"/>'          /* 牆 */
+  + '<rect x="20" y="29" width="8" height="11" rx="1" fill="#7A3B22" stroke="#3A2E2A" stroke-width="1.2"/>'    /* 門 */
+  + '<line x1="24" y1="29" x2="24" y2="40" stroke="#3A2E2A" stroke-width="1"/>'
+  + '<rect x="11.5" y="24" width="3.2" height="16" fill="#C4432C" stroke="#3A2E2A" stroke-width="1"/>'          /* 柱 */
+  + '<rect x="33.3" y="24" width="3.2" height="16" fill="#C4432C" stroke="#3A2E2A" stroke-width="1"/>'
+  + '<rect x="8" y="21.5" width="32" height="3.2" rx=".8" fill="#2F6B3A" stroke="#3A2E2A" stroke-width="1.2"/>' /* 檐樑 */
+  + '<path d="M4 22 C10 20 14 12 24 12 C34 12 38 20 44 22 L41 17 C36 11 32 8 24 8 C16 8 12 11 7 17 Z"'
+  +   ' fill="#C4432C" stroke="#3A2E2A" stroke-width="1.4" stroke-linejoin="round"/>'                           /* 燕尾屋頂 */
+  + '<path d="M15 10.5 C19 8.6 29 8.6 33 10.5" fill="none" stroke="#3A2E2A" stroke-width="1.4"/>'              /* 屋脊 */
+  + '<circle cx="24" cy="7.2" r="2.2" fill="#F2B93E" stroke="#3A2E2A" stroke-width="1.2"/>'                    /* 寶珠 */
+  + '</svg>';
+/* 正式圖是 AI 生成的 temple.webp（跟法器圖、獅仔同一套畫風）；
+   圖載不到就換回上面那座 SVG，地圖不會出現破圖。 */
+function templeFallback(img){
+  img.insertAdjacentHTML('afterend', TEMPLE_SVG); img.remove();
+}
+function pinFor(){
+  return '<div class="pin"><div class="pdot">'
+    + '<img class="temple" src="temple.webp" alt="" onerror="templeFallback(this)">'
     + '</div></div>';
 }
+/* 停車場圖釘（parking.webp 載不到就用一個 P） */
+const PARK_SVG = '<svg class="temple" viewBox="0 0 48 48" aria-hidden="true">'
+  + '<rect x="8" y="6" width="32" height="30" rx="5" fill="#FFFDF6" stroke="#3A2E2A" stroke-width="2"/>'
+  + '<path d="M18 30V12h7.5a6 6 0 0 1 0 12H22v6z" fill="#1F5FB8"/>'
+  + '<rect x="21" y="36" width="6" height="5" fill="#8C8C8C" stroke="#3A2E2A" stroke-width="1.5"/></svg>';
+function parkFallback(img){ img.insertAdjacentHTML('afterend', PARK_SVG); img.remove(); }
+function parkPin(){
+  return '<div class="pin ppin"><div class="pdot">'
+    + '<img class="temple" src="parking.webp" alt="" onerror="parkFallback(this)">'
+    + '</div></div>';
+}
+/* 點了一間廟 → 把它 500 公尺內的停車場放上地圖；關面板／重排清單就收掉。
+   預設關閉：這個提案的主角是宮廟，一次冒出二十幾顆 P 會搶戲；
+   停車資訊本來就有三個出口（獅仔那句、面板的「周遭停車場」、清單的 P 標籤）。
+   demo 時如果有人問「附近能停嗎」，把下面改成 true 就開。 */
+const SHOW_PARKING_PINS = false;
+let parkMarkers = [];
+function showParking(t){
+  clearParking();
+  if(!SHOW_PARKING_PINS) return;
+  if(!parkingCovered(t)) return;
+  const list = (window.FACILITIES || []).filter(function(f){
+    return f.type === 'parking' && haversine(t.lat, t.lng, f.lat, f.lng) <= PARK_KM; });
+  list.forEach(function(f, i){
+    const m = L.marker([f.lat, f.lng], { icon: L.divIcon({ html: parkPin(), className:'', iconSize:[30,30], iconAnchor:[15,15] }),
+                                         zIndexOffset: -100 }).addTo(map);
+    const el = m.getElement() && m.getElement().querySelector('.pin');
+    if(el) el.style.animationDelay = Math.min(i*25, 400) + 'ms';
+    m.on('click', function(){
+      toast(f.name + (typeof f.total === 'number' ? '・' + f.total + ' 格' : ''));
+      navigate(f);      /* 停車場只有座標，點下去直接開 Google 導航 */
+    });
+    parkMarkers.push(m);
+  });
+}
+function clearParking(){ parkMarkers.forEach(function(m){ map.removeLayer(m); }); parkMarkers = []; }
 
 /* ===== 設施與開放時間 =====
    資料模型刻意用「只列確定有的」而不是 true/false，
@@ -1362,6 +1449,7 @@ function closePanel(restore){
   tpanelEl.style.left = tpanelEl.style.top = '';
   if(typeof map !== 'undefined' && map && map.off) map.off('move zoom', panelFollow);
   panelTarget = null;
+  if(typeof clearParking === 'function') clearParking();
   tpanelEl.innerHTML = '';
   if(wasOpen) releaseBear();
   if(wasOpen && restore) setSheet(false);
@@ -1408,6 +1496,7 @@ function openPanel(i){
     map.setView([t.lat, t.lng], Math.max(map.getZoom(), 16), { animate:false });
     map.panBy([ (tpanelEl.offsetWidth + 20) / 2, 0 ], { animate:false });
     placePanel(t);                      /* 面板貼到圖釘旁邊，而不是固定在右上角 */
+    showParking(t);                     /* 這間廟附近的停車場一起浮出來 */
     map.on('move zoom', panelFollow);   /* 使用者拖地圖、縮放時面板跟著圖釘走 */
   }, 300);
   panelTarget = t;
