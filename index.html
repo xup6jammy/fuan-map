@@ -1441,11 +1441,16 @@ function facHtml(t){
    沒有官網就沒有「官方網站」。點了沒反應比少一顆按鈕更糟。
    只有官方 FB 粉專的廟會寫「官方粉專」，不冒充成官網。 */
 const P_ICON = {
-  story: '<path fill="currentColor" d="M5 3h9l5 5v13H5zm8 1.5V9h4.5z"/>',
+  /* 維基百科：攤開的書，左右兩頁都實心，中間留一道書縫（自繪，不用授權） */
+  story: '<path fill="currentColor" d="M11.3 6.2Q9 4.6 6.5 4.6Q4.1 4.6 1.9 5.7Q1.4 5.95 1.4 6.55V17.9Q1.4 18.9 2.6 18.55Q4.5 17.7 6.5 17.7Q9.1 17.7 11.3 19.2ZM12.7 6.2Q15 4.6 17.5 4.6Q19.9 4.6 22.1 5.7Q22.6 5.95 22.6 6.55V17.9Q22.6 18.9 21.4 18.55Q19.5 17.7 17.5 17.7Q14.9 17.7 12.7 19.2Z"/>',
   tel:   '<path fill="currentColor" d="M6.6 10.8a15.1 15.1 0 0 0 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.2.4 2.4.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1A17 17 0 0 1 3 4c0-.6.4-1 1-1h3.4c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.4 0 .8-.2 1z"/>',
   web:   '<path fill="currentColor" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20m0 2c1.1 0 2.4 1.9 3 5H9c.6-3.1 1.9-5 3-5M7 9h10c.1.6.1 1.3.1 2s0 1.4-.1 2H7c-.1-.6-.1-1.3-.1-2s0-1.4.1-2m0 6h6c-.6 3.1-1.9 5-3 5s-2.4-1.9-3-5"/>',
   share: '<path fill="currentColor" d="M18 16.1c-.8 0-1.5.3-2 .8l-7.1-4.1c.1-.3.1-.5.1-.8s0-.5-.1-.8l7-4.1c.5.5 1.3.8 2.1.8a3 3 0 1 0-3-3c0 .3 0 .5.1.8L8 9.8a3 3 0 1 0 0 4.4l7.1 4.2c-.1.2-.1.5-.1.7a2.9 2.9 0 1 0 3-3"/>',
-  nav:   '<path fill="currentColor" d="M20.6 3.4 3.6 10.1c-.8.3-.8 1.4 0 1.7l6.3 2.3 2.3 6.3c.3.8 1.4.8 1.7 0l6.7-17c.3-.7-.4-1.4-1.1-1.1z"/>'
+  nav:   '<path fill="currentColor" d="M20.6 3.4 3.6 10.1c-.8.3-.8 1.4 0 1.7l6.3 2.3 2.3 6.3c.3.8 1.4.8 1.7 0l6.7-17c.3-.7-.4-1.4-1.1-1.1z"/>',
+  /* 宮廟：Google Material Symbols temple_buddhist（Apache 2.0），給「官方網站」那顆用 */
+  temple:'<path fill="currentColor" d="M8.25 6L12 1l3.75 5zM6 10V8.85q-1.3-.325-2.15-1.375T3 5.025h2q0 .8.588 1.387T6.975 7h10.05q.8 0 1.388-.587T19 5.025h2q0 1.4-.85 2.45T18 8.85V10zM4 22v-9.15q-1.3-.325-2.15-1.375T1 9.025h2q0 .8.588 1.388T4.975 11h14.05q.8 0 1.388-.587T21 9.025h2q0 1.4-.85 2.45T20 12.85V22h-7v-4q0-.425-.288-.712T12 17t-.712.288T11 18v4z"/>',
+  /* 腳踏車：Google Material Symbols pedal_bike（Apache 2.0） */
+  bike:  '<path fill="currentColor" d="M15.5 5.5c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2M5 12c-2.8 0-5 2.2-5 5s2.2 5 5 5 5-2.2 5-5-2.2-5-5-5m0 8.5c-1.9 0-3.5-1.6-3.5-3.5S3.1 13.5 5 13.5s3.5 1.6 3.5 3.5-1.6 3.5-3.5 3.5m5.8-10 2.4-2.4.8.8c1.3 1.3 3 2.1 5.1 2.1V9c-1.5 0-2.7-.6-3.6-1.5l-1.9-1.9c-.5-.4-1-.6-1.6-.6s-1.1.2-1.4.6L7.8 8.4c-.4.4-.6.9-.6 1.4 0 .6.2 1.1.6 1.4L11 14v5h2v-6.2zM19 12c-2.8 0-5 2.2-5 5s2.2 5 5 5 5-2.2 5-5-2.2-5-5-5m0 8.5c-1.9 0-3.5-1.6-3.5-3.5s1.6-3.5 3.5-3.5 3.5 1.6 3.5 3.5-1.6 3.5-3.5 3.5"/>'
 };
 const tpanelEl = document.getElementById('tpanel');
 /* 在 LINE 裡用 liff.openWindow 開外部瀏覽器，一般瀏覽器就開新分頁 */
@@ -1459,6 +1464,68 @@ function wikiUrl(t){ return 'https://zh.wikipedia.org/wiki/' + encodeURIComponen
 function parkMapUrl(t){
   return 'https://www.google.com/maps/search/' + encodeURIComponent('停車場')
        + '/@' + t.lat + ',' + t.lng + ',17z';
+}
+
+/* ===== YouBike 即時站點 =====
+   來源：臺北市交通局 YouBike2.0 即時資料（tcgbusfs blob）、新北市政府資料開放平臺 YouBike2.0。
+   兩邊欄位不同，抓下來先轉成同一個形狀：{ name, lat, lng, rent, ret, total, at }。
+   這是即時資料（有時間戳），所以獅仔可以講「現在可借幾台」——這是整張地圖上
+   唯一一個能講「現在」的數字。只抓被點那間廟所在的城市，60 秒內不重抓。
+   抓不到就什麼都不講，不補假的。 */
+const YB_SRC = {
+  taipei: ['https://tcgbusfs.blob.core.windows.net/dotapp/youbike/v2/youbike_immediate.json'],
+  ntpc:   ['https://data.ntpc.gov.tw/api/datasets/010e5b15-3823-4b20-b401-b1cf000550c5/json?page=0&size=1000',
+           'https://data.ntpc.gov.tw/api/datasets/010e5b15-3823-4b20-b401-b1cf000550c5/json?page=1&size=1000',
+           'https://data.ntpc.gov.tw/api/datasets/010e5b15-3823-4b20-b401-b1cf000550c5/json?page=2&size=1000']
+};
+const YB_TTL_MS = 60000, YB_NEAR_KM = 0.3;
+const ybCache = { taipei:{ at:0, list:null }, ntpc:{ at:0, list:null } };
+function ybCity(t){
+  const a = String(t.addr || '');
+  if(a.indexOf('新北市') === 0) return 'ntpc';
+  if(a.indexOf('台北市') === 0 || a.indexOf('臺北市') === 0) return 'taipei';
+  return null;
+}
+function ybNormalize(city, rows){
+  const out = [];
+  (rows || []).forEach(function(r){
+    if(String(r.act) !== '1') return;                       /* 停用的站不算 */
+    const lat = parseFloat(city === 'taipei' ? r.latitude : r.lat);
+    const lng = parseFloat(city === 'taipei' ? r.longitude : r.lng);
+    if(!isFinite(lat) || !isFinite(lng)) return;
+    out.push({
+      name : String(r.sna || '').replace(/^YouBike2\.0_/, ''),
+      lat  : lat, lng : lng,
+      rent : +(city === 'taipei' ? r.available_rent_bikes   : r.sbi_quantity) || 0,
+      ret  : +(city === 'taipei' ? r.available_return_bikes : r.bemp)         || 0,
+      total: +(city === 'taipei' ? r.Quantity : r.tot_quantity) || 0,
+      at   : String(r.mday || '')
+    });
+  });
+  return out;
+}
+function loadYouBike(city){
+  const c = ybCache[city];
+  if(!c) return Promise.resolve(null);
+  if(c.list && Date.now() - c.at < YB_TTL_MS) return Promise.resolve(c.list);
+  return Promise.all(YB_SRC[city].map(function(u){
+      return fetch(u, { cache:'no-store' }).then(function(r){ return r.ok ? r.json() : []; }).catch(function(){ return []; });
+    })).then(function(pages){
+      const list = ybNormalize(city, [].concat.apply([], pages));
+      if(list.length){ c.list = list; c.at = Date.now(); }
+      return c.list;
+    }).catch(function(){ return c.list; });
+}
+/* 同步版：只看快取（templeTip 是同步函式）。還沒抓到就回 null，獅仔就先不提 */
+function ybNearest(t){
+  const city = ybCity(t); if(!city) return null;
+  const list = ybCache[city].list; if(!list) return null;
+  let best = null;
+  for(const s of list){
+    const d = haversine(t.lat, t.lng, s.lat, s.lng);
+    if(d <= YB_NEAR_KM && (!best || d < best.d)) best = { d:d, s:s };
+  }
+  return best;
 }
 
 /* ===== 面板貼著圖釘 =====
@@ -1499,10 +1566,11 @@ function openPanel(i){
   const a = [];
   if(t.wiki)
     a.push('<button class="tact" data-go="' + esc(wikiUrl(t)) + '"><svg viewBox="0 0 24 24">'
-      + P_ICON.story + '</svg>看故事<span class="sub">維基</span></button>');
+      + P_ICON.story + '</svg>看故事<span class="sub">維基</span></button>');   /* 按鈕寫「要什麼」，小字寫「誰給的」；之後換廟方資料只改小字 */
   if(t.url)
+    /* 官網那顆用線稿小廟當 icon，跟同一排的其他圖示同一套（單色 Material 線稿） */
     a.push('<button class="tact" data-go="' + esc(t.url) + '"><svg viewBox="0 0 24 24">'
-      + P_ICON.web + '</svg>' + (t.urlKind === 'fb' ? '官方粉專' : '官方網站') + '</button>');
+      + P_ICON.temple + '</svg>' + (t.urlKind === 'fb' ? '官方粉專' : '官方網站') + '</button>');
   a.push('<button class="tact js-nav"><svg viewBox="0 0 24 24">'
     + P_ICON.nav + '</svg>導航過去</button>');
   /* 每一間都給「周遭停車場」：開放資料只有點位跟數量，真的要找還是得看地圖 */
@@ -1540,10 +1608,28 @@ function openPanel(i){
   }, 300);
   panelTarget = t;
 
+  /* YouBike：即時資料，抓到再插一顆鈕、再讓獅仔補一句。面板已經換人就不動 */
+  const city = ybCity(t);
+  if(city) loadYouBike(city).then(function(){
+    if(panelTarget !== t) return;
+    const yb = ybNearest(t); if(!yb) return;
+    const acts = tpanelEl.querySelector('.tcard.acts'); if(!acts) return;
+    const navBtn = acts.querySelector('.js-nav');
+    const btn = document.createElement('button');
+    btn.className = 'tact js-yb';
+    btn.innerHTML = '<svg viewBox="0 0 24 24">' + P_ICON.bike + '</svg>YouBike'
+      + '<span class="sub">' + (yb.s.rent > 0 ? '可借 ' + yb.s.rent : '沒車') + '</span>';
+    btn.title = yb.s.name + '・' + Math.round(yb.d * 1000) + ' 公尺・可借 ' + yb.s.rent + ' 可還 ' + yb.s.ret;
+    (navBtn && navBtn.nextSibling) ? acts.insertBefore(btn, navBtn.nextSibling) : acts.appendChild(btn);
+    placePanel(t);          /* 多了一顆鈕，面板高度變了，重新對齊圖釘 */
+    if(!bearOff) bearFocus(t);   /* 獅仔補上 YouBike 那句 */
+  });
+
   tpanelEl.onclick = function(e){
     const el = e.target.closest ? e.target : null; if(!el) return;
     if(el.closest('.js-close')){ closePanel(true); return; }
     if(el.closest('.js-nav')){ navigate(t); return; }
+    if(el.closest('.js-yb')){ const yb = ybNearest(t); if(yb) navigate(yb.s); return; }
     if(el.closest('.js-share')){ shareTemple(t); return; }
     const go = el.closest('[data-go]');
     if(go){ openUrl(go.getAttribute('data-go')); }
@@ -1801,6 +1887,14 @@ function templeTip(t){
   else if(mrt)   s += mrt;
   else if((t.fac || []).indexOf('accessible') >= 0)
     s += '有無障礙廁所。';
+  /* YouBike：唯一能講「現在」的數字，因為是即時資料。走得到的廟就不提（走路就好）。
+     還沒抓到就不講，抓到了但 300 公尺內沒站也不講。 */
+  const yb = walkable ? null : ybNearest(t);
+  if(yb){
+    s += yb.s.rent > 0
+       ? 'YouBike ' + esc(yb.s.name) + '站現在可借 <b>' + yb.s.rent + '</b> 台。'
+       : 'YouBike ' + esc(yb.s.name) + '站現在沒車可借。';
+  }
   return s + ' ' + PARK_LINK;   /* 每一間都給「看周遭停車場」，交給 Google 地圖 */
 }
 
