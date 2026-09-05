@@ -787,12 +787,11 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink)}
 .row:last-child{border-bottom:none}
 .row.sel{background:#F7FBF8}
 .rthumb{position:relative;width:52px;height:52px;border-radius:15px;flex:none;
-        display:grid;place-items:center}
-.rthumb .ticon{width:28px;height:28px;display:block}
-.rthumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:15px}
-.rnum{position:absolute;right:-3px;bottom:-3px;width:17px;height:17px;border-radius:50%;
-      background:#fff;border:1.5px solid #F0EBDD;color:var(--muted);z-index:2;
-      display:grid;place-items:center;font-size:10px;font-weight:800}
+        display:grid;place-items:center;
+        background:linear-gradient(180deg,#FFFCF3 0%,#F4EBD5 100%);
+        box-shadow:inset 0 1px 0 #fff, 0 2px 0 #D6C9AD}   /* 跟地圖圖釘同一塊磁磚 */
+.rthumb .temple{width:46px;height:46px;display:block;object-fit:contain}
+
 .rmain{flex:1;min-width:0}
 .rname{font-size:14.5px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .rsub{font-size:12px;color:var(--muted);margin-top:2px;
@@ -804,12 +803,14 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink)}
 /* 第三行：設施與開放時間。沒有資料就整行不出現，所以還沒調查的宮廟
    高度跟原本一樣，不會出現一排空欄位 */
 .rfac{display:flex;align-items:center;flex-wrap:wrap;gap:5px;margin-top:5px}
-/* 廟內設施：實心底色的圖示。跟「附近」的外框圖示成對比，
-   一眼分得出「廟裡就有」和「附近有」。 */
-.fpill{display:inline-flex;align-items:center;justify-content:center;
-       background:#E6EFE9;border:1px solid #D3E2D9;border-radius:4px;
-       padding:2px 6px;color:#3F6B52;line-height:0}
-.fpill svg{width:13px;height:13px;fill:currentColor;display:block}
+/* 設施四格：同一個色調。on = 有，off = 還不知道（淡色，不是灰掉的「沒有」） */
+.fslot{display:inline-flex;align-items:center;gap:3px;height:22px;padding:0 6px;
+       border-radius:6px;background:#F3EEE3;border:1px solid #E3DBCA;
+       color:#5C5340;font-size:10.5px;font-weight:800;line-height:1}
+.fslot svg{width:13px;height:13px;fill:currentColor;display:block}
+.fslot b{font-weight:800}
+.fslot.off{color:#CFC7B8;background:#FBF8F1;border-color:#EFE9DC}
+.fslot.js-todo{cursor:pointer}
 .fopen{font-size:11px;font-weight:700;display:inline-flex;align-items:center;gap:4px}
 .fopen i{width:6px;height:6px;border-radius:50%;flex:none}
 .fopen.yes{color:#127A3E} .fopen.yes i{background:#17A34A}
@@ -1370,7 +1371,30 @@ function crowdHtml(t){
        + '<span class="cmeter">' + bars + '</span>推估人潮 ' + c.label + '</span>';
 }
 
+/* 設施列：固定四格、固定順序（廁所・友善・飲水機・停車），同一個色調。
+   有 → 深色；沒資料 → 淡色（不是「沒有」，是「還不知道」，長按看說明）。
+   「廟內有」跟「附近有」在畫面上不再分兩種樣式，差別寫在 title 裡——
+   一列九個彩色藥丸太吵，使用者要的是一眼掃過去知道哪幾樣有。 */
+const FAC_SLOTS = ['toilet', 'accessible', 'water', 'parking'];
+
+/* ===== 示範模式 =====
+   飲水機目前沒有任何資料來源，正常狀態一律「待補」。比賽 demo 想看到整排亮燈，
+   就開這個開關：用廟名算一個固定值決定亮不亮（同一間廟在每支手機上都一樣，
+   不會刷新就變），大約八成亮、兩成不亮。開著的時候清單標題會標「示範」，
+   title 也寫「示範資料」——這是編的，畫面上要說出來。正式資料進來就關掉。 */
+const DEMO_FAC = true;
+function demoHash(str){
+  let h = 0;
+  for(let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0;
+  return h;
+}
+function demoWaterOn(t){ return demoHash(t.name) % 10 < 8; }   /* 8/10 亮 */
+function facSlot(k, on, title, extra, cls){
+  return '<span class="fslot ' + (on ? 'on' : 'off') + (cls ? ' ' + cls : '') + '" title="' + title
+       + '" aria-label="' + title + '">' + iconSvg(k) + (extra || '') + '</span>';
+}
 function facHtml(t){
+  const own = t.fac || [];
   const parts = [];
   const st = openState(t.open);
   if(st){
@@ -1378,23 +1402,38 @@ function facHtml(t){
     else parts.push('<span class="fopen ' + (st.on ? 'yes' : 'no') + '"><i></i>'
                   + (st.on ? '開放中' : '已休息') + '　' + st.text + '</span>');
   }
-  (t.fac || []).forEach(function(k){
-    if(!FAC_LABEL[k] || !WALK_ICON[k]) return;
-    parts.push('<span class="fpill" title="廟內設施：' + FAC_LABEL[k] + '" aria-label="廟內有'
-      + FAC_LABEL[k] + '">' + iconSvg(k) + '</span>');
-  });
-  /* 飲水機目前沒有任何開放資料來源，一律顯示成「待廟方確認」。
-     這一格空著本身就在說明產品的下一步：廟方登入後自己補。 */
-  if((t.fac || []).indexOf('water') < 0){
-    parts.push('<button class="npill ico todo js-todo" title="飲水機：還沒有資料，之後開放廟方回報"'
-      + ' aria-label="飲水機資料待補">'
-      + iconSvg('water') + '</button>');
+  /* 廁所：廟內有 → 附近公廁 → 查無 */
+  if(own.indexOf('toilet') >= 0) parts.push(facSlot('toilet', true, '廟內有廁所'));
+  else {
+    const h = nearestFac(t, 'toilet', 0.35);
+    parts.push(h ? facSlot('toilet', true, '附近有公廁：' + h.f.name)
+                 : facSlot('toilet', false, '廁所：查無資料'));
   }
+  /* 友善（無障礙）：廟內有 → 附近公廁有無障礙 → 查無 */
+  if(own.indexOf('accessible') >= 0) parts.push(facSlot('accessible', true, '廟內有無障礙廁所'));
+  else {
+    const list = (window.FACILITIES || []).filter(function(f){
+      return f.type === 'toilet' && f.acc && haversine(t.lat, t.lng, f.lat, f.lng) <= 0.35; });
+    parts.push(list.length ? facSlot('accessible', true, '附近公廁有無障礙：' + list[0].name)
+                           : facSlot('accessible', false, '無障礙：查無資料'));
+  }
+  /* 飲水機：沒有任何開放資料來源，一律待廟方回報（點了會說明）。
+     示範模式下用固定值點亮，title 明寫「示範資料」。 */
+  if(own.indexOf('water') >= 0)      parts.push(facSlot('water', true, '廟內有飲水機'));
+  else if(DEMO_FAC)                  parts.push(facSlot('water', demoWaterOn(t),
+                                       '飲水機（示範資料，尚未取得廟方回報）', '', 'js-todo'));
+  else                               parts.push(facSlot('water', false, '飲水機：還沒有資料，之後開放廟方回報', '', 'js-todo'));
+  /* 停車：附近有幾個（不講格數）；資料沒涵蓋或 0 個 → 淡色 */
+  if(parkingCovered(t)){
+    const n = countFac(t, 'parking', PARK_KM);
+    parts.push(n ? facSlot('parking', true, Math.round(PARK_KM*1000) + ' 公尺內有 ' + n + ' 個停車場', '<b>' + n + '</b>')
+                 : facSlot('parking', false, '附近沒有公共停車場'));
+  } else parts.push(facSlot('parking', false, '停車場：這一區還沒有開放資料'));
+
   if(t.peak) parts.push('<span class="fpeak">' + t.peak + '</span>');
-  const near = nearHtml(t);
   const cw = crowdHtml(t);
-  const all = parts.concat(near, cw ? [cw] : []);
-  return all.length ? '<div class="rfac">' + all.join('') + '</div>' : '';
+  if(cw) parts.push(cw);
+  return '<div class="rfac">' + parts.join('') + '</div>';
 }
 
 /* ===== 宮廟面板（地圖右側） =====
@@ -1587,7 +1626,8 @@ function render(){
   document.getElementById('sTitle').textContent =
     activeNeed ? ('求' + activeNeed + '｜附近的宮廟') : '附近的宮廟';
   document.getElementById('sMeta').textContent =
-    me ? (shown.length + ' 間・' + RADIUS_KM + ' 公里內') : (shown.length + ' 間');
+    (me ? (shown.length + ' 間・' + RADIUS_KM + ' 公里內') : (shown.length + ' 間'))
+    + (DEMO_FAC ? '・示範' : '');
 
   const list = document.getElementById('list');
   list.innerHTML = '';
@@ -1612,11 +1652,10 @@ function render(){
     const row = document.createElement('div');
     row.className = 'row' + (i === selected ? ' sel' : '');
     row.innerHTML =
-      '<div class="rthumb" style="background:' + thumbBg(t.deity) + '">' +
-        typeIcon(t.deity) +
-        (needImg(t.deity) ? '<img src="' + needImg(t.deity) + '" alt="" loading="lazy" onerror="this.remove()">' : '') +
-        (t.img ? '<img src="' + t.img + '" alt="" loading="lazy" onerror="this.remove()">' : '') +
-        '<span class="rnum">' + (i+1) + '</span></div>' +
+      /* 清單縮圖跟地圖圖釘同一座小廟；載不到退回 SVG。求什麼看旁邊的神明 tag 就好 */
+      '<div class="rthumb">' +
+        '<img class="temple" src="temple.webp" alt="" loading="lazy" onerror="templeFallback(this)">' +
+        '</div>' +
       '<div class="rmain"><div class="rname">' + t.name + '</div>' +
       '<div class="rsub"><span class="tag" style="'+tagStyle(t.deity)+'">' + (t.deity || '—') + '</span>' + (t.dist || '') + '</div>' +
       facHtml(t) + '</div>' +
@@ -1631,7 +1670,7 @@ function render(){
     item.onclick = (e)=>{
       const el = e.target.closest ? e.target : null;
       if(el && el.closest('.js-todo')){
-        toast('飲水機還沒有開放資料，之後由廟方自己回報'); return;
+        toast(DEMO_FAC ? '飲水機是示範資料，正式版由廟方回報' : '飲水機還沒有開放資料，之後由廟方自己回報'); return;
       }
       if(el && el.closest('.rbtn')){ navigate(t); return; }
       /* 點列本身：選取，面板開在地圖右邊（鏡頭由 openPanel 統一處理） */
