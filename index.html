@@ -916,6 +916,9 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink)}
 .bear .msg .bbtn{flex:1;font:inherit;font-size:11.5px;font-weight:800;padding:6px 0;border-radius:8px;cursor:pointer;
                  border:1px solid #DDD3BF;background:#FBF9F4;color:#5C5340}
 .bear .msg .bbtn.pri{background:var(--g);border-color:var(--g);color:#fff}
+.bear .msg .bbtn:disabled{opacity:.42;cursor:default}
+.bear .msg .note{display:block;margin-top:4px;font-size:10.5px;color:#A29C8C;font-weight:600}
+.tact.off{opacity:.5;cursor:default}
 .bear .msg .lnks{margin-top:4px;display:flex;gap:12px}
 .bear .x{position:absolute;top:5px;right:6px;width:22px;height:22px;border:none;
          background:transparent;color:#B3AB9E;font-size:15px;line-height:1;cursor:pointer}
@@ -1484,7 +1487,7 @@ function facHtml(t){
 }
 
 /* ===== 宮廟面板（地圖右側） =====
-   按鈕只在真的有資料時出現：沒查到維基條目就沒有「看故事」，
+   官網沒有就灰掉不可按並註明，說故事每間都有（適合、近期是資料算的），
    沒有官網就沒有「官方網站」。點了沒反應比少一顆按鈕更糟。
    只有官方 FB 粉專的廟會寫「官方粉專」，不冒充成官網。 */
 const P_ICON = {
@@ -1585,12 +1588,18 @@ function briefHtml(t, wikiTxt){
       '<span class="cal"><i>' + nb.mon + '<br>' + nb.day + '</i><span>' + esc(nb.b.name)
     + '<small>' + nb.lunar + '・' + (nb.days === 0 ? '就是今天' : nb.days + ' 天後') + '</small></span></span>');
   else   h += row('近期活動', '<span class="muted">活動請看廟方公告</span>');
-  /* 主要動作實色、次要空心；沒維基就讓官網當主要 */
-  const btns = [];
-  if(t.wiki) btns.push('<button type="button" class="bbtn pri js-wiki">看完整故事</button>');
-  if(t.url)  btns.push('<button type="button" class="bbtn ' + (t.wiki ? '' : 'pri ') + 'js-site">'
-                       + (t.urlKind === 'fb' ? '官方粉專' : '官方網站') + '</button>');
-  if(btns.length) h += '<div class="btns">' + btns.join('') + '</div>';
+  /* 兩顆鈕永遠都在：有資料的亮、沒有的灰掉不可按，底下一行小字說少了什麼。
+     主要動作實色（優先完整故事，沒維基就換官網），次要空心。 */
+  const pri = t.wiki ? 'wiki' : (t.url ? 'site' : null);
+  h += '<div class="btns">'
+     + '<button type="button" class="bbtn js-wiki' + (pri === 'wiki' ? ' pri' : '') + '"' + (t.wiki ? '' : ' disabled') + '>看完整故事</button>'
+     + '<button type="button" class="bbtn js-site' + (pri === 'site' ? ' pri' : '') + '"' + (t.url ? '' : ' disabled') + '>'
+     + (t.urlKind === 'fb' ? '官方粉專' : '官方網站') + '</button>'
+     + '</div>';
+  const miss = [];
+  if(!t.wiki) miss.push('尚無完整故事可提供');
+  if(!t.url)  miss.push('宮廟尚無網站可提供');
+  if(miss.length) h += '<span class="note">' + miss.join('；') + '</span>';
   h += '<span class="src">' + (w ? '起源、特色摘自維基百科；' : '') + '聖誕日期為民間通行說法</span></div>';
   return h;
 }
@@ -1708,12 +1717,16 @@ function openPanel(i){
   const t = shown[i];
   if(!t) return;
   const a = [];
+  /* 說故事：每間都有（適合、近期是資料算的），維基有沒有到泡泡裡再說 */
   a.push('<button class="tact js-story"><svg viewBox="0 0 24 24">'
-      + P_ICON.story + '</svg>看故事<span class="sub">' + (t.wiki ? '維基' : '') + '</span></button>');   /* 按鈕寫「要什麼」，小字寫「誰給的」；之後換廟方資料只改小字 */
+      + P_ICON.story + '</svg>獅仔說故事</button>');
+  /* 官網：每間都顯示；沒有就灰掉不可按、小字說明——「沒有」也是一種資訊 */
   if(t.url)
-    /* 官網那顆用線稿小廟當 icon，跟同一排的其他圖示同一套（單色 Material 線稿） */
     a.push('<button class="tact" data-go="' + esc(t.url) + '"><svg viewBox="0 0 24 24">'
       + P_ICON.temple + '</svg>' + (t.urlKind === 'fb' ? '官方粉專' : '官方網站') + '</button>');
+  else
+    a.push('<button class="tact off" disabled aria-disabled="true"><svg viewBox="0 0 24 24">'
+      + P_ICON.temple + '</svg>官方網站<span class="sub">宮廟尚無網站</span></button>');
   a.push('<button class="tact js-nav"><svg viewBox="0 0 24 24">'
     + P_ICON.nav + '</svg>導航過去</button>');
   /* 每一間都給「周遭停車場」：開放資料只有點位跟數量，真的要找還是得看地圖 */
@@ -1732,7 +1745,7 @@ function openPanel(i){
     + '<div class="tsub"><span class="tag" style="' + tagStyle(t.deity) + '">'
     + esc(t.deity || '—') + '</span><span>' + fmtDist(t.d) + '</span></div></div>'
     + '<div class="tcard acts">' + a.join('')
-    + (t.wiki ? '' : '<div class="tnote">這間還沒查到維基百科條目</div>')
+
     + '</div>';
   tpanelEl.classList.add('on');
   bearFocus(t);          /* 獅仔留在原位，改講「你點的這一間」；輪播先停 */
@@ -2200,7 +2213,7 @@ bearCall.onclick = ()=>{
   bearEl.addEventListener('click', (e)=>{
     const a = e.target.closest('.js-parkmap, .js-wiki, .js-site'); if(!a) return;
     e.preventDefault();
-    if(!bearFocusT) return;
+    if(!bearFocusT || a.disabled) return;
     if(a.classList.contains('js-wiki'))      openUrl(wikiUrl(bearFocusT));
     else if(a.classList.contains('js-site')) { if(bearFocusT.url) openUrl(bearFocusT.url); }
     else openUrl(parkMapUrl(bearFocusT));
