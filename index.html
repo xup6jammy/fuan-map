@@ -1003,6 +1003,70 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink)}
 .tact svg{width:16px;height:16px;fill:#A2926C;flex:none}
 .tact .sub{margin-left:auto;font-size:10px;font-weight:700;color:#9A938C;flex:none}
 .tnote{padding:2px 4px 4px;font-size:10.5px;line-height:1.6;color:#9A938C}
+
+/* ===== v3：點廟後，圖釘旁只留小標籤，所有動作搬進底部抽屜 =====
+   第一層三顆大按鈕（說故事｜官網｜導航），第二層三顆小磁磚（停車｜最愛｜打卡）。
+   只有「導航過去」填色：長輩不知道按哪個就按這顆。 */
+.tpanel.lite{width:auto;max-width:200px}
+.tpanel.lite .tcard.head{padding:7px 11px 8px}
+.tpanel.lite .tx{display:none}
+.sheet.tmode{max-height:70%}
+.sheet.tmode .shead,.sheet.tmode .list{display:none}
+.tsheet{padding:0 14px;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.tsheet[hidden]{display:none}
+.thead{display:flex;align-items:center;gap:9px;padding:2px 0 10px;border-bottom:1px solid #F2EEE4;margin-bottom:11px}
+.thead .thumb{width:44px;height:44px;border-radius:12px;flex:none;object-fit:cover;background:#EDE7D6}
+.thead .tt{min-width:0;flex:1}
+.thead .tn{font-size:16px;font-weight:800;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.thead .ts{margin-top:3px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:11.5px;color:var(--muted)}
+.thead .ts .tag{font-size:10.5px;padding:2px 7px}
+.thead .tx2{flex:none;width:30px;height:30px;border:none;border-radius:50%;background:#F5F1E8;color:#8C8478;
+            font-size:17px;line-height:1;font-family:var(--font);cursor:pointer}
+.bigrow{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.bb{min-height:88px;padding:8px 4px;border-radius:16px;border:1.5px solid #DED5C2;background:#FCFAF4;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+    font-size:14px;font-weight:800;color:#4A4038;font-family:var(--font);cursor:pointer;
+    text-decoration:none;transition:background .12s,transform .08s}
+.bb:active{background:#F1E9D7;transform:translateY(1px)}
+.bb svg{width:28px;height:28px;fill:#A2926C;flex:none}
+.bb .lion{width:36px;height:36px;object-fit:contain;display:block}
+.bb.pri{background:#A2926C;border-color:#A2926C;color:#fff;box-shadow:0 3px 0 #8A7A55}
+.bb.pri:active{background:#94845F;box-shadow:0 1px 0 #8A7A55}
+.bb.pri svg{fill:#fff}
+.bb.pri.open{box-shadow:none;transform:translateY(2px)}
+.bb.off{opacity:.5;border-style:dashed;cursor:default}
+.bb small{font-size:10px;font-weight:700;color:#9A938C;line-height:1.2}
+.bb.pri small{color:#F3EBD8}
+.subrow{margin-top:10px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.sb{min-height:46px;padding:4px 6px;border-radius:12px;border:1px solid #EDE7D8;background:#FCFAF4;
+    display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;
+    font-size:12.5px;font-weight:800;color:#4A4038;font-family:var(--font);cursor:pointer;text-decoration:none}
+.sb:active{background:#F1E9D7}
+.sb svg{width:16px;height:16px;fill:#A2926C;flex:none}
+.sb.fav{color:#B8382B}.sb.fav svg{fill:#E05A4B}
+.sb.done{background:#F3E8D2;color:#7A5A2B}
+.sb.off{opacity:.55;cursor:default}
+.sb .sub{flex-basis:100%;text-align:center;font-size:10px;font-weight:700;color:#9A938C;margin-top:-3px}
+/* 導航三段：按「導航過去」才展開，不佔第一眼版面 */
+.navx{display:none;margin-top:10px;background:#F7F3E9;border:1px solid #E6DFD0;border-radius:14px;padding:10px}
+.navx.open{display:block}
+.navx .t{font-size:11.5px;color:var(--muted);font-weight:700;margin-bottom:8px}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.seg button{min-height:46px;border-radius:10px;border:1.5px solid #DED5C2;background:#fff;
+            font-size:13px;font-weight:800;color:#4A4038;font-family:var(--font);cursor:pointer;padding:5px 2px}
+.seg button:active{background:#F1E9D7}
+.seg button span{display:block;font-size:10px;font-weight:600;color:#8C8478;margin-top:2px}
+.seg button.off{opacity:.5;cursor:default}
+.seg button svg{width:18px;height:18px;fill:#A2926C;vertical-align:-4px;margin-right:2px}
+.trow{margin-top:10px;display:flex;justify-content:center;gap:18px}
+.trow a,.trow button{border:none;background:none;font-size:12px;font-weight:700;color:#8C8478;
+                     font-family:var(--font);cursor:pointer;text-decoration:none;padding:4px 2px;
+                     display:inline-flex;align-items:center;gap:4px}
+.trow svg{width:14px;height:14px;fill:#A2926C}
+.tolist{display:block;width:100%;margin:10px 0 12px;padding:6px;border:none;background:none;
+        font-size:11.5px;font-weight:700;color:#9A938C;font-family:var(--font);cursor:pointer}
+.tolist::before{content:"";display:inline-block;width:38px;height:4px;border-radius:99px;background:#DDD6C6;
+                vertical-align:middle;margin-right:7px}
 .locate svg{width:20px;height:20px;stroke:var(--g);fill:none;stroke-width:2;
             stroke-linecap:round;stroke-linejoin:round}
 
@@ -1048,6 +1112,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink)}
 
 <div class="sheet" id="sheet">
   <div class="grip" id="grip"><i></i></div>
+  <div class="tsheet" id="tsheet" hidden></div>
   <div class="shead"><b id="sTitle">附近的宮廟</b><span id="sMeta"></span></div>
   <div class="list" id="list"></div>
 </div>
@@ -1544,6 +1609,7 @@ const P_ICON = {
   bike:  '<path fill="currentColor" d="M15.5 5.5c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2M5 12c-2.8 0-5 2.2-5 5s2.2 5 5 5 5-2.2 5-5-2.2-5-5-5m0 8.5c-1.9 0-3.5-1.6-3.5-3.5S3.1 13.5 5 13.5s3.5 1.6 3.5 3.5-1.6 3.5-3.5 3.5m5.8-10 2.4-2.4.8.8c1.3 1.3 3 2.1 5.1 2.1V9c-1.5 0-2.7-.6-3.6-1.5l-1.9-1.9c-.5-.4-1-.6-1.6-.6s-1.1.2-1.4.6L7.8 8.4c-.4.4-.6.9-.6 1.4 0 .6.2 1.1.6 1.4L11 14v5h2v-6.2zM19 12c-2.8 0-5 2.2-5 5s2.2 5 5 5 5-2.2 5-5-2.2-5-5-5m0 8.5c-1.9 0-3.5-1.6-3.5-3.5s1.6-3.5 3.5-3.5 3.5 1.6 3.5 3.5-1.6 3.5-3.5 3.5"/>'
 };
 const tpanelEl = document.getElementById('tpanel');
+const tsheetEl = document.getElementById('tsheet');
 /* 在 LINE 裡用 liff.openWindow 開外部瀏覽器，一般瀏覽器就開新分頁 */
 function openUrl(url){
   if(window.liff && liff.isInClient && liff.isInClient()) liff.openWindow({ url:url, external:true });
@@ -1597,12 +1663,12 @@ function setFav(t, on){
     if(r.dataset.name !== t.name) return;
     r.classList.toggle('isfav', on);
   });
-  const btn = tpanelEl.querySelector('.js-fav');
+  const btn = tsheetEl.querySelector('.js-fav');
   if(btn && panelTarget === t) btn.outerHTML = favBtn(t);
 }
 function favBtn(t){
   const on = isFav(t);
-  return '<button class="tact js-fav' + (on ? ' fav' : '') + '"><svg viewBox="0 0 24 24">'
+  return '<button class="sb js-fav' + (on ? ' fav' : '') + '"><svg viewBox="0 0 24 24">'
     + (on ? P_ICON.heart : P_ICON.heartO) + '</svg>' + (on ? '已在最愛' : '加入最愛') + '</button>';
 }
 function toggleFav(t){
@@ -1621,7 +1687,7 @@ function bearSayFav(t){
   const n = nextBigDay(t);
   document.getElementById('bearMsg').innerHTML = esc('好，' + t.name + '記在你的最愛了。'
     + (n ? (n.days === 0 ? '今天就是' : n.days === 1 ? '明天是' : n.days + ' 天後是') + n.what + '。' : '')
-    + '想在 LINE 裡也留一份，按「釘到聊天室」。');
+    + '上面「我的最愛」隨時找得到。');
 }
 let activeFav = false;
 
@@ -1843,7 +1909,7 @@ function checkinState(t){
 }
 function checkinBtn(t){
   const st = checkinState(t);
-  return '<button class="tact js-checkin' + (st.ok ? '' : ' off') + '"' + (st.ok ? '' : ' disabled aria-disabled="true"') + '><svg viewBox="0 0 24 24">'
+  return '<button class="sb js-checkin' + (st.ok ? '' : ' off') + '"' + (st.ok ? '' : ' disabled aria-disabled="true"') + '><svg viewBox="0 0 24 24">'
     + P_ICON.stamp + '</svg>到廟打卡' + (st.why ? '<span class="sub">' + esc(st.why) + '</span>' : '') + '</button>';
 }
 function checkin(t){
@@ -1852,7 +1918,7 @@ function checkin(t){
   stamps.push({ n:t.name, d:isoDay(now), t:String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0'),
                 p:k.pts, g:k.tag, demo: (DEMO_CHECKIN && !(me && haversine(me[0], me[1], t.lat, t.lng) * 1000 <= CHECKIN_M)) ? 1 : 0 });
   saveStamps();
-  const btn = tpanelEl.querySelector('.js-checkin'); if(btn && panelTarget === t) btn.outerHTML = checkinBtn(t);
+  const btn = tsheetEl.querySelector('.js-checkin'); if(btn && panelTarget === t) btn.outerHTML = checkinBtn(t);
   const month = stamps.filter(function(x){ return x.n === t.name && x.d.slice(0, 7) === isoDay(now).slice(0, 7); }).length;
   toast('蓋好了' + (k.pts > 1 ? '，' + k.tag + ' +2' : ' +1'));
   bearHold = true;
@@ -2198,107 +2264,151 @@ function panelFollow(){ if(panelTarget) placePanel(panelTarget); }
 
 function closePanel(restore){
   const wasOpen = tpanelEl.classList.contains('on');
-  tpanelEl.classList.remove('on', 'pinned');
+  const wasT = sheet.classList.contains('tmode');
+  tpanelEl.classList.remove('on', 'pinned', 'lite');
   tpanelEl.style.left = tpanelEl.style.top = '';
   if(typeof map !== 'undefined' && map && map.off) map.off('move zoom', panelFollow);
   panelTarget = null;
   if(typeof clearParking === 'function') clearParking();
   tpanelEl.innerHTML = '';
+  /* v3：動作抽屜收掉、浮在地圖上的東西回到原本的高度 */
+  sheet.classList.remove('tmode');
+  tsheetEl.hidden = true; tsheetEl.innerHTML = '';
+  [bearEl, bearCall, locBtn].forEach(function(el){ el.style.bottom = ''; });
   if(wasOpen) releaseBear();
+  /* restore=true 回到清單；否則（例如接著要讓獅仔講故事）清單維持收起，泡泡才放得下 */
   if(wasOpen && restore) setSheet(false);
+  else if(wasT) setSheet(true);
+}
+const ybTried = {};   /* 哪些城市的 YouBike 已經試著抓過（成功或失敗都算） */
+/* 導航三段：開車｜大眾運輸｜YouBike。YouBike 只在真的抓到附近站點時才能按（資料誠實） */
+function navxHtml(t){
+  const yb = ybNearest(t), city = ybCity(t);
+  let ybSub, ybOff = false;
+  if(yb) ybSub = (yb.s.rent > 0 ? '可借 ' + yb.s.rent + ' 台' : '站點沒車') + '・' + Math.round(yb.d * 1000) + ' 公尺';
+  else if(city && !ybTried[city]){ ybSub = '站點查詢中…'; ybOff = true; }
+  else if(city && !(ybCache[city] && ybCache[city].list)){ ybSub = '站點資料暫時抓不到'; ybOff = true; }
+  else { ybSub = '附近沒有站點'; ybOff = true; }
+  return '<div class="t">怎麼過去？</div><div class="seg">'
+    + '<button type="button" class="js-go" data-mode="driving"><svg viewBox="0 0 24 24">' + P_ICON.nav + '</svg>開車<span>Google 導航</span></button>'
+    + '<button type="button" class="js-go" data-mode="transit"><svg viewBox="0 0 24 24">' + P_ICON.nav + '</svg>大眾運輸<span>捷運・公車</span></button>'
+    + '<button type="button" class="js-go' + (ybOff ? ' off' : '') + '" data-mode="bike"' + (ybOff ? ' disabled aria-disabled="true"' : '')
+    + '><svg viewBox="0 0 24 24">' + P_ICON.bike + '</svg>YouBike<span>' + esc(ybSub) + '</span></button>'
+    + '</div>';
+}
+/* 動作抽屜撐起來之後，獅仔、召喚鈕、定位鈕都要浮在抽屜上面 */
+function liftAboveSheet(){
+  const h = sheet.offsetHeight + 12;
+  [bearEl, bearCall, locBtn].forEach(function(el){ el.style.bottom = h + 'px'; });
 }
 function openPanel(i){
   const t = shown[i];
   if(!t) return;
-  const a = [];
-  /* 說故事：每間都有（適合、近期是資料算的），維基有沒有到泡泡裡再說 */
-  a.push('<button class="tact js-story"><svg viewBox="0 0 24 24">'
-      + P_ICON.story + '</svg>獅仔說故事</button>');
-  /* 官網：每間都顯示；沒有就灰掉不可按、小字說明——「沒有」也是一種資訊 */
-  if(t.url)
-    a.push('<button class="tact" data-go="' + esc(t.url) + '"><svg viewBox="0 0 24 24">'
-      + P_ICON.temple + '</svg>' + (t.urlKind === 'fb' ? '官方粉專' : '官方網站') + '</button>');
-  else
-    a.push('<button class="tact off" disabled aria-disabled="true"><svg viewBox="0 0 24 24">'
-      + P_ICON.temple + '</svg>官方網站<span class="sub">宮廟尚無網站</span></button>');
-  a.push('<button class="tact js-nav"><svg viewBox="0 0 24 24">'
-    + P_ICON.nav + '</svg>導航過去</button>');
-  /* 釘到聊天室：把這間廟做成一張卡片送進 LINE 聊天室（liff.sendMessages，以使用者身分送出），
-     等於幫他書籤。卡片上的按鈕帶 ?temple= 深連結，點回來會直接選中這間。 */
-  a.push(favBtn(t));
-  a.push(checkinBtn(t));
-  a.push('<button class="tact js-pin"><svg viewBox="0 0 24 24">'
-    + P_ICON.pin + '</svg>釘到聊天室</button>');
-  /* 每一間都給「周遭停車場」：開放資料只有點位跟數量，真的要找還是得看地圖 */
-  a.push('<button class="tact" data-go="' + esc(parkMapUrl(t)) + '"><svg viewBox="0 0 24 24">'
-      + WALK_ICON.parking + '</svg>周遭停車場<span class="sub">Google</span></button>');
-  if(t.tel)
-    a.push('<a class="tact" href="tel:' + String(t.tel).replace(/[^0-9+]/g,'') + '"><svg viewBox="0 0 24 24">'
-      + P_ICON.tel + '</svg>打電話</a>');
-  if(window.liff && liff.isApiAvailable && liff.isApiAvailable('shareTargetPicker'))
-    a.push('<button class="tact js-share"><svg viewBox="0 0 24 24">'
-      + P_ICON.share + '</svg>分享給朋友</button>');
 
+  /* 圖釘旁：只留「這是哪間廟」的小標籤 */
   tpanelEl.innerHTML =
-    '<div class="tcard head' + (photoUrl(t) ? ' hasph' : '') + '"><button class="tx js-close" aria-label="關閉">×</button>'
-    + '<div class="tname">' + esc(t.name) + '</div>'
+    '<div class="tcard head"><div class="tname">' + esc(t.name) + '</div>'
     + '<div class="tsub"><span class="tag" style="' + tagStyle(t.deity) + '">'
-    + esc(t.deity || '—') + '</span><span>' + fmtDist(t.d) + '</span>'
-    + (t.folk ? '<span class="tag folk" title="' + esc(t.folk.name) + '">' + esc(t.folk.level || '登錄民俗') + '</span>' : '')
-    + '</div>'
-    + (photoUrl(t) ? '<img class="tphoto" src="' + esc(photoUrl(t).replace('maxWidthPx=160&maxHeightPx=160', 'maxWidthPx=480&maxHeightPx=320')) + '" alt="" onerror="this.parentNode.classList.remove(\'hasph\');this.remove()">'
-                     + (photoCredit(t) ? '<div class="tcredit">' + photoCredit(t) + '</div>' : '') : '')
-    + '</div>'
-    + '<div class="tcard acts">' + a.join('')
+    + esc(t.deity || '—') + '</span><span>' + fmtDist(t.d) + '</span></div></div>';
+  tpanelEl.classList.add('on', 'lite');
 
-    + '</div>';
-  tpanelEl.classList.add('on');
+  /* 底部抽屜：第一層三顆大按鈕 */
+  const ph = photoUrl(t);
+  let h = '<div class="thead">'
+    + (ph ? '<img class="thumb" src="' + esc(ph) + '" alt="" onerror="this.remove()">' : '')
+    + '<div class="tt"><div class="tn">' + esc(t.name) + '</div>'
+    + '<div class="ts"><span class="tag" style="' + tagStyle(t.deity) + '">' + esc(t.deity || '—') + '</span>'
+    + '<span>' + fmtDist(t.d) + '</span>'
+    + (t.folk ? '<span class="tag folk" title="' + esc(t.folk.name) + '">' + esc(t.folk.level || '登錄民俗') + '</span>' : '')
+    + '</div></div>'
+    + '<button type="button" class="tx2 js-close" aria-label="關閉">×</button></div>';
+  h += '<div class="bigrow">';
+  /* 說故事：每間都有；維基有沒有到泡泡裡再說 */
+  h += '<button type="button" class="bb js-story"><img class="lion" src="lion_full.webp" alt="">獅仔說故事</button>';
+  /* 官網：沒有就灰掉不可按、小字說明——位置不變，版面不跳 */
+  if(t.url)
+    h += '<button type="button" class="bb" data-go="' + esc(t.url) + '"><svg viewBox="0 0 24 24">'
+       + P_ICON.temple + '</svg>' + (t.urlKind === 'fb' ? '官方粉專' : '官方網站') + '</button>';
+  else
+    h += '<button type="button" class="bb off" disabled aria-disabled="true"><svg viewBox="0 0 24 24">'
+       + P_ICON.temple + '</svg>官方網站<small>廟方尚未提供</small></button>';
+  h += '<button type="button" class="bb pri js-nav" aria-expanded="false"><svg viewBox="0 0 24 24">'
+     + P_ICON.nav + '</svg>導航過去<small>選方式 ▾</small></button>';
+  h += '</div>';
+  h += '<div class="navx" id="navx">' + navxHtml(t) + '</div>';
+  /* 第二層：到了之後的事 */
+  h += '<div class="subrow">'
+     + '<button type="button" class="sb" data-go="' + esc(parkMapUrl(t)) + '"><svg viewBox="0 0 24 24">'
+     + WALK_ICON.parking + '</svg>周遭停車場</button>'
+     + favBtn(t) + checkinBtn(t) + '</div>';
+  /* 第三列：小字連結，有才顯示 */
+  const tr = [];
+  if(t.tel) tr.push('<a href="tel:' + String(t.tel).replace(/[^0-9+]/g,'') + '"><svg viewBox="0 0 24 24">' + P_ICON.tel + '</svg>打電話</a>');
+  if(window.liff && liff.isApiAvailable && liff.isApiAvailable('shareTargetPicker'))
+    tr.push('<button type="button" class="js-share"><svg viewBox="0 0 24 24">' + P_ICON.share + '</svg>分享給朋友</button>');
+  if(tr.length) h += '<div class="trow">' + tr.join('') + '</div>';
+  h += '<button type="button" class="tolist js-tolist">往上拉：附近的宮廟清單</button>';
+  tsheetEl.innerHTML = h;
+  tsheetEl.hidden = false;
+  sheet.classList.add('tmode');
+  sheet.classList.remove('down');
+  [locBtn, tpanelEl].forEach(function(el){ el.classList.remove('down'); });
+
   bearFocus(t);          /* 獅仔留在原位，改講「你點的這一間」；輪播先停 */
-  /* 地圖只佔上面 42%，塞不下四五顆按鈕。選了一間廟就把清單收起來，
-     地圖變大、面板也放得完整；要看清單再拉一下把手就回來。 */
-  setSheet(true);
-  /* 清單收起來會改變地圖大小，等版面定了再對焦。
-     對完焦再往右推半個面板寬，廟才會落在左半邊而不是被面板蓋住。 */
+  liftAboveSheet();
   setTimeout(function(){
     map.invalidateSize();
     map.setView([t.lat, t.lng], Math.max(map.getZoom(), 16), { animate:false });
-    map.panBy([ (tpanelEl.offsetWidth + 20) / 2, 0 ], { animate:false });
-    placePanel(t);                      /* 面板貼到圖釘旁邊，而不是固定在右上角 */
+    /* 抽屜蓋掉下半截地圖：把廟推到「看得見的那一半」的中間，再往右推半個標籤寬 */
+    map.panBy([ (tpanelEl.offsetWidth + 20) / 2, Math.max(0, sheet.offsetHeight / 2 - 40) ], { animate:false });
+    placePanel(t);                      /* 標籤貼到圖釘旁邊 */
     showParking(t);                     /* 這間廟附近的停車場一起浮出來 */
-    map.on('move zoom', panelFollow);   /* 使用者拖地圖、縮放時面板跟著圖釘走 */
+    map.on('move zoom', panelFollow);   /* 使用者拖地圖、縮放時標籤跟著圖釘走 */
+    liftAboveSheet();
   }, 300);
   panelTarget = t;
 
-  /* YouBike：即時資料，抓到再插一顆鈕、再讓獅仔補一句。面板已經換人就不動 */
+  /* YouBike：即時資料，抓到再把三段裡的 YouBike 點亮、讓獅仔補一句。抽屜已經換人就不動 */
   const city = ybCity(t);
   if(city) loadYouBike(city).then(function(){
+    ybTried[city] = true;
     if(panelTarget !== t) return;
-    const yb = ybNearest(t); if(!yb) return;
-    const acts = tpanelEl.querySelector('.tcard.acts'); if(!acts) return;
-    const navBtn = acts.querySelector('.js-nav');
-    const btn = document.createElement('button');
-    btn.className = 'tact js-yb';
-    btn.innerHTML = '<svg viewBox="0 0 24 24">' + P_ICON.bike + '</svg>YouBike'
-      + '<span class="sub">' + (yb.s.rent > 0 ? '可借 ' + yb.s.rent : '沒車') + '</span>';
-    btn.title = yb.s.name + '・' + Math.round(yb.d * 1000) + ' 公尺・可借 ' + yb.s.rent + ' 可還 ' + yb.s.ret;
-    (navBtn && navBtn.nextSibling) ? acts.insertBefore(btn, navBtn.nextSibling) : acts.appendChild(btn);
-    placePanel(t);          /* 多了一顆鈕，面板高度變了，重新對齊圖釘 */
-    if(!bearOff) bearFocus(t);   /* 獅仔補上 YouBike 那句 */
+    const nx = document.getElementById('navx'); if(nx) nx.innerHTML = navxHtml(t);
+    if(ybNearest(t) && !bearOff) bearFocus(t);
   });
 
-  tpanelEl.onclick = function(e){
+  tsheetEl.onclick = function(e){
     const el = e.target.closest ? e.target : null; if(!el) return;
-    if(el.closest('.js-close')){ closePanel(true); return; }
-    if(el.closest('.js-nav')){ navigate(t); return; }
-    if(el.closest('.js-yb')){ const yb = ybNearest(t); if(yb) navigate(yb.s); return; }
+    if(el.closest('.js-close') || el.closest('.js-tolist')){ closePanel(true); return; }
+    if(el.closest('.js-nav')){
+      const nx = document.getElementById('navx'), b = el.closest('.js-nav');
+      const open = !nx.classList.contains('open');
+      const before = sheet.offsetHeight;
+      nx.classList.toggle('open', open); b.classList.toggle('open', open);
+      b.setAttribute('aria-expanded', open ? 'true' : 'false');
+      liftAboveSheet();
+      /* 抽屜長高了：地圖往上讓一半，廟跟標籤才不會被獅仔的泡泡蓋住 */
+      const grow = sheet.offsetHeight - before;
+      if(grow) map.panBy([0, grow / 2], { animate:true, duration:.25 });
+      setTimeout(function(){ placePanel(t); }, 300);
+      return;
+    }
+    const go = el.closest('.js-go');
+    if(go){
+      if(go.disabled) return;
+      const m = go.getAttribute('data-mode');
+      if(m === 'bike'){ const yb = ybNearest(t); if(yb) navigate(yb.s, 'bicycling'); }
+      else navigate(t, m);
+      return;
+    }
     if(el.closest('.js-share')){ shareTemple(t); return; }
     if(el.closest('.js-story')){ tellStory(t); return; }
-    if(el.closest('.js-pin')){ pinToChat(t); return; }
     if(el.closest('.js-fav')){ toggleFav(t); return; }
     if(el.closest('.js-checkin')){ checkin(t); return; }
-    const go = el.closest('[data-go]');
-    if(go){ openUrl(go.getAttribute('data-go')); }
+    const link = el.closest('[data-go]');
+    if(link){ openUrl(link.getAttribute('data-go')); }
   };
+  tpanelEl.onclick = null;
 }
 function esc(x){
   return String(x).replace(/&/g,'&amp;').replace(/</g,'&lt;')
@@ -2472,8 +2582,9 @@ function select(i){
   if(rows[i]) rows[i].scrollIntoView({ block:'nearest', behavior:'smooth' });
   openPanel(i);
 }
-function navigate(t){
-  const url = 'https://www.google.com/maps/dir/?api=1&destination=' + t.lat + ',' + t.lng;
+function navigate(t, mode){
+  const url = 'https://www.google.com/maps/dir/?api=1&destination=' + t.lat + ',' + t.lng
+            + (mode ? '&travelmode=' + mode : '');
   if(window.liff && liff.isInClient && liff.isInClient()){
     liff.openWindow({ url: url, external: true });
   } else {
@@ -2789,6 +2900,8 @@ function setSheet(down){
   setTimeout(function(){ map.invalidateSize(); }, 260);
 }
 document.getElementById('grip').onclick = function(){
+  /* 點廟的動作抽屜開著：拉把手 = 回到清單 */
+  if(sheet.classList.contains('tmode')){ closePanel(true); return; }
   const down = !sheet.classList.contains('down');
   /* 清單跟右側面板是兩種模式：把清單拉回來就等於離開單一宮廟的畫面。
      不收掉的話面板會被清單擠到只剩一半，按鈕看不完。 */
