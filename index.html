@@ -1037,16 +1037,19 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink)}
 .bb.off{opacity:.5;border-style:dashed;cursor:default}
 .bb small{font-size:10px;font-weight:700;color:#9A938C;line-height:1.2}
 .bb.pri small{color:#F3EBD8}
-.subrow{margin-top:10px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.sb{min-height:46px;padding:4px 6px;border-radius:12px;border:1px solid #EDE7D8;background:#FCFAF4;
-    display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;
-    font-size:12.5px;font-weight:800;color:#4A4038;font-family:var(--font);cursor:pointer;text-decoration:none}
+.subrow{margin-top:10px;display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.sb{min-height:60px;padding:6px 2px;border-radius:12px;border:1px solid #EDE7D8;background:#FCFAF4;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+    font-size:12px;font-weight:800;color:#4A4038;font-family:var(--font);cursor:pointer;text-decoration:none;
+    white-space:nowrap}
 .sb:active{background:#F1E9D7}
 .sb svg{width:16px;height:16px;fill:#A2926C;flex:none}
 .sb.fav{color:#B8382B}.sb.fav svg{fill:#E05A4B}
 .sb.done{background:#F3E8D2;color:#7A5A2B}
 .sb.off{opacity:.55;cursor:default}
-.sb .sub{flex-basis:100%;text-align:center;font-size:10px;font-weight:700;color:#9A938C;margin-top:-3px}
+.sb .sub{font-size:10px;font-weight:700;color:#9A938C;margin-top:-2px}
+.thead .tfac{display:inline-flex;gap:4px;align-items:center}
+.thead .tfac .fslot{height:20px;padding:0 5px}
 /* 導航三段：按「導航過去」才展開，不佔第一眼版面 */
 .navx{display:none;margin-top:10px;background:#F7F3E9;border:1px solid #E6DFD0;border-radius:14px;padding:10px}
 .navx.open{display:block}
@@ -1544,15 +1547,10 @@ function facSlot(k, on, title, extra, cls){
   return '<span class="fslot ' + (on ? 'on' : 'off') + (cls ? ' ' + cls : '') + '" title="' + title
        + '" aria-label="' + title + '">' + iconSvg(k) + (extra || '') + '</span>';
 }
-function facHtml(t){
+/* 固定四格（廁所・友善・飲水機・P）：清單列跟點廟後的抽屜標題共用同一份 */
+function facSlots(t){
   const own = t.fac || [];
   const parts = [];
-  const st = openState(t.open);
-  if(st){
-    if(st.on === null) parts.push('<span class="fpeak">' + st.text + '</span>');
-    else parts.push('<span class="fopen ' + (st.on ? 'yes' : 'no') + '"><i></i>'
-                  + (st.on ? '開放中' : '已休息') + '　' + st.text + '</span>');
-  }
   /* 廁所：廟內有 → 附近公廁 → 查無 */
   if(own.indexOf('toilet') >= 0) parts.push(facSlot('toilet', true, '廟內有廁所'));
   else {
@@ -1580,7 +1578,17 @@ function facHtml(t){
     parts.push(n ? facSlot('parking', true, Math.round(PARK_KM*1000) + ' 公尺內有 ' + n + ' 個停車場', '<b>' + n + '</b>')
                  : facSlot('parking', false, '附近沒有公共停車場'));
   } else parts.push(facSlot('parking', false, '停車場：這一區還沒有開放資料'));
-
+  return parts;
+}
+function facHtml(t){
+  const parts = [];
+  const st = openState(t.open);
+  if(st){
+    if(st.on === null) parts.push('<span class="fpeak">' + st.text + '</span>');
+    else parts.push('<span class="fopen ' + (st.on ? 'yes' : 'no') + '"><i></i>'
+                  + (st.on ? '開放中' : '已休息') + '　' + st.text + '</span>');
+  }
+  parts.push.apply(parts, facSlots(t));
   if(t.peak) parts.push('<span class="fpeak">' + t.peak + '</span>');
   const cw = crowdHtml(t);
   if(cw) parts.push(cw);
@@ -1903,7 +1911,7 @@ function checkinState(t){
   if(todayStamp(t)) return { ok:false, why:'今天蓋過了' };
   const m = me ? Math.round(haversine(me[0], me[1], t.lat, t.lng) * 1000) : null;
   if(m !== null && m <= CHECKIN_M) return { ok:true, why:'' };           /* 真的在廟裡 */
-  if(DEMO_CHECKIN) return { ok:true, why:'示範' };                          /* 不在廟裡，示範模式放行但標明 */
+  if(DEMO_CHECKIN) return { ok:true, why:'' };                              /* 不在廟裡，示範模式放行；按鈕上不寫「示範」 */
   if(m === null) return { ok:false, why:'還沒定位' };
   return { ok:false, why:'離廟 ' + (m >= 1000 ? (m / 1000).toFixed(1) + ' 公里' : m + ' 公尺') };
 }
@@ -2319,6 +2327,7 @@ function openPanel(i){
     + '<div class="tt"><div class="tn">' + esc(t.name) + '</div>'
     + '<div class="ts"><span class="tag" style="' + tagStyle(t.deity) + '">' + esc(t.deity || '—') + '</span>'
     + '<span>' + fmtDist(t.d) + '</span>'
+    + '<span class="tfac">' + facSlots(t).join('') + '</span>'   /* 廁所・友善・飲水機・P，跟清單同一套 */
     + (t.folk ? '<span class="tag folk" title="' + esc(t.folk.name) + '">' + esc(t.folk.level || '登錄民俗') + '</span>' : '')
     + '</div></div>'
     + '<button type="button" class="tx2 js-close" aria-label="關閉">×</button></div>';
@@ -2340,10 +2349,14 @@ function openPanel(i){
   h += '<div class="subrow">'
      + '<button type="button" class="sb" data-go="' + esc(parkMapUrl(t)) + '"><svg viewBox="0 0 24 24">'
      + WALK_ICON.parking + '</svg>周遭停車場</button>'
-     + favBtn(t) + checkinBtn(t) + '</div>';
+     + favBtn(t) + checkinBtn(t)
+     /* 打電話：沒電話就灰掉留位，四格位置固定 */
+     + (t.tel
+        ? '<a class="sb" href="tel:' + String(t.tel).replace(/[^0-9+]/g,'') + '"><svg viewBox="0 0 24 24">' + P_ICON.tel + '</svg>打電話</a>'
+        : '<button type="button" class="sb off" disabled aria-disabled="true"><svg viewBox="0 0 24 24">' + P_ICON.tel + '</svg>打電話<span class="sub">尚無電話</span></button>')
+     + '</div>';
   /* 第三列：小字連結，有才顯示 */
   const tr = [];
-  if(t.tel) tr.push('<a href="tel:' + String(t.tel).replace(/[^0-9+]/g,'') + '"><svg viewBox="0 0 24 24">' + P_ICON.tel + '</svg>打電話</a>');
   if(window.liff && liff.isApiAvailable && liff.isApiAvailable('shareTargetPicker'))
     tr.push('<button type="button" class="js-share"><svg viewBox="0 0 24 24">' + P_ICON.share + '</svg>分享給朋友</button>');
   if(tr.length) h += '<div class="trow">' + tr.join('') + '</div>';
@@ -2401,6 +2414,7 @@ function openPanel(i){
       else navigate(t, m);
       return;
     }
+    if(el.closest('.js-todo')){ toast(DEMO_FAC ? '飲水機是示範資料，正式版由廟方回報' : '飲水機還沒有開放資料，之後由廟方自己回報'); return; }
     if(el.closest('.js-share')){ shareTemple(t); return; }
     if(el.closest('.js-story')){ tellStory(t); return; }
     if(el.closest('.js-fav')){ toggleFav(t); return; }
