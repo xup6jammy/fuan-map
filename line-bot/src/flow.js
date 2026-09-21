@@ -129,7 +129,16 @@ export function createBot({ store, line, now = () => Date.now(), rand = defaultR
 
     if (a === 'status') {
       if (v !== 'safe' && v !== 'help') return reprompt(uid, s, token, M.useButtons());
-      s.status = v; s.step = 'location';
+      s.status = v;
+      if (v === 'safe') {
+        /* 平安：不用再問，記一筆、回一句關懷就結束 */
+        const report = { id: rand(), status: 'safe', loc: { source: 'none' }, confirmedAt: now(), sent: {} };
+        await store.set(S.report(uid), report);
+        await clearSession(uid);
+        await reply(token, M.safeCare());
+        return { safe: report.id };
+      }
+      s.step = 'location';
     } else if (a === 'loc') {
       if (v === 'home') s.loc = { ...HOME_LOC };
       else if (v === 'skip') s.loc = { source: 'none' };

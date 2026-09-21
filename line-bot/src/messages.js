@@ -139,6 +139,9 @@ export const M = {
     const title = okNames.length ? `已通知${okNames.join('、')}；${failNames.join('、')}發送失敗` : '通知發送失敗';
     return card(title, title, [bigBtn('再試一次', pbAction('再試一次', pb('confirm', sid)), C.red)], { rows: summaryRows(report, report.confirmedAt) });
   },
+  safeCare() {
+    return text('知道你平安就好 🙏\n最近天氣變化大，記得多喝水、照顧好自己。\n有任何需要，隨時按「平安回報」找獅仔。');
+  },
   cancelled() { return text('已取消。要重新回報請按「平安回報」。'); },
   expired() {
     return card('按鈕已過期', '這個按鈕已經過期了', [bigBtn('重新開始', pbAction('重新開始', pb('restart', ''), '平安回報'), C.green)]);
