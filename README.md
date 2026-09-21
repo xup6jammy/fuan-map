@@ -55,6 +55,12 @@
 - 尚未做（下一階段）：真實定位（`navigator.geolocation`）與 LINE 分享給親友（LIFF `shareTargetPicker`）。這一版沒有任何會看起來像「已分享」的按鈕。
 - 圖文選單「平安回報」設定為「連結」，網址填 `https://xup6jammy.github.io/fuan-map/safety-demo.html`。
 
+## LINE 聊天室平安回報 Bot（`line-bot/`）
+
+官方帳號聊天室裡的固定問答版（Quick Reply 一題一題問，不呼叫 AI 模型），是獨立的 Messaging API webhook 後端，
+**不在 GitHub Pages 上**，要另外部署。流程、資料、配對與部署步驟見 `line-bot/README.md`。
+測試：`cd line-bot && npm test`（LINE API 全部 mock）。
+
 ## 地圖驗看
 
 透過 HTTP 伺服器開啟 `index.html`。允許定位後，地圖顯示定位點附近 5 公里內的宮廟，最多 60 筆；
