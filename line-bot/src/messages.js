@@ -1,25 +1,20 @@
 /* ============================================================
    福安 LINE・平安回報 Bot — 固定文案與訊息模板
    ------------------------------------------------------------
-   全部寫死，不叫任何 AI 模型。每一題都用 Quick Reply（手機 LINE 才看得到，
-   電腦版 LINE 不顯示 Quick Reply，展示請用手機）。
+   全部寫死，不叫任何 AI 模型。
+   每一題用 Flex Message 做「大按鈕」（Quick Reply 的字級 LINE 固定、不能放大），
+   整格都能按、字級 xxl，長輩好點。
+   流程只有三步：狀況 → 位置 → 確認並通知家人（出事時要快，不問需求、人數）。
    Postback 的 data 格式：a=動作&s=對話代號&v=值
      s（session id）用來擋「過期按鈕」：舊對話的按鈕按下去，s 對不上就當過期。
    ============================================================ */
 
-export const DEMO_TAG = '【展示演練，非真實求助】';
-export const DEMO_FOOT = '這是功能展示訊息，並非真實求助或救援派遣。';
-export const DEMO_LOC = { source: 'demo', text: '福安里示範地址（福安街 1 號）' };
-/* 未配對家人時的示範模式：家人訊息推播到回報者自己的聊天室 */
-export const DEMO_FAMILY_NAME = '示範家人';
-export const DEMO_SELF_PREFIX = '（示範模式：尚未配對測試家人，以下是家人會收到的訊息，先送到你自己這裡）';
+export const HOME_LOC = { source: 'preset', text: '福安里福安街 1 號' };
+export const DEFAULT_FAMILY_NAME = '家人';
+/* LINE 官方 URL scheme：開啟「傳送位置」畫面，使用者自己確認後才送出位置訊息 */
+export const LOCATION_PICKER_URL = 'https://line.me/R/nv/location/';
 
-export const NEED_LIST = ['飲水', '食物', '行動協助', '其他'];
-export const PEOPLE_OPTIONS = [
-  { v: '1', label: '1 人' },
-  { v: '2', label: '2 人' },
-  { v: '3+', label: '3 人以上' }
-];
+const C = { green: '#0C8F3B', red: '#B4362A', gray: '#5F5952', ink: '#1F1A17', soft: '#F7F5F0' };
 
 /* ---------- 文字指令（完全比對，前後空白忽略）---------- */
 export const CMD = {
@@ -27,14 +22,13 @@ export const CMD = {
   CANCEL: ['取消'],
   RESTART: ['重新開始', '重來'],
   PAIR_CODE: ['配對家人', '配對碼', '取得配對碼'],
-  MY_FAMILY: ['我的家人', '我的測試家人'],
+  MY_FAMILY: ['我的家人'],
   UNPAIR: ['解除配對', '取消配對']
 };
 export const PAIR_JOIN_RE = /^配對\s*(\d{6})$/;
 
 /* ---------- 小工具 ---------- */
 export function pb(action, sessionId, value) {
-  /* postback data（上限 300 字元；這裡都很短）*/
   const p = new URLSearchParams();
   p.set('a', action);
   if (sessionId) p.set('s', sessionId);
@@ -50,174 +44,126 @@ export function parsePb(data) {
 function qrPostback(label, data, displayText) {
   return { type: 'action', action: { type: 'postback', label, data, displayText: displayText || label } };
 }
-function qrLocation(label) {
-  return { type: 'action', action: { type: 'location', label } };
-}
+function qrLocation(label) { return { type: 'action', action: { type: 'location', label } }; }
 export function text(t, quickItems) {
   const m = { type: 'text', text: t };
   if (quickItems && quickItems.length) m.quickReply = { items: quickItems.slice(0, 13) };
   return m;
 }
 
+/* ---------- 大按鈕 Flex ---------- */
+function bigBtn(label, action, color, sub) {
+  const contents = [{ type: 'text', text: label, size: 'xxl', weight: 'bold', color: '#FFFFFF', align: 'center', wrap: true }];
+  if (sub) contents.push({ type: 'text', text: sub, size: 'md', color: '#FFFFFF', align: 'center', wrap: true, margin: 'sm' });
+  return { type: 'box', layout: 'vertical', backgroundColor: color, cornerRadius: '14px', paddingAll: '20px', action, contents };
+}
+function pbAction(label, data, displayText) { return { type: 'postback', label: label.slice(0, 20), data, displayText: displayText || label }; }
+function uriAction(label, uri) { return { type: 'uri', label: label.slice(0, 20), uri }; }
+function rows(lines) {
+  return lines.map(([k, v]) => ({
+    type: 'box', layout: 'baseline', spacing: 'md', contents: [
+      { type: 'text', text: k, size: 'lg', color: C.gray, flex: 2 },
+      { type: 'text', text: v, size: 'lg', color: C.ink, weight: 'bold', flex: 5, wrap: true }
+    ]
+  }));
+}
+/* bubble：標題（xl）＋ 選配資料列 ＋ 大按鈕 */
+export function card(altText, title, buttons, opts = {}) {
+  const body = [{ type: 'text', text: title, size: 'xl', weight: 'bold', color: C.ink, wrap: true }];
+  if (opts.rows && opts.rows.length) body.push({ type: 'box', layout: 'vertical', spacing: 'md', margin: 'lg', paddingAll: '14px', backgroundColor: C.soft, cornerRadius: '12px', contents: rows(opts.rows) });
+  if (opts.note) body.push({ type: 'text', text: opts.note, size: 'md', color: C.gray, wrap: true, margin: 'md' });
+  if (buttons.length) body.push({ type: 'box', layout: 'vertical', spacing: 'lg', margin: 'xl', contents: buttons });
+  const m = { type: 'flex', altText: altText.slice(0, 400), contents: { type: 'bubble', size: 'giga', body: { type: 'box', layout: 'vertical', paddingAll: '20px', contents: body } } };
+  if (opts.quick && opts.quick.length) m.quickReply = { items: opts.quick };
+  return m;
+}
+
 /* ---------- 時間（台灣時間）---------- */
 const TZ = 'Asia/Taipei';
 export function fmtFull(ms) {
-  const d = new Date(ms);
   const parts = {};
   new Intl.DateTimeFormat('zh-TW', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })
-    .formatToParts(d).forEach(p => { parts[p.type] = p.value; });
+    .formatToParts(new Date(ms)).forEach(p => { parts[p.type] = p.value; });
   return `${parts.year}/${parts.month}/${parts.day} ${parts.hour === '24' ? '00' : parts.hour}:${parts.minute}`;
 }
 
-/* ---------- 位置文字 ---------- */
+/* ---------- 位置 ---------- */
 export function locLabel(loc) {
   if (!loc || loc.source === 'none') return '未提供';
-  if (loc.source === 'demo') return `${loc.text}（示範位置）`;
-  /* 使用者自己在 LINE 按「分享位置」送出的位置訊息 */
-  const addr = loc.address ? `${loc.address}　` : '';
-  return `${addr}${Number(loc.lat).toFixed(5)}, ${Number(loc.lng).toFixed(5)}（使用者分享的位置）`;
+  if (loc.source === 'preset') return loc.text;
+  const addr = loc.address ? `${loc.address} ` : '';
+  return `${addr}(${Number(loc.lat).toFixed(5)}, ${Number(loc.lng).toFixed(5)})`;
 }
-export function mapUrl(loc) {
-  return `https://www.google.com/maps?q=${Number(loc.lat).toFixed(5)},${Number(loc.lng).toFixed(5)}`;
-}
-export function needsText(d) {
-  return (d.needs || []).map(n => (n === '其他' && d.other ? `其他（${d.other}）` : n)).join('、');
-}
-export function peopleText(v) {
-  const o = PEOPLE_OPTIONS.find(x => x.v === v);
-  return o ? o.label : '—';
-}
+export function mapUrl(loc) { return `https://www.google.com/maps?q=${Number(loc.lat).toFixed(5)},${Number(loc.lng).toFixed(5)}`; }
+function statusText(s) { return s === 'help' ? '需要協助' : '平安'; }
 
-/* ---------- 摘要（確認頁、完成頁、家人通知共用同一套模板）---------- */
-export function summaryLines(d, opts = {}) {
-  const lines = [];
-  lines.push(`目前狀況：${d.status === 'help' ? '需要協助' : '平安'}`);
-  if (d.status === 'help') {
-    lines.push(`需求：${needsText(d)}`);
-    lines.push(`需要協助人數：${peopleText(d.people)}`);
-  }
-  lines.push(`位置：${locLabel(d.loc)}`);
-  if (d.loc && d.loc.source === 'real') lines.push(`地圖：${mapUrl(d.loc)}`);
-  if (opts.confirmedAt) lines.push(`回報時間：${fmtFull(opts.confirmedAt)}（台灣時間）`);
-  return lines;
+/* ---------- 摘要（確認頁、完成頁、家人通知共用）---------- */
+export function summaryRows(d, at) {
+  const r = [['狀況', statusText(d.status)], ['位置', locLabel(d.loc)]];
+  if (at) r.push(['時間', fmtFull(at)]);
+  return r;
 }
 export function familyNotifyText(report, ownerName) {
-  return [
-    DEMO_TAG,
-    `${ownerName || '你的家人'} 的獅仔平安回報`,
-    ...summaryLines(report, { confirmedAt: report.confirmedAt }),
-    DEMO_FOOT
-  ].join('\n');
+  const lines = [`【平安回報】${ownerName || '家人'}`, `狀況：${statusText(report.status)}`, `位置：${locLabel(report.loc)}`];
+  if (report.loc && report.loc.source === 'real') lines.push(`地圖：${mapUrl(report.loc)}`);
+  lines.push(`時間：${fmtFull(report.confirmedAt)}`);
+  return lines.join('\n');
 }
 
-/* ---------- 每一題的訊息 ---------- */
+/* ---------- 每一題 ---------- */
 export const M = {
   askStatus(sid) {
-    return text('我是獅仔，來關心你。你現在平安嗎？\n（展示演練，不會通知宮廟或派遣救援）', [
-      qrPostback('我平安', pb('status', sid, 'safe')),
-      qrPostback('需要協助', pb('status', sid, 'help')),
-      qrPostback('取消', pb('cancel', sid))
+    return card('你現在平安嗎？', '我是獅仔，你現在平安嗎？', [
+      bigBtn('我平安', pbAction('我平安', pb('status', sid, 'safe')), C.green),
+      bigBtn('需要協助', pbAction('需要協助', pb('status', sid, 'help')), C.red)
     ]);
   },
   askLocation(sid) {
-    return text('方便提供目前位置嗎？也可以略過。\n「分享位置」會打開 LINE 的地圖，由你自己確認後才送出。', [
-      qrLocation('分享位置'),
-      qrPostback('使用示範位置', pb('loc', sid, 'demo')),
-      qrPostback('略過', pb('loc', sid, 'skip')),
-      qrPostback('取消', pb('cancel', sid))
-    ]);
-  },
-  askNeeds(sid, d) {
-    const sel = d.needs || [];
-    const head = sel.length ? `目前選了：${needsText(d)}\n還要加嗎？選好了請按「選好了」。` : '你需要哪方面的協助？可以選多項，選完按「選好了」。';
-    return text(head, [
-      ...NEED_LIST.map(n => qrPostback((sel.includes(n) ? '✓ ' : '') + n, pb('need', sid, n), n)),
-      qrPostback('選好了', pb('needs_done', sid)),
-      qrPostback('取消', pb('cancel', sid))
-    ]);
-  },
-  askOther(sid) {
-    return text('「其他」是什麼協助？請用一句話輸入（最多 60 字）。', [
-      qrPostback('不填了，回上一步', pb('other_back', sid)),
-      qrPostback('取消', pb('cancel', sid))
-    ]);
-  },
-  askPeople(sid) {
-    return text('包含你，一共有幾位需要協助？', [
-      ...PEOPLE_OPTIONS.map(o => qrPostback(o.label, pb('people', sid, o.v))),
-      qrPostback('取消', pb('cancel', sid))
-    ]);
+    return card('你在哪裡？', '你現在在哪裡？', [
+      bigBtn('傳送目前位置', uriAction('傳送目前位置', LOCATION_PICKER_URL), C.green, '開啟地圖，確認後送出'),
+      bigBtn('在家', pbAction('在家', pb('loc', sid, 'home')), C.gray, HOME_LOC.text),
+      bigBtn('不提供', pbAction('不提供', pb('loc', sid, 'skip')), C.gray)
+    ], { quick: [qrLocation('傳送目前位置')] });
   },
   askConfirm(sid, d) {
-    return text(['我幫你整理好了，請看一下對不對：', '', ...summaryLines(d), '', '按「確認回報」才會記錄（展示用，不會通知宮廟）。'].join('\n'), [
-      qrPostback('確認回報', pb('confirm', sid)),
-      qrPostback('重新填寫', pb('redo', sid)),
-      qrPostback('取消', pb('cancel', sid))
-    ]);
+    const help = d.status === 'help';
+    return card(`${statusText(d.status)}・${locLabel(d.loc)}`, help ? '確認後立刻通知家人' : '確認後通知家人你平安', [
+      bigBtn('送出並通知家人', pbAction('送出並通知家人', pb('confirm', sid)), help ? C.red : C.green),
+      bigBtn('重新填寫', pbAction('重新填寫', pb('redo', sid)), C.gray)
+    ], { rows: summaryRows(d) });
   },
-  done(sid, report) {
-    return text(['示範回報已記錄。', '', ...summaryLines(report, { confirmedAt: report.confirmedAt }), '', '要通知已配對的測試家人嗎？（會由本官方帳號推播，訊息開頭標示「展示演練」）'].join('\n'), [
-      qrPostback('通知測試家人', pb('notify', sid)),
-      qrPostback('暫不通知', pb('notify_skip', sid))
-    ]);
+  sent(report, names) {
+    return card(`已通知${names.join('、')}`, `已通知${names.join('、')}`, [], { rows: summaryRows(report, report.confirmedAt) });
   },
-  noFamily(sid) {
-    return text('你還沒有配對的測試家人，所以這次沒有發送任何通知。\n\n要配對的話：輸入「配對家人」取得配對碼，請家人加入本官方帳號後傳送「配對 六位數」。', [
-      qrPostback('配對家人', pb('pair_code', sid), '配對家人'),
-      qrPostback('暫不通知', pb('notify_skip', sid))
-    ]);
+  sendFailed(sid, report, okNames, failNames) {
+    const title = okNames.length ? `已通知${okNames.join('、')}；${failNames.join('、')}發送失敗` : '通知發送失敗';
+    return card(title, title, [bigBtn('再試一次', pbAction('再試一次', pb('confirm', sid)), C.red)], { rows: summaryRows(report, report.confirmedAt) });
   },
-  notifyPreview(sid, family, previewText, demoSelf) {
-    const names = family.map(f => f.name || '（未取得名稱）').join('、');
-    const head = demoSelf
-      ? `你還沒有配對測試家人，示範模式會把家人收到的訊息推播到「你自己的聊天室」（收件人顯示為「${DEMO_FAMILY_NAME}」）。要通知真正的家人，請先輸入「配對家人」。`
-      : `將由本官方帳號推播給 ${family.length} 位測試家人：${names}`;
-    return text([head, '', '訊息內容：', previewText, '', '按「確認通知」才會真的送出。'].join('\n'), [
-      qrPostback('確認通知', pb('notify_go', sid)),
-      qrPostback('取消通知', pb('notify_cancel', sid))
-    ]);
-  },
-  notifyResult(okList, failList, demoSelf) {
-    const lines = [];
-    if (okList.length) lines.push(demoSelf
-      ? `已送出（示範模式）：家人會收到的訊息已推播到你自己的聊天室。要通知真正的家人，請先輸入「配對家人」。`
-      : `已送出給 ${okList.length} 位：${okList.join('、')}（LINE API 回傳成功；系統無法得知是否已讀）`);
-    if (failList.length) lines.push(`發送失敗 ${failList.length} 位：${failList.join('、')}（可稍後再試，或請家人確認已加入官方帳號且未封鎖）`);
-    lines.push('', '本次演練結束。要再演練一次請輸入「平安回報」。');
-    return text(lines.join('\n'));
-  },
-  notifySkipped() { return text('好，這次不通知。本次演練結束，要再演練一次請輸入「平安回報」。'); },
-  notifyCancelled() { return text('已取消通知，沒有送出任何訊息。本次回報仍保留。要再演練一次請輸入「平安回報」。'); },
-  cancelled() { return text('已取消這次回報，沒有記錄任何內容。要重新開始請輸入「平安回報」。'); },
+  cancelled() { return text('已取消。要重新回報請按「平安回報」。'); },
   expired() {
-    return text('這個按鈕已經過期了（可能是之前的對話）。要重新開始請按下面的按鈕。', [
-      qrPostback('重新開始', pb('restart', ''), '平安回報')
-    ]);
+    return card('按鈕已過期', '這個按鈕已經過期了', [bigBtn('重新開始', pbAction('重新開始', pb('restart', ''), '平安回報'), C.green)]);
   },
-  useButtons() { return '請用下方的按鈕選擇；想放棄可以輸入「取消」。'; },
-  alreadyAnswered() { return '這一題已經回答過了，我們接著往下。'; },
-  otherTooLong() { return text('太長了，請縮短到 60 字以內。'); },
-  needsAtLeastOne() { return '請至少選一項需要的協助。'; },
+  useButtons() { return text('請按下面的按鈕。'); },
 
   /* ---------- 配對 ---------- */
   pairCode(code, minutes) {
-    return text([`你的配對碼：${code}（${minutes} 分鐘內有效，只能用一次）`, '', '請測試家人：', '1. 加入本官方帳號', `2. 傳送「配對 ${code}」`, '3. 按「接受」', '', '對方接受後你會收到通知。'].join('\n'));
+    return text([`你的配對碼：${code}（${minutes} 分鐘內有效，只能用一次）`, '', '請家人：', '1. 加入本官方帳號', `2. 傳送「配對 ${code}」`, '3. 按「接受」', '', '對方接受後你會收到通知。'].join('\n'));
   },
   pairInvalid() { return text('配對碼無效或已過期。請對方重新輸入「配對家人」取得新的配對碼。'); },
   pairSelf() { return text('這是你自己的配對碼，不能和自己配對。'); },
-  pairAlready(ownerName) { return text(`你已經是 ${ownerName} 的測試家人了。`); },
+  pairAlready(ownerName) { return text(`你已經是 ${ownerName} 的家人了。`); },
   pairAsk(sid, ownerName, code) {
-    return text(`要成為 ${ownerName} 的測試家人嗎？\n接受後，對方做平安回報演練並按「確認通知」時，你會收到開頭標示「展示演練」的訊息。`, [
+    return text(`要成為 ${ownerName} 的家人嗎？\n接受後，對方按「平安回報」送出時，你會收到通知。`, [
       qrPostback('接受', pb('pair_accept', sid, code)),
       qrPostback('拒絕', pb('pair_decline', sid, code))
     ]);
   },
-  pairDone(ownerName) { return text(`已完成綁定，你現在是 ${ownerName} 的測試家人。要解除請輸入「解除配對」。`); },
+  pairDone(ownerName) { return text(`已完成綁定，你現在是 ${ownerName} 的家人。要解除請輸入「解除配對」。`); },
   pairDeclined() { return text('已拒絕，沒有綁定。'); },
-  pairOwnerNotice(familyName) { return text(`${familyName} 已成為你的測試家人。做平安回報演練時可以選「通知測試家人」。`); },
+  pairOwnerNotice(familyName) { return text(`${familyName} 已成為你的家人，你的平安回報會通知對方。`); },
   myFamily(family, owners) {
-    const a = family.length ? `你的測試家人（${family.length} 位）：${family.map(f => f.name).join('、')}` : '你還沒有配對的測試家人。輸入「配對家人」可取得配對碼。';
-    const b = owners.length ? `你是這些人的測試家人：${owners.map(o => o.name).join('、')}` : '';
+    const a = family.length ? `你的家人（${family.length} 位）：${family.map(f => f.name).join('、')}` : '你還沒有配對家人（目前通知會送到你自己的聊天室）。輸入「配對家人」可取得配對碼。';
+    const b = owners.length ? `你是這些人的家人：${owners.map(o => o.name).join('、')}` : '';
     return text([a, b].filter(Boolean).join('\n\n'));
   },
   unpairMenu(sid, family, owners) {

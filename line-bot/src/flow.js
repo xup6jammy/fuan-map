@@ -4,38 +4,34 @@
    handleEvent(event) 收一個 LINE webhook 事件，決定要回什麼、要不要推播，
    全部透過注入的 store（儲存）與 line（LINE API 封裝）完成；測試時兩個都用 mock。
 
-   流程（step）：
-     status → location → [needs → (other_text) → people] → confirm → done → notify_confirm
-     「我平安」跳過 needs / people。
+   流程（出事時要快，只問兩題）：
+     status（我平安／需要協助）→ location（傳送目前位置／在家／不提供）→ confirm（送出並通知家人）
+   家人：預設就有。已配對的家人帳號會收到推播；沒有配對時推播到回報者自己的聊天室（Demo 用）。
    原則：
-     ・確認回報前，內容只在 session:<userId>（草稿）；按「確認回報」才寫 report:<userId>
-     ・同一個人只有一筆 report，確認就是覆蓋更新，不會越積越多
-     ・每個按鈕帶 s=session id：對不上就是過期按鈕，回「已過期」＋重新開始
+     ・按「送出並通知家人」前，內容只在 session:<userId>；按下才寫 report:<userId>（同一人一筆，覆蓋）
+     ・每個按鈕帶 s=session id：對不上就是過期按鈕
      ・webhookEventId 記錄過就跳過：LINE 重送不會重複記錄、重複通知
-     ・推播只在使用者按「確認通知」後，且同一次回報同一個 notifyId 只推一次
+     ・同一次回報對同一位家人只推一次；失敗的可以按「再試一次」只補送失敗的
    ============================================================ */
-import { M, CMD, PAIR_JOIN_RE, NEED_LIST, PEOPLE_OPTIONS, DEMO_LOC, DEMO_FAMILY_NAME, DEMO_SELF_PREFIX, parsePb, text, familyNotifyText } from './messages.js';
+import { M, CMD, PAIR_JOIN_RE, HOME_LOC, DEFAULT_FAMILY_NAME, parsePb, text, familyNotifyText } from './messages.js';
 
 const SESSION_TTL = 24 * 60 * 60 * 1000;
 const PAIR_TTL = 10 * 60 * 1000;
 const EVENT_TTL = 60 * 60 * 1000;
-const OTHER_MAX = 60;
 
 function defaultRand(len = 8) {
   const a = new Uint8Array(len); crypto.getRandomValues(a);
   return Array.from(a, b => (b % 36).toString(36)).join('');
 }
 function normText(s) { return String(s || '').replace(/\s+/g, ' ').trim(); }
-function nextAfterLocation(d) { return d.status === 'help' ? 'needs' : 'confirm'; }
 
 export function createBot({ store, line, now = () => Date.now(), rand = defaultRand, log = console }) {
   const S = {
     session: id => `session:${id}`, report: id => `report:${id}`, family: id => `family:${id}`, owners: id => `owners:${id}`,
     pair: code => `pair:${code}`, pairOwner: id => `pairOwner:${id}`, pairSession: id => `pairSession:${id}`, event: id => `event:${id}`
   };
-  const short = id => String(id || '').slice(0, 6) + '…';   // log 只留 userId 前幾碼
+  const short = id => String(id || '').slice(0, 6) + '…';
 
-  /* ---------- 回覆／推播（吞掉錯誤，不讓一個事件的失敗影響其他事件）---------- */
   async function reply(token, messages) {
     if (!messages || !token) return false;
     try { await line.reply(token, messages); return true; }
@@ -47,43 +43,33 @@ export function createBot({ store, line, now = () => Date.now(), rand = defaultR
   async function saveSession(uid, s) { s.updatedAt = now(); await store.set(S.session(uid), s, { ttlMs: SESSION_TTL }); }
   async function clearSession(uid) { await store.del(S.session(uid)); }
   async function startSession(uid) {
-    const s = { id: rand(), step: 'status', status: null, loc: null, needs: [], other: '', people: null, createdAt: now() };
+    const s = { id: rand(), step: 'status', status: null, loc: null, createdAt: now() };
     await saveSession(uid, s);
     return s;
   }
-  function promptFor(s, report) {
-    switch (s.step) {
-      case 'status': return M.askStatus(s.id);
-      case 'location': return M.askLocation(s.id);
-      case 'needs': return M.askNeeds(s.id, s);
-      case 'other_text': return M.askOther(s.id);
-      case 'people': return M.askPeople(s.id);
-      case 'confirm': return M.askConfirm(s.id, s);
-      case 'done': return report ? M.done(s.id, report) : M.expired();
-      case 'notify_confirm': return report && s.preview ? M.notifyPreview(s.id, s.previewFamily || [], s.preview, s.demoSelf) : M.expired();
-      default: return M.expired();
-    }
+  function promptFor(s) {
+    if (s.step === 'status') return M.askStatus(s.id);
+    if (s.step === 'location') return M.askLocation(s.id);
+    if (s.step === 'confirm') return M.askConfirm(s.id, s);
+    return M.expired();
   }
-  /* 回覆「請用按鈕」＋把目前這題再問一次（亂輸入、按到別題的按鈕都走這裡）*/
   async function reprompt(uid, s, token, lead) {
-    const report = s.step === 'done' || s.step === 'notify_confirm' ? await store.get(S.report(uid)) : null;
-    const p = promptFor(s, report);
-    if (lead) p.text = lead + '\n\n' + p.text;
-    return reply(token, p);
+    return reply(token, lead ? [lead, promptFor(s)] : promptFor(s));
   }
-
-  /* ---------- 名稱（對方要是好友才拿得到；拿不到就用中性稱呼）---------- */
   async function nameOf(uid, fallback) {
     const p = await line.profile(uid);
     return (p && p.displayName) ? String(p.displayName).slice(0, 20) : fallback;
   }
+  /* 家人名單：已配對的帳號；沒有就用回報者自己的聊天室當「家人」（預設已加好家人） */
+  async function familyOf(uid) {
+    const family = (await store.get(S.family(uid))) || [];
+    return family.length ? family.map(f => ({ userId: f.userId, name: f.name || DEFAULT_FAMILY_NAME }))
+                         : [{ userId: uid, name: DEFAULT_FAMILY_NAME }];
+  }
 
-  /* ============================================================
-     入口：一個事件
-     ============================================================ */
+  /* ============================================================ */
   async function handleEvent(ev) {
     if (!ev || !ev.source || !ev.source.userId) return { ignored: 'no userId' };
-    /* 擋重送：LINE 可能對同一事件重送（deliveryContext.isRedelivery），先記再處理 */
     if (ev.webhookEventId) {
       const k = S.event(ev.webhookEventId);
       if (await store.get(k)) { log.info('[dup event]', ev.webhookEventId); return { skipped: 'duplicate' }; }
@@ -101,7 +87,6 @@ export function createBot({ store, line, now = () => Date.now(), rand = defaultR
     }
   }
 
-  /* ---------- 文字 ---------- */
   async function onText(uid, token, t) {
     if (CMD.START.includes(t) || CMD.RESTART.includes(t)) { const s = await startSession(uid); await reply(token, M.askStatus(s.id)); return { started: s.id }; }
     if (CMD.CANCEL.includes(t)) { await clearSession(uid); await reply(token, M.cancelled()); return { cancelled: true }; }
@@ -110,33 +95,25 @@ export function createBot({ store, line, now = () => Date.now(), rand = defaultR
     if (CMD.UNPAIR.includes(t)) return unpairMenu(uid, token);
     const m = PAIR_JOIN_RE.exec(t);
     if (m) return pairJoin(uid, token, m[1]);
-
     const s = await getSession(uid);
-    if (!s) return { ignored: 'text outside session' };   // 沒在流程中：不回，交給官方帳號其他設定
-    if (s.step === 'other_text') {
-      if (t.length > OTHER_MAX) { await reply(token, M.otherTooLong()); return { rejected: 'too long' }; }
-      s.other = t; if (!s.needs.includes('其他')) s.needs.push('其他');
-      s.step = 'needs'; await saveSession(uid, s);
-      await reply(token, M.askNeeds(s.id, s)); return { step: s.step };
-    }
+    if (!s || s.step === 'done') return { ignored: 'text outside session' };
     await reprompt(uid, s, token, M.useButtons());
     return { reprompted: s.step };
   }
 
-  /* ---------- 位置訊息（使用者在 LINE 按「分享位置」、自己確認送出的）---------- */
+  /* 位置訊息：使用者在 LINE 位置畫面自己確認送出的 */
   async function onLocation(uid, token, msg) {
     const s = await getSession(uid);
-    if (!s) return { ignored: 'location outside session' };
+    if (!s || s.step === 'done') return { ignored: 'location outside session' };
     if (s.step !== 'location') { await reprompt(uid, s, token, M.useButtons()); return { reprompted: s.step }; }
-    s.loc = { source: 'real', lat: Number(msg.latitude), lng: Number(msg.longitude), address: String(msg.address || '').slice(0, 100), title: String(msg.title || '').slice(0, 60) };
-    if (!isFinite(s.loc.lat) || !isFinite(s.loc.lng)) { await reprompt(uid, s, token, '這個位置讀不到座標，請再試一次。'); return { rejected: 'bad location' }; }
-    s.step = nextAfterLocation(s); await saveSession(uid, s);
+    const lat = Number(msg.latitude), lng = Number(msg.longitude);
+    if (!isFinite(lat) || !isFinite(lng)) { await reprompt(uid, s, token, text('這個位置讀不到座標，請再試一次。')); return { rejected: 'bad location' }; }
+    s.loc = { source: 'real', lat, lng, address: String(msg.address || '').slice(0, 100) };
+    s.step = 'confirm'; await saveSession(uid, s);
     await reply(token, promptFor(s)); return { step: s.step };
   }
 
-  /* ---------- 按鈕 ---------- */
-  const STEP_OF = { status: 'status', loc: 'location', need: 'needs', needs_done: 'needs', other_back: 'other_text', people: 'people',
-    confirm: 'confirm', redo: 'confirm', notify: 'done', notify_skip: 'done', notify_go: 'notify_confirm', notify_cancel: 'notify_confirm' };
+  const STEP_OF = { status: 'status', loc: 'location', confirm: 'confirm', redo: 'confirm' };
 
   async function onPostback(uid, token, { a, s: sid, v }) {
     if (a === 'restart') { const s = await startSession(uid); await reply(token, M.askStatus(s.id)); return { started: s.id }; }
@@ -145,99 +122,50 @@ export function createBot({ store, line, now = () => Date.now(), rand = defaultR
 
     const s = await getSession(uid);
     if (!s || s.id !== sid) { await reply(token, M.expired()); return { expired: true }; }
-    if (a === 'cancel') { await clearSession(uid); await reply(token, M.cancelled()); return { cancelled: true }; }
     const want = STEP_OF[a];
-    if (!want) { await reprompt(uid, s, token, M.useButtons()); return { reprompted: s.step }; }
-    if (s.step !== want) { await reprompt(uid, s, token, M.alreadyAnswered()); return { reprompted: s.step }; }
+    /* 「再試一次」＝在 done 狀態再按 confirm：只補送失敗的 */
+    if (a === 'confirm' && s.step === 'done') return sendToFamily(uid, token, s);
+    if (!want || s.step !== want) { await reprompt(uid, s, token, s.step === 'done' ? null : M.useButtons()); return { reprompted: s.step }; }
 
-    switch (a) {
-      case 'status':
-        if (v !== 'safe' && v !== 'help') return reprompt(uid, s, token, M.useButtons());
-        s.status = v; if (v === 'safe') { s.needs = []; s.other = ''; s.people = null; }
-        s.step = 'location'; break;
-      case 'loc':
-        if (v === 'demo') s.loc = { ...DEMO_LOC };
-        else if (v === 'skip') s.loc = { source: 'none' };
-        else return reprompt(uid, s, token, M.useButtons());
-        s.step = nextAfterLocation(s); break;
-      case 'need':
-        if (!NEED_LIST.includes(v)) return reprompt(uid, s, token, M.useButtons());
-        if (s.needs.includes(v)) { s.needs = s.needs.filter(x => x !== v); if (v === '其他') s.other = ''; }
-        else { s.needs.push(v); if (v === '其他') s.step = 'other_text'; }
-        break;
-      case 'other_back':
-        s.needs = s.needs.filter(x => x !== '其他'); s.other = ''; s.step = 'needs'; break;
-      case 'needs_done':
-        if (!s.needs.length) { await saveSession(uid, s); return reprompt(uid, s, token, M.needsAtLeastOne()); }
-        if (s.needs.includes('其他') && !s.other) { s.step = 'other_text'; break; }
-        s.step = 'people'; break;
-      case 'people':
-        if (!PEOPLE_OPTIONS.some(o => o.v === v)) return reprompt(uid, s, token, M.useButtons());
-        s.people = v; s.step = 'confirm'; break;
-      case 'redo': {
-        const n = await startSession(uid); await reply(token, M.askStatus(n.id)); return { started: n.id };
-      }
-      case 'confirm': {
-        /* 只有這裡會寫正式紀錄；同一人永遠只有一筆（覆蓋）。平安者不帶任何求助欄位。 */
-        const report = {
-          id: rand(), status: s.status, loc: s.loc || { source: 'none' },
-          needs: s.status === 'help' ? s.needs.slice() : [], other: s.status === 'help' && s.needs.includes('其他') ? s.other : '',
-          people: s.status === 'help' ? s.people : null, confirmedAt: now(), notifies: {}
-        };
-        await store.set(S.report(uid), report);
-        s.step = 'done'; s.reportId = report.id; await saveSession(uid, s);
-        await reply(token, M.done(s.id, report)); return { confirmed: report.id };
-      }
-      case 'notify': {
-        const report = await store.get(S.report(uid));
-        if (!report || report.id !== s.reportId) { await clearSession(uid); await reply(token, M.expired()); return { expired: true }; }
-        let family = (await store.get(S.family(uid))) || [];
-        const ownerName = s.ownerName || (s.ownerName = await nameOf(uid, '你的家人'));
-        s.preview = familyNotifyText(report, ownerName);
-        /* 還沒配對家人：示範模式——把「家人會收到的訊息」真的推播到回報者自己的聊天室，
-           畫面上明講是示範、送到自己這裡；不假裝有別人收到 */
-        s.demoSelf = !family.length;
-        if (s.demoSelf) family = [{ userId: uid, name: DEMO_FAMILY_NAME }];
-        s.previewFamily = family.map(f => ({ userId: f.userId, name: f.name }));
-        s.notifyId = rand(); s.step = 'notify_confirm'; await saveSession(uid, s);
-        await reply(token, M.notifyPreview(s.id, family, s.preview, s.demoSelf)); return { step: s.step };
-      }
-      case 'notify_skip':
-        await clearSession(uid); await reply(token, M.notifySkipped()); return { finished: 'skipped' };
-      case 'notify_cancel':
-        await clearSession(uid); await reply(token, M.notifyCancelled()); return { finished: 'cancelled' };
-      case 'notify_go':
-        return notifyGo(uid, token, s);
+    if (a === 'status') {
+      if (v !== 'safe' && v !== 'help') return reprompt(uid, s, token, M.useButtons());
+      s.status = v; s.step = 'location';
+    } else if (a === 'loc') {
+      if (v === 'home') s.loc = { ...HOME_LOC };
+      else if (v === 'skip') s.loc = { source: 'none' };
+      else return reprompt(uid, s, token, M.useButtons());
+      s.step = 'confirm';
+    } else if (a === 'redo') {
+      const n = await startSession(uid); await reply(token, M.askStatus(n.id)); return { started: n.id };
+    } else if (a === 'confirm') {
+      const report = { id: rand(), status: s.status, loc: s.loc || { source: 'none' }, confirmedAt: now(), sent: {} };
+      await store.set(S.report(uid), report);
+      s.step = 'done'; s.reportId = report.id; s.ownerName = await nameOf(uid, '');
+      s.family = await familyOf(uid);
+      await saveSession(uid, s);
+      return sendToFamily(uid, token, s);
     }
     await saveSession(uid, s);
     await reply(token, promptFor(s));
     return { step: s.step };
   }
 
-  /* ---------- 真的推播給已綁定的測試家人 ---------- */
-  async function notifyGo(uid, token, s) {
+  /* 推播給家人：每位家人每份回報只推一次（report.sent 記錄）；失敗的留著讓「再試一次」補送 */
+  async function sendToFamily(uid, token, s) {
     const report = await store.get(S.report(uid));
-    if (!report || report.id !== s.reportId || !s.notifyId) { await clearSession(uid); await reply(token, M.expired()); return { expired: true }; }
-    /* 同一次通知只送一次：先在 report 上占位再送（LINE 重送或連點都會撞到占位）*/
-    if (report.notifies[s.notifyId]) {
-      const r = report.notifies[s.notifyId];
-      await reply(token, M.notifyResult(r.ok || [], r.fail || []));
-      return { alreadySent: true };
-    }
-    report.notifies[s.notifyId] = { startedAt: now(), ok: [], fail: [] };
-    await store.set(S.report(uid), report);
-    const family = s.previewFamily || [];
+    if (!report || report.id !== s.reportId) { await clearSession(uid); await reply(token, M.expired()); return { expired: true }; }
+    const body = text(familyNotifyText(report, s.ownerName));
     const ok = [], fail = [];
-    const body = s.demoSelf ? DEMO_SELF_PREFIX + '\n' + s.preview : s.preview;
-    for (const f of family) {
-      try { await line.push(f.userId, text(body)); ok.push(f.name || '家人'); }
-      catch (e) { log.error('[push failed]', short(f.userId), e && e.message); fail.push(f.name || '家人'); }
+    for (const f of s.family || []) {
+      if (report.sent[f.userId]) { ok.push(f.name); continue; }
+      try { await line.push(f.userId, body); report.sent[f.userId] = now(); ok.push(f.name); }
+      catch (e) { log.error('[push failed]', short(f.userId), e && e.message); fail.push(f.name); }
+      await store.set(S.report(uid), report);
     }
-    report.notifies[s.notifyId] = { startedAt: report.notifies[s.notifyId].startedAt, doneAt: now(), ok, fail };
-    await store.set(S.report(uid), report);
-    await clearSession(uid);
-    await reply(token, M.notifyResult(ok, fail, s.demoSelf));
-    return { notified: ok.length, failed: fail.length, demoSelf: !!s.demoSelf };
+    if (fail.length) { await saveSession(uid, s); await reply(token, M.sendFailed(s.id, report, ok, fail)); return { notified: ok.length, failed: fail.length }; }
+    await saveSession(uid, s);   // 留在 done：之後同一顆按鈕再按不會重送
+    await reply(token, M.sent(report, ok));
+    return { notified: ok.length, failed: 0 };
   }
 
   /* ============================================================
