@@ -425,9 +425,13 @@ function locHtml(loc){     /* HTML（給畫面）*/
     + (loc.acc ? '<br><span class="small muted">誤差約 ' + Math.round(loc.acc) + ' 公尺</span>' : '') + '<br><a href="' + esc(mapUrl(loc)) + '" target="_blank" rel="noopener" style="color:var(--blue);font-weight:800">在地圖上看座標</a>';
   return '<span class="muted">未提供</span>';
 }
+/* focus：延遲執行前先確認元素還在（切題後舊欄位已被移除），並取消過期的計時器 */
+let focusTimer = null;
+function focusNow(id){ const el = $(id); if(el && document.body.contains(el)) el.focus(); }
+function focusLater(id){ clearTimeout(focusTimer); focusTimer = setTimeout(function(){ focusTimer = null; focusNow(id); }, 60); }
 function confirmBox(title, text, onOk){
   $('mTitle').textContent = title; $('mText').textContent = text;
-  $('modal').classList.add('on'); $('mCancel').focus();
+  $('modal').classList.add('on'); focusNow('mCancel');
   $('mOk').onclick = function(){ $('modal').classList.remove('on'); onOk(); };
 }
 $('mCancel').onclick = function(){ $('modal').classList.remove('on'); };
@@ -450,7 +454,9 @@ $('btnGoResident').onclick = function(){ setSide('resident'); };
    二、對話式流程（草稿）
    steps：status → location → [needs → people]（只有需要協助才有）→ extra → confirm；phase 'done' 是完成畫面
    ===================================================================== */
-function newDraft(){ return { phase:'flow', step:0, status:null, loc:null, needs:[], other:'', people:null, contact:'', note:'', extraDone:false }; }
+function newDraft(){ return { phase:'flow', step:0, status:null, loc:null, needs:[], other:'', people:null, contact:'', note:'', extraDone:false, reconfirmExtra:false, ui:{} }; }
+/* 這題畫面上的暫時狀態（手動輸入模式與尚未按確定的地址、其他人數輸入）也存進草稿，重新整理不會掉 */
+function resetUi(){ draft.ui = {}; }
 function draftFromRecord(m){    /* 「修改本次回報」：把已確認的內容帶回草稿，直接跳到確認頁 */
   const d = newDraft();
   d.status = m.status; d.loc = Object.assign(blankLoc(), m.loc || {});
@@ -465,6 +471,7 @@ function loadDraft(){
   const base = newDraft();
   Object.keys(base).forEach(function(k){ if(d[k] === undefined) d[k] = base[k]; });
   if(!Array.isArray(d.needs)) d.needs = [];
+  if(!d.ui || typeof d.ui !== 'object') d.ui = {};
   d.step = Math.min(Math.max(0, d.step | 0), steps(d).length - 1);
   return d;
 }
@@ -484,12 +491,10 @@ function advance(fromIdx){
   const st = steps();
   let next = st.length - 1;
   for(let i = fromIdx + 1; i < st.length - 1; i++){ if(!answered(draft, st[i])){ next = i; break; } }
-  draft.step = next; ui = {}; saveDraft(); render(true);
+  draft.step = next; resetUi(); saveDraft(); render(true);
 }
-function goTo(idx){ draft.step = Math.max(0, Math.min(idx, steps().length - 1)); ui = {}; saveDraft(); render(true); }
+function goTo(idx){ draft.step = Math.max(0, Math.min(idx, steps().length - 1)); resetUi(); saveDraft(); render(true); }
 
-/* 這題畫面上的暫時狀態（手動輸入模式、其他人數輸入），不存進草稿 */
-let ui = {};
 
 const Q = {
   status:   { full:'我是獅仔，來關心你。<b>你現在平安嗎？</b>', short:'你現在平安嗎？' },
@@ -543,7 +548,7 @@ function render(fresh){
 $('btnPrev').onclick = function(){ if(draft.phase === 'flow' && draft.step > 0) goTo(draft.step - 1); };
 $('btnRestart').onclick = function(){ restart(); };
 function restart(){   /* 重新開始：只丟掉草稿；已確認的本機紀錄與統計不動，要再按一次「確認回報」才會更新 */
-  draft = newDraft(); ui = {}; saveDraft(); render(true);
+  draft = newDraft(); saveDraft(); render(true);
   if(me().status !== 'none') toast('已重新開始。先前確認的回報還在，再次確認後才會更新。');
 }
 function btn(label, cls, onclick, id){
@@ -561,17 +566,19 @@ function setStatus(v){
   const changed = draft.status !== v;
   draft.status = v;
   if(v === 'safe'){ draft.needs = []; draft.other = ''; draft.people = null; }   /* 平安不殘留求助資訊 */
+  /* 狀況改了（例如求助→平安）：舊的補充說明可能已過期，不直接帶入，要回到補充那題請使用者重新確認 */
+  if(changed && (draft.contact || draft.note)){ draft.extraDone = false; draft.reconfirmExtra = true; }
   if(changed && draft.step > 0) draft.step = 0;
   advance(0);
 }
 
 /* --- 第 2 題：位置 --- */
 function ctlLocation(ctl){
-  const mode = ui.locMode || 'menu';
+  const ui = draft.ui; const mode = ui.locMode || 'menu';
   if(mode === 'menu'){
     const s = stack(ctl);
     s.appendChild(btn('使用示範位置', 'pri', function(){ draft.loc = Object.assign(blankLoc(), DEMO_LOC); advance(1); }, 'btnLocDemo'));
-    s.appendChild(btn('手動輸入地址', 'out', function(){ ui.locMode = 'manual'; render(); }, 'btnLocManual'));
+    s.appendChild(btn('手動輸入地址', 'out', function(){ ui.locMode = 'manual'; saveDraft(); render(); }, 'btnLocManual'));
     s.appendChild(btn('暫不提供', '', function(){ draft.loc = blankLoc(); advance(1); }, 'btnLocSkip'));
     const n = document.createElement('p'); n.className = 'note'; n.textContent = '示範位置是固定的虛構地址。這一版不會請求手機定位（真實定位留待下一階段）。'; ctl.appendChild(n);
     return;
@@ -580,15 +587,15 @@ function ctlLocation(ctl){
     ctl.innerHTML = '<div class="field"><label class="lb" for="locText">目前位置或地址<small>示範用，不必填真實住址</small></label>'
       + '<input type="text" id="locText" maxlength="80" autocomplete="off" placeholder="例如：福安里 3 鄰 活動中心旁（示範）"></div><div class="err" id="locErr" role="alert"></div>';
     $('locText').value = ui.locDraft || (draft.loc && draft.loc.source === 'manual' ? draft.loc.text : '');
-    $('locText').oninput = function(){ ui.locDraft = $('locText').value; };
+    $('locText').oninput = function(){ ui.locDraft = $('locText').value; saveDraft(); };
     const s = stack(ctl);
     s.appendChild(btn('確定', 'pri', function(){
       const t = $('locText').value.trim();
-      if(!t){ $('locErr').textContent = '請輸入位置，或按「返回」改用其他方式。'; $('locErr').classList.add('on'); $('locText').focus(); return; }
+      if(!t){ $('locErr').textContent = '請輸入位置，或按「返回」改用其他方式。'; $('locErr').classList.add('on'); focusNow('locText'); return; }
       draft.loc = Object.assign(blankLoc(), { source:'manual', text:t }); advance(1);
     }, 'btnLocManualOk'));
-  s.appendChild(btn('返回', 'sm', function(){ ui.locMode = 'menu'; render(); }));
-  setTimeout(function(){ $('locText').focus(); }, 50);
+  s.appendChild(btn('返回', 'sm', function(){ ui.locMode = 'menu'; saveDraft(); render(); }));
+  focusLater('locText');
 }
 
 /* --- 第 3 題：協助需求（複選）--- */
@@ -618,7 +625,7 @@ function ctlNeeds(ctl){
   stack(ctl).appendChild(btn('選好了', 'pri', function(){
     draft.other = $('otherText').value.trim();
     if(!draft.needs.length){ err.textContent = '請至少選一項需要的協助。'; err.classList.add('on'); return; }
-    if(draft.needs.indexOf('其他') >= 0 && !draft.other){ err.textContent = '勾了「其他」，請寫一下是什麼協助。'; err.classList.add('on'); $('otherText').focus(); return; }
+    if(draft.needs.indexOf('其他') >= 0 && !draft.other){ err.textContent = '勾了「其他」，請寫一下是什麼協助。'; err.classList.add('on'); focusNow('otherText'); return; }
     if(draft.needs.indexOf('其他') < 0) draft.other = '';
     advance(steps().indexOf('needs'));
   }, 'btnNeedsOk'));
@@ -626,25 +633,27 @@ function ctlNeeds(ctl){
 
 /* --- 第 4 題：人數 --- */
 function ctlPeople(ctl){
+  const ui = draft.ui;
   if(!ui.peopleOther){
     const s = stack(ctl); s.className = 'stack row2';
     [1, 2, 3].forEach(function(n){ s.appendChild(btn(n + ' 人', draft.people === n ? 'pri' : 'out', function(){ draft.people = n; advance(steps().indexOf('people')); }, 'btnPeople' + n)); });
-    s.appendChild(btn('其他人數', '', function(){ ui.peopleOther = true; render(); }, 'btnPeopleOther'));
+    s.appendChild(btn('其他人數', '', function(){ ui.peopleOther = true; saveDraft(); render(); }, 'btnPeopleOther'));
     return;
   }
   ctl.innerHTML = '<div class="field"><label class="lb" for="peopleNum">需要協助的人數<small>含自己，1～' + PEOPLE_MAX + ' 的整數</small></label>'
     + '<input type="number" id="peopleNum" inputmode="numeric" min="1" max="' + PEOPLE_MAX + '" step="1"></div><div class="err" id="peopleErr" role="alert"></div>';
-  $('peopleNum').value = draft.people != null && draft.people > 3 ? draft.people : '';
+  $('peopleNum').value = ui.peopleDraft != null ? ui.peopleDraft : (draft.people != null && draft.people > 3 ? draft.people : '');
+  $('peopleNum').oninput = function(){ ui.peopleDraft = $('peopleNum').value; saveDraft(); };
   const s = stack(ctl);
   s.appendChild(btn('確定', 'pri', function(){
     const raw = $('peopleNum').value.trim(); const n = Number(raw);
     if(!/^\d+$/.test(raw) || !Number.isInteger(n) || n < 1 || n > PEOPLE_MAX){
-      $('peopleErr').textContent = '請輸入 1 到 ' + PEOPLE_MAX + ' 之間的整數。'; $('peopleErr').classList.add('on'); $('peopleNum').focus(); return;
+      $('peopleErr').textContent = '請輸入 1 到 ' + PEOPLE_MAX + ' 之間的整數。'; $('peopleErr').classList.add('on'); focusNow('peopleNum'); return;
     }
     draft.people = n; advance(steps().indexOf('people'));
   }, 'btnPeopleOk'));
-  s.appendChild(btn('返回', 'sm', function(){ ui = {}; render(); }));
-  setTimeout(function(){ $('peopleNum').focus(); }, 50);
+  s.appendChild(btn('返回', 'sm', function(){ resetUi(); saveDraft(); render(); }));
+  focusLater('peopleNum');
 }
 
 /* --- 第 5 題：補充與聯絡方式（可略過）--- */
@@ -652,6 +661,11 @@ function ctlExtra(ctl){
   ctl.innerHTML = '<div class="field"><label class="lb" for="fContact">方便聯繫的方式<small>選填</small></label><input type="text" id="fContact" maxlength="40" autocomplete="off" placeholder="例如：LINE 訊息（示範）"></div>'
     + '<div class="field"><label class="lb" for="fNote">補充說明<small>選填</small></label><textarea id="fNote" maxlength="120" placeholder="例如：家裡停水兩天、樓梯不好走（示範）"></textarea></div>'
     + '<p class="note" style="margin-top:0">示範用，請不要填真實電話或住址。可以按「填入示範資料」快速展示。</p>';
+  if(draft.reconfirmExtra && (draft.contact || draft.note)){
+    const warn = document.createElement('div'); warn.className = 'hint amber'; warn.id = 'extraReconfirm'; warn.style.marginBottom = '10px';
+    warn.innerHTML = '你的狀況改成「<b>' + (draft.status === 'help' ? '需要協助' : '我平安') + '</b>」了。下面是之前填的補充與聯絡方式，請確認還要不要保留；不保留就按「清除舊內容」。';
+    ctl.insertBefore(warn, ctl.firstChild);
+  }
   $('fContact').value = draft.contact; $('fNote').value = draft.note;
   $('fContact').oninput = function(){ draft.contact = $('fContact').value.trim(); saveDraft(); };
   $('fNote').oninput = function(){ draft.note = $('fNote').value.trim(); saveDraft(); };
@@ -662,8 +676,11 @@ function ctlExtra(ctl){
   }, 'btnExtraDemo');
   demoBtn.innerHTML = '填入示範資料 <span class="demoTag">示範</span>';
   s.appendChild(demoBtn);
-  s.appendChild(btn('下一步', 'pri', function(){ draft.contact = $('fContact').value.trim(); draft.note = $('fNote').value.trim(); draft.extraDone = true; advance(steps().indexOf('extra')); }, 'btnExtraOk'));
-  s.appendChild(btn('略過', 'sm', function(){ draft.contact = ''; draft.note = ''; draft.extraDone = true; advance(steps().indexOf('extra')); }, 'btnExtraSkip'));
+  if(draft.reconfirmExtra && (draft.contact || draft.note)){
+    s.appendChild(btn('清除舊內容', 'sm warn', function(){ draft.contact = ''; draft.note = ''; $('fContact').value = ''; $('fNote').value = ''; const w = $('extraReconfirm'); if(w) w.remove(); saveDraft(); }, 'btnExtraClear'));
+  }
+  s.appendChild(btn('下一步', 'pri', function(){ draft.contact = $('fContact').value.trim(); draft.note = $('fNote').value.trim(); draft.extraDone = true; draft.reconfirmExtra = false; advance(steps().indexOf('extra')); }, 'btnExtraOk'));
+  s.appendChild(btn('略過', 'sm', function(){ draft.contact = ''; draft.note = ''; draft.extraDone = true; draft.reconfirmExtra = false; advance(steps().indexOf('extra')); }, 'btnExtraSkip'));
 }
 
 /* --- 第 6 題：確認摘要 --- */
@@ -737,7 +754,7 @@ function renderDone(fresh){
     toast('模擬通知完成，未實際發送');
   };
   $('btnGoTemple').onclick = function(){ setSide('temple'); };
-  $('btnModify').onclick = function(){ draft = draftFromRecord(m); ui = {}; saveDraft(); render(true); };
+  $('btnModify').onclick = function(){ draft = draftFromRecord(m); saveDraft(); render(true); };
   $('btnRestart2').onclick = restart;
   if(fresh) setTimeout(function(){ window.scrollTo({ top:0, behavior:'smooth' }); }, 30);
 }
@@ -851,7 +868,7 @@ $('btnAsk').onclick = function(){
 /* 重設全部示範資料：只刪這個 Demo 自己的鍵（含舊版鍵）。收藏 fuan.fav、香火簿 fuan.stamps、LIFF 的儲存一律不碰。 */
 function resetAll(){
   confirmBox('重設全部示範資料？', '會恢復成初始的虛構居民與統計，並清掉這支手機的回報與草稿。收藏、香火簿與 LINE 登入不受影響。', function(){
-    state = seed(); draft = newDraft(); ui = {};
+    state = seed(); draft = newDraft();
     try{ if(canStore){ [DEMO_KEY, DRAFT_KEY].concat(LEGACY_KEYS).forEach(function(k){ localStorage.removeItem(k); }); } }catch(_){}
     renderTemple(); render(true);
     toast('已恢復初始示範資料');
