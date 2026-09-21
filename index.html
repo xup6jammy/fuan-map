@@ -4,6 +4,18 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <title>周遭宮廟地圖｜福安 LINE</title>
+<script>
+/* ?do=safety（圖文選單「平安回報」那格）：整頁換去 safety-demo.html，地圖與 Leaflet 都不用載。
+   LIFF 會把原本的查詢字串包進 liff.state，兩個地方都看。 */
+(function(){
+  try{
+    var q = new URLSearchParams(location.search);
+    var v = q.get('do');
+    if(!v && q.get('liff.state')) v = new URLSearchParams(q.get('liff.state').replace(/^\?/, '')).get('do');
+    if(v === 'safety') location.replace('safety-demo.html');
+  }catch(_){}
+})();
+</script>
 <style>/* Leaflet 1.9.4 */
 /* required styles */
 
@@ -712,6 +724,9 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink)}
 .chip.fav.has .cico{color:#E05A4B}
 .chip.fav.on .cico{color:#fff}
 .chip.on{background:var(--g);border-color:var(--g);color:#fff}
+/* 「平安回報」是入口不是篩選：綠框綠字、圖示也綠，按下去換頁 */
+.chip.go{border-color:var(--g);color:var(--g);padding:6px 13px 6px 9px;text-decoration:none}
+.chip.go .cico{color:var(--g)}
 /* 法器小圖：跟清單縮圖是同一張，使用者按下心願後看到清單也是同一個圖 */
 .cimg{width:20px;height:20px;border-radius:6px;object-fit:cover;flex:none;
       background:#FAF5E6}
@@ -1600,6 +1615,8 @@ function facHtml(t){
    沒有官網就沒有「官方網站」。點了沒反應比少一顆按鈕更糟。
    只有官方 FB 粉專的廟會寫「官方粉專」，不冒充成官網。 */
 const P_ICON = {
+  /* 盾牌打勾：平安回報入口（自繪） */
+  shield:'<path fill="currentColor" d="M12 2 4 5v6c0 5.1 3.4 9.8 8 11 4.6-1.2 8-5.9 8-11V5l-8-3zm-1.2 14.2-3.5-3.5 1.4-1.4 2.1 2.1 4.9-4.9 1.4 1.4-6.3 6.3z"/>',
   heart: '<path fill="currentColor" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>',
   stamp: '<path fill="currentColor" d="M12 2a4 4 0 0 0-4 4c0 1.5.8 2.7 2 3.4V12H7a2 2 0 0 0-2 2v2h14v-2a2 2 0 0 0-2-2h-3V9.4c1.2-.7 2-1.9 2-3.4a4 4 0 0 0-4-4zM5 18v2h14v-2z"/>',
   heartO: '<path fill="currentColor" d="M16.5 3c-1.74 0-3.41.81-4.5 2.09C10.91 3.81 9.24 3 7.5 3 4.42 3 2 5.42 2 8.5c0 3.78 3.4 6.86 8.55 11.54L12 21.35l1.45-1.32C18.6 15.36 22 12.28 22 8.5 22 5.42 19.58 3 16.5 3zm-4.4 15.55l-.1.1-.1-.1C7.14 14.24 4 11.39 4 8.5 4 6.5 5.5 5 7.5 5c1.54 0 3.04.99 3.57 2.36h1.87C13.46 5.99 14.96 5 16.5 5c2 0 3.5 1.5 3.5 3.5 0 2.89-3.14 5.74-7.9 10.05z"/>',
@@ -1801,6 +1818,7 @@ let deepDo = deepParam('do');          /* calendar：圖文選單「神明行事
 function applyDeepLink(){
   if(deepDo === 'calendar'){ deepDo = null; showCalendar(); return; }
   if(deepDo === 'stamps'){ deepDo = null; showStamps(); return; }
+  if(deepDo === 'safety'){ deepDo = null; location.href = 'safety-demo.html'; return; }   /* 退路：<head> 那段沒跑到才會走到這 */
   if(!deepTemple) return;
   const i = shown.findIndex(function(t){ return t.name === deepTemple; });
   deepTemple = null;
@@ -2470,6 +2488,12 @@ function buildChips(){
         render();
       };
       chipBox.appendChild(f);
+      /* 「平安回報」入口：災時平安回報 Demo（safety-demo.html），純展示、不推播 */
+      const g = document.createElement('a');
+      g.className = 'chip go';
+      g.href = 'safety-demo.html';
+      g.innerHTML = '<svg class="cico" viewBox="0 0 24 24">' + P_ICON.shield + '</svg>平安回報';
+      chipBox.appendChild(g);
     }
   });
   /* 滑到最右邊就把漸層收起來 */
@@ -2929,7 +2953,7 @@ render();
 /* 收到家人分享的最愛：先併進來、清單重畫，再決定要不要開行事曆 */
 if(applyFavParam()){ render(); if(!deepTemple && deepDo !== 'calendar') deepDo = 'calendar'; }
 /* 行事曆不需要位置，開頁就先顯示，不等定位（定位可能等 10 秒、也可能被拒） */
-if(deepDo === 'calendar' || deepDo === 'stamps') applyDeepLink();
+if(deepDo === 'calendar' || deepDo === 'stamps' || deepDo === 'safety') applyDeepLink();
 
 // LIFF 初始化：在 LINE 裡會成功；用一般瀏覽器直接開也不會壞
 if(window.liff && LIFF_ID !== 'YOUR_LIFF_ID'){

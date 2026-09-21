@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<title>災時平安回報（展示）｜福安 LINE</title>
+<meta name="robots" content="noindex">
+<style>
+/* ===== 災時平安回報 Demo =====
+   純前端、不打任何 API。資料只存在這支手機（localStorage：fuan.safetyDemo.v1），
+   跟收藏（fuan.fav）、香火簿（fuan.stamps）分開存，重設示範只清自己的 key。
+   白底、黑字、綠色重點；字大、鈕大，給長輩用。 */
+:root{
+  --bg:#FFFFFF; --ink:#1F1A17; --muted:#5F5952; --line:#E4DFD6;
+  --g:#0C8F3B; --gd:#0A7A32; --gt:#E7F7EC; --gline:#BFE3CB;
+  --amber:#8C6A1E; --ambert:#FBF1D6; --red:#B4362A; --redt:#FBE9E6;
+  --card:#fff; --soft:#F7F5F0;
+  --font:"Noto Sans TC","PingFang TC","Microsoft JhengHei",-apple-system,sans-serif;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--ink)}
+body{font-family:var(--font);font-size:18px;line-height:1.6;min-height:100vh;
+     padding-bottom:calc(24px + env(safe-area-inset-bottom))}
+img{max-width:100%}
+button{font-family:var(--font);cursor:pointer}
+button:disabled{cursor:default}
+:focus-visible{outline:3px solid var(--g);outline-offset:2px}
+.wrap{max-width:520px;margin:0 auto;padding:0 16px}
+
+/* ---- 頂欄 ---- */
+.hd{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.96);backdrop-filter:blur(6px);
+    border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top)}
+.hd .wrap{display:flex;align-items:center;gap:10px;height:56px}
+.back{display:inline-flex;align-items:center;gap:2px;color:var(--g);font-weight:800;text-decoration:none;
+      font-size:16px;padding:8px 6px 8px 0;white-space:nowrap}
+.back svg{width:20px;height:20px}
+.ttl{font-weight:800;font-size:17px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.seg{display:inline-flex;border:2px solid var(--g);border-radius:12px;overflow:hidden;flex:none}
+.seg button{border:none;background:#fff;color:var(--g);font-weight:800;font-size:15px;padding:7px 12px;min-height:40px}
+.seg button[aria-selected="true"]{background:var(--g);color:#fff}
+
+/* ---- 展示模式橫幅：全程都在 ---- */
+.demo{background:var(--ambert);color:var(--amber);font-weight:800;font-size:14.5px;text-align:center;
+      padding:8px 14px;line-height:1.5;border-bottom:1px solid #EFDFB5}
+.demo b{display:inline-block;background:var(--amber);color:#fff;border-radius:6px;padding:0 7px;margin-right:6px;font-size:13px;line-height:22px;vertical-align:1px}
+.storenote{display:none;background:var(--redt);color:var(--red);font-size:14px;font-weight:700;text-align:center;padding:7px 14px}
+.storenote.on{display:block}
+
+/* ---- 共用 ---- */
+main{padding-top:16px}
+main[hidden]{display:none}
+.view[hidden]{display:none}
+h1{font-size:24px;line-height:1.35;margin:6px 0 10px;font-weight:800}
+h2{font-size:19px;margin:22px 0 10px;font-weight:800}
+p{margin:6px 0}
+.muted{color:var(--muted)}
+.small{font-size:14.5px}
+.card{background:var(--card);border:1.5px solid var(--line);border-radius:16px;padding:16px}
+.lion{display:flex;align-items:flex-end;gap:12px;margin:4px 0 14px}
+.lion img{width:86px;height:auto;flex:none;filter:drop-shadow(0 2px 3px rgba(31,26,23,.22))}
+.bubble{position:relative;flex:1;background:var(--soft);border:1.5px solid var(--line);border-radius:16px;padding:14px 15px;font-size:17.5px;line-height:1.65;min-width:0}
+.bubble::before{content:"";position:absolute;left:-9px;bottom:22px;width:14px;height:14px;background:var(--soft);
+                border-left:1.5px solid var(--line);border-bottom:1.5px solid var(--line);transform:rotate(45deg)}
+.bubble b{font-weight:800}
+.bubble .tag{display:inline-block;font-size:13px;font-weight:800;color:var(--amber);background:var(--ambert);border-radius:6px;padding:0 7px;margin-bottom:6px}
+
+.btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:64px;
+     border-radius:16px;border:2px solid var(--line);background:#fff;color:var(--ink);
+     font-size:22px;font-weight:800;padding:12px 16px;line-height:1.3;text-decoration:none;
+     transition:transform .08s,background .12s}
+.btn:active{transform:scale(.985)}
+.btn.pri{background:var(--g);border-color:var(--g);color:#fff}
+.btn.pri:active{background:var(--gd)}
+.btn.out{border-color:var(--g);color:var(--g)}
+.btn.sm{min-height:52px;font-size:18px;border-radius:14px}
+.btn.xs{min-height:44px;font-size:16px;border-radius:12px;padding:8px 14px;width:auto;display:inline-flex}
+.btn:disabled{opacity:.55}
+.btn svg{width:26px;height:26px;flex:none}
+.stack{display:grid;gap:12px;margin:14px 0}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.note{font-size:14.5px;color:var(--muted);line-height:1.6;margin-top:8px}
+.ok{color:var(--g);font-weight:800}
+.hint{background:var(--gt);border:1.5px solid var(--gline);border-radius:12px;padding:10px 14px;font-size:15px;color:#0B5A27;line-height:1.6}
+
+/* 需求複選：一格一格大方塊 */
+.choice{display:grid;gap:10px}
+.choice label{display:flex;align-items:center;gap:12px;border:2px solid var(--line);border-radius:14px;
+              padding:12px 14px;font-size:20px;font-weight:800;min-height:60px;cursor:pointer;background:#fff}
+.choice label.on{border-color:var(--g);background:var(--gt)}
+.choice input{position:absolute;opacity:0;width:0;height:0}
+.choice .box{width:28px;height:28px;border-radius:8px;border:2.5px solid #B9B2A8;flex:none;display:grid;place-items:center;background:#fff}
+.choice label.on .box{border-color:var(--g);background:var(--g)}
+.choice .box svg{width:20px;height:20px;display:none}
+.choice label.on .box svg{display:block}
+.field{margin:14px 0}
+.field .lb{display:block;font-weight:800;font-size:17px;margin-bottom:6px}
+.field .lb small{font-weight:600;color:var(--muted);font-size:13.5px;margin-left:6px}
+.field input[type=text],.field textarea{width:100%;font:inherit;font-size:18px;padding:12px 14px;border:2px solid var(--line);
+                          border-radius:12px;background:#fff;color:var(--ink)}
+.field textarea{min-height:84px;resize:vertical}
+.field input:focus,.field textarea:focus{border-color:var(--g);outline:none}
+.field .demoTag{display:inline-block;font-size:12.5px;font-weight:800;color:var(--amber);background:var(--ambert);border-radius:6px;padding:0 6px;margin-left:4px;vertical-align:2px}
+.stepper{display:inline-flex;align-items:center;border:2px solid var(--line);border-radius:14px;overflow:hidden}
+.stepper button{width:56px;height:56px;border:none;background:#fff;font-size:28px;font-weight:800;color:var(--g)}
+.stepper button:disabled{color:#C9C3B8}
+.stepper output{min-width:64px;text-align:center;font-size:22px;font-weight:800;border-left:2px solid var(--line);border-right:2px solid var(--line);height:56px;line-height:56px}
+.err{display:none;color:var(--red);background:var(--redt);border-radius:10px;padding:8px 12px;font-weight:800;font-size:15px;margin-top:8px}
+.err.on{display:block}
+.sub{display:none;margin-top:10px}
+.sub.on{display:block}
+
+/* 摘要表 */
+.sum{border:1.5px solid var(--line);border-radius:14px;overflow:hidden}
+.sum div{display:grid;grid-template-columns:96px 1fr;gap:10px;padding:11px 14px;border-top:1px solid var(--line);font-size:17px}
+.sum div:first-child{border-top:none}
+.sum dt{color:var(--muted);font-weight:700;margin:0}
+.sum dd{margin:0;font-weight:700;word-break:break-word}
+.badge{display:inline-block;border-radius:8px;padding:1px 9px;font-size:14px;font-weight:800;line-height:1.7}
+.badge.safe{background:var(--gt);color:var(--g)}
+.badge.help{background:var(--redt);color:var(--red)}
+.badge.none{background:#EFECE6;color:#6B655E}
+.badge.demo{background:var(--ambert);color:var(--amber)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-block;background:#FBF3E4;color:#7A5A2B;border:1px solid #EFDFC2;border-radius:8px;padding:1px 9px;font-size:14px;font-weight:800}
+
+/* 完成畫面 */
+.doneHead{text-align:center;padding:10px 0 4px}
+.doneHead .ck{width:72px;height:72px;border-radius:50%;background:var(--gt);display:grid;place-items:center;margin:0 auto 10px}
+.doneHead .ck svg{width:40px;height:40px}
+.doneHead h1{margin:0 0 4px}
+
+/* ---- 宮廟端 ---- */
+.tiles{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:12px 0}
+.tile{border:1.5px solid var(--line);border-radius:14px;padding:12px 14px;background:#fff}
+.tile .k{font-size:14px;font-weight:700;color:var(--muted)}
+.tile .v{font-size:34px;font-weight:800;line-height:1.15;margin-top:2px}
+.tile .v small{font-size:15px;font-weight:700;color:var(--muted);margin-left:3px}
+.tile.safe .v{color:var(--g)}
+.tile.help .v{color:var(--red)}
+.tile.none .v{color:#6B655E}
+.tile.all{border-color:var(--g);background:var(--gt)}
+.bars{display:grid;gap:8px;margin-top:8px}
+.bar{display:grid;grid-template-columns:88px 1fr 52px;align-items:center;gap:8px;font-size:16px;font-weight:700}
+.bar .tr{height:18px;background:var(--soft);border-radius:6px;overflow:hidden;border:1px solid var(--line)}
+.bar .tr i{display:block;height:100%;background:var(--g);border-radius:5px;min-width:0;transition:width .25s}
+.bar .n{text-align:right;font-weight:800}
+.bar .n small{font-weight:700;color:var(--muted);font-size:13px}
+.legend{font-size:14px;color:var(--muted);line-height:1.6;margin-top:8px}
+.rlist{display:grid;gap:10px}
+.rc{border:1.5px solid var(--line);border-radius:14px;padding:12px 14px;background:#fff}
+.rc.me{border-color:var(--g);box-shadow:0 0 0 2px var(--gt)}
+.rc .top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.rc .nm{font-size:18px;font-weight:800}
+.rc .tm{margin-left:auto;font-size:13.5px;color:var(--muted);font-weight:700;white-space:nowrap}
+.rc .meta{font-size:15px;color:var(--ink);margin-top:6px;line-height:1.6}
+.rc .meta span{display:block}
+.rc .meta em{font-style:normal;color:var(--muted);font-weight:700;margin-right:6px}
+.follow{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.follow button{flex:1;min-width:84px;min-height:40px;border-radius:10px;border:1.5px solid var(--line);background:#fff;font-size:14.5px;font-weight:800;color:var(--muted)}
+.follow button[aria-pressed="true"]{border-color:var(--g);background:var(--g);color:#fff}
+.follow button[aria-pressed="true"].done{background:#6B655E;border-color:#6B655E}
+.tools{display:grid;gap:10px;margin:14px 0}
+.split{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.split .small{margin-left:auto}
+
+/* toast 與確認框 */
+.toast{position:fixed;left:50%;bottom:calc(28px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:60;
+       background:rgba(31,26,23,.92);color:#fff;padding:12px 18px;border-radius:12px;font-size:16px;font-weight:700;
+       line-height:1.5;max-width:86%;text-align:center;display:none}
+.modal{position:fixed;inset:0;z-index:50;background:rgba(31,26,23,.45);display:none;align-items:center;justify-content:center;padding:20px}
+.modal.on{display:flex}
+.modal .box{background:#fff;border-radius:18px;padding:20px;max-width:400px;width:100%}
+.modal h3{margin:0 0 8px;font-size:20px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.foot{margin-top:28px;text-align:center;font-size:13.5px;color:var(--muted);line-height:1.7}
+/* 窄機（320～360）：頂欄擠一點，標題不被切掉 */
+@media (max-width:360px){
+  .ttl{font-size:15px}
+  .seg button{font-size:14px;padding:6px 9px}
+  .back{font-size:15px}
+  .bubble{font-size:17px;padding:12px 13px}
+  .lion img{width:74px}
+  .tile .v{font-size:30px}
+}
+</style>
+</head>
+<body>
+
+<header class="hd">
+  <div class="wrap">
+    <a class="back" href="index.html" aria-label="返回地圖">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>地圖
+    </a>
+    <div class="ttl">災時平安回報</div>
+    <div class="seg" role="tablist" aria-label="切換居民端或宮廟端">
+      <button type="button" role="tab" id="tabR" aria-selected="true">居民端</button>
+      <button type="button" role="tab" id="tabT" aria-selected="false">宮廟端</button>
+    </div>
+  </div>
+</header>
+<div class="demo"><b>展示模式</b>不會實際通知宮廟或派遣救援</div>
+<div class="storenote" id="storeNote">此瀏覽器無法儲存資料，示範照常可以操作，但重新整理後會重設。</div>
+
+<!-- ================= 居民端 ================= -->
+<main id="resident" class="wrap">
+
+  <!-- 1. 收到宮廟詢問 -->
+  <section class="view" id="v-home">
+    <div class="lion">
+      <img src="lion_full.webp" alt="福安宮的獅仔">
+      <div class="bubble">
+        <span class="tag">災害演練</span><br>
+        颱風過後，<b>福安宮</b>關心你。<br>
+        目前是否平安？如果需要協助，請告訴我們。
+      </div>
+    </div>
+    <div id="homeStatus"></div>
+    <div class="stack">
+      <button type="button" class="btn pri" id="btnSafe">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>我平安
+      </button>
+      <button type="button" class="btn out" id="btnHelp">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l9.5 17h-19z"/><path d="M12 10v4.5"/><circle cx="12" cy="17.2" r=".6" fill="currentColor"/></svg>需要協助
+      </button>
+    </div>
+    <div class="hint">平時累積關懷，災時快速掌握需求。<br>協助縮短物資準備時間，讓調配更有效率。</div>
+    <p class="note">這是比賽用的示範：情境、居民與回報內容都是虛構的，不需要輸入真實個資，也不會送到任何地方。</p>
+  </section>
+
+  <!-- 2. 需要協助：填寫需求 -->
+  <section class="view" id="v-form" hidden>
+    <h1>需要哪些協助？</h1>
+    <p class="muted small">可以複選，至少選一項。</p>
+    <div class="choice" id="needBox" role="group" aria-label="協助需求"></div>
+    <div class="sub" id="otherWrap">
+      <div class="field" style="margin-top:6px">
+        <label class="lb" for="otherText">「其他」是什麼？<small>必填</small></label>
+        <input type="text" id="otherText" maxlength="60" placeholder="例如：需要充電、需要藥局資訊（示範）" autocomplete="off">
+      </div>
+    </div>
+    <div class="err" id="needErr" role="alert"></div>
+
+    <div class="field">
+      <span class="lb" id="peopleLb">需要協助的人數<small>含自己</small></span>
+      <div class="stepper" role="group" aria-labelledby="peopleLb">
+        <button type="button" id="pMinus" aria-label="減少一人">−</button>
+        <output id="pOut" aria-live="polite">1</output>
+        <button type="button" id="pPlus" aria-label="增加一人">＋</button>
+      </div>
+    </div>
+    <div class="field">
+      <label class="lb" for="fPlace">目前位置<span class="demoTag">示範預填</span></label>
+      <input type="text" id="fPlace" maxlength="60" autocomplete="off">
+    </div>
+    <div class="field">
+      <label class="lb" for="fContact">聯絡方式<span class="demoTag">示範預填</span></label>
+      <input type="text" id="fContact" maxlength="40" autocomplete="off">
+      <p class="note" style="margin-top:4px">示範用，請不要填真實電話或住址。</p>
+    </div>
+    <div class="field">
+      <label class="lb" for="fNote">補充說明<small>選填</small></label>
+      <textarea id="fNote" maxlength="120" placeholder="例如：家裡停水兩天、樓梯不好走（示範）"></textarea>
+    </div>
+    <div class="stack">
+      <button type="button" class="btn pri" id="btnToConfirm">下一步：確認內容</button>
+      <button type="button" class="btn sm" id="btnFormBack">返回上一頁</button>
+    </div>
+  </section>
+
+  <!-- 3. 確認送出 -->
+  <section class="view" id="v-confirm" hidden>
+    <h1>請確認回報內容</h1>
+    <p class="muted small">按「確認送出」之後，宮廟端的示範統計才會更新。</p>
+    <dl class="sum" id="sumBox"></dl>
+    <div class="stack">
+      <button type="button" class="btn pri" id="btnSubmit">確認送出</button>
+      <button type="button" class="btn sm" id="btnEdit">返回修改</button>
+    </div>
+    <p class="note">展示模式：不會實際通知宮廟或派遣救援。</p>
+  </section>
+
+  <!-- 4. 完成 -->
+  <section class="view" id="v-done" hidden>
+    <div class="doneHead">
+      <div class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="#0C8F3B" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
+      <h1>示範回報已完成</h1>
+      <p class="muted small">本次資料僅更新此裝置的模擬統計，不會實際通知宮廟。</p>
+    </div>
+    <dl class="sum" id="doneBox" style="margin-top:12px"></dl>
+    <div class="stack">
+      <button type="button" class="btn sm out" id="btnModify">修改本次回報</button>
+      <button type="button" class="btn sm pri" id="btnGoTemple">查看宮廟端示範</button>
+      <a class="btn sm" href="index.html">返回地圖</a>
+    </div>
+  </section>
+</main>
+
+<!-- ================= 宮廟端 ================= -->
+<main id="temple" class="wrap" hidden>
+  <h1>福安宮・平安回報總覽</h1>
+  <p class="muted small" id="askedLine"></p>
+  <div class="tools">
+    <button type="button" class="btn sm out" id="btnAsk">模擬發出詢問</button>
+  </div>
+
+  <div class="tiles" id="tiles"></div>
+  <p class="legend">「尚未回覆」只代表還沒收到回覆，不代表平安，也不代表受困。</p>
+
+  <h2>協助需求統計</h2>
+  <div class="card">
+    <div class="split"><b>各項需求筆數</b><span class="small muted">單位：筆回報</span></div>
+    <div class="bars" id="bars"></div>
+    <div class="legend" id="peopleLine"></div>
+    <div class="legend">需求可以複選，所以各項筆數加總 <b>不等於</b> 回報筆數，也不等於人數。<br>
+      「回報筆數」＝幾個人回覆需要協助；「需要協助人數」＝他們填報的合計人數（含同住家人）。</div>
+  </div>
+
+  <h2>居民回報清單</h2>
+  <p class="muted small" style="margin-top:-4px">示範用固定虛構居民；標示 <span class="badge demo">這支手機</span> 的那筆會隨你在居民端的回報更新。</p>
+  <div class="rlist" id="rlist"></div>
+
+  <h2>示範工具</h2>
+  <div class="tools">
+    <button type="button" class="btn sm" id="btnGoResident">切換到居民端</button>
+    <button type="button" class="btn sm" id="btnReset" style="color:var(--red);border-color:#E6C2BC">重設示範</button>
+  </div>
+  <p class="note">重設只清除這個 Demo 的資料，不會動到地圖的收藏與香火簿。</p>
+</main>
+
+<div class="foot wrap">展示模式：不會實際通知宮廟或派遣救援。<br>居民資料為虛構，只存在這支裝置。</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="mTitle">
+  <div class="box">
+    <h3 id="mTitle">重設示範資料？</h3>
+    <p class="small muted" style="margin-top:0">會恢復成初始的虛構居民與統計，包含這支手機的回報。收藏與香火簿不受影響。</p>
+    <div class="row2" style="margin-top:14px">
+      <button type="button" class="btn sm" id="mCancel">取消</button>
+      <button type="button" class="btn sm pri" id="mOk">確定重設</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===== 資料 =====
+   一份 state：askedAt（最近一次模擬詢問時間）＋ residents（固定虛構居民）。
+   id 'me' 那筆代表現在操作這支手機的居民；其他筆是固定情境，只有聯繫狀態可改。
+   三種數字分開算，不混：
+     回報筆數     = residents 裡 status 為 safe / help 的筆數
+     需要協助人數 = help 那幾筆的 people 加總（居民自己填的，含家人）
+     各項需求筆數 = 有勾那一項的 help 筆數（可複選，所以加總不等於人數） */
+const DEMO_KEY = 'fuan.safetyDemo.v1';
+const NEED_LIST = ['飲水', '食物', '避難資訊', '行動協助', '其他'];
+const FOLLOW = { pending:'待聯繫', contacted:'已聯繫', closed:'已結案' };
+const ME_DEFAULT = { place:'福安里 2 鄰（示範地址）', contact:'LINE 訊息（示範）' };
+
+function seed(){
+  /* 時間用「今天」的固定時刻，重設之後看起來永遠像剛發生 */
+  const d = new Date(); const day = d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate());
+  const t = function(hm){ return day + 'T' + hm + ':00'; };
+  return {
+    askedAt: t('08:00'),
+    residents: [
+      { id:'me',  name:'陳阿公', area:'福安里 2 鄰', me:true, status:'none', needs:[], other:'', people:0, place:'', contact:'', note:'', at:null, follow:null },
+      { id:'r2',  name:'王阿嬤', area:'福安里 1 鄰', status:'safe', needs:[], other:'', people:0, place:'', contact:'', note:'', at:t('08:12'), follow:null },
+      { id:'r3',  name:'李伯伯', area:'福安里 5 鄰', status:'help', needs:['飲水', '食物'], other:'', people:2, place:'福安里 5 鄰 自宅 2 樓', contact:'LINE 訊息', note:'停水兩天，太太行動不便', at:t('08:15'), follow:'pending' },
+      { id:'r4',  name:'張阿姨', area:'福安里 3 鄰', status:'safe', needs:[], other:'', people:0, place:'', contact:'', note:'', at:t('08:20'), follow:null },
+      { id:'r5',  name:'黃先生', area:'福安里 4 鄰', status:'help', needs:['行動協助'], other:'', people:1, place:'福安里 4 鄰 公寓 4 樓', contact:'LINE 訊息', note:'坐輪椅，電梯停電', at:t('08:26'), follow:'contacted' },
+      { id:'r6',  name:'劉奶奶', area:'福安里 6 鄰', status:'none', needs:[], other:'', people:0, place:'', contact:'', note:'', at:null, follow:null },
+      { id:'r7',  name:'吳大哥', area:'福安里 2 鄰', status:'safe', needs:[], other:'', people:0, place:'', contact:'', note:'', at:t('08:31'), follow:null },
+      { id:'r8',  name:'周阿婆', area:'福安里 7 鄰', status:'none', needs:[], other:'', people:0, place:'', contact:'', note:'', at:null, follow:null }
+    ]
+  };
+}
+function p2(n){ return String(n).padStart(2, '0'); }
+
+/* ===== 儲存：localStorage 能用就用；不能用（隱私模式、被擋）就只留在記憶體，畫面提醒重新整理會重設 ===== */
+let canStore = true;
+(function probe(){
+  try{ localStorage.setItem(DEMO_KEY + '.probe', '1'); localStorage.removeItem(DEMO_KEY + '.probe'); }
+  catch(_){ canStore = false; }
+})();
+function load(){
+  if(!canStore) return null;
+  try{
+    const raw = localStorage.getItem(DEMO_KEY); if(!raw) return null;
+    const o = JSON.parse(raw);
+    if(!o || !Array.isArray(o.residents) || !o.residents.some(function(r){ return r.id === 'me'; })) return null;
+    return o;
+  }catch(_){ return null; }
+}
+function save(){
+  if(!canStore) return;
+  try{ localStorage.setItem(DEMO_KEY, JSON.stringify(state)); }
+  catch(_){ canStore = false; document.getElementById('storeNote').classList.add('on'); }
+}
+let state = load() || seed();
+if(!canStore) document.getElementById('storeNote').classList.add('on');
+function me(){ return state.residents.find(function(r){ return r.id === 'me'; }); }
+
+/* ===== 小工具 ===== */
+const $ = function(id){ return document.getElementById(id); };
+function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]; }); }
+function fmtTime(iso){
+  if(!iso) return '—';
+  const d = new Date(iso); if(isNaN(d)) return '—';
+  return (d.getMonth() + 1) + '/' + d.getDate() + ' ' + p2(d.getHours()) + ':' + p2(d.getMinutes());
+}
+function nowIso(){
+  const d = new Date();
+  return d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate()) + 'T' + p2(d.getHours()) + ':' + p2(d.getMinutes()) + ':' + p2(d.getSeconds());
+}
+let toastTimer;
+function toast(msg, ms){
+  const el = $('toast'); el.textContent = msg; el.style.display = 'block';
+  clearTimeout(toastTimer); toastTimer = setTimeout(function(){ el.style.display = 'none'; }, ms || 2800);
+}
+function needsText(r){
+  return r.needs.map(function(n){ return n === '其他' && r.other ? '其他（' + r.other + '）' : n; }).join('、');
+}
+function statusBadge(s){
+  return s === 'safe' ? '<span class="badge safe">平安</span>' : s === 'help' ? '<span class="badge help">需要協助</span>' : '<span class="badge none">尚未回覆</span>';
+}
+
+/* ===== 居民端／宮廟端切換 ===== */
+let side = 'resident';
+function setSide(s){
+  side = s;
+  $('resident').hidden = s !== 'resident';
+  $('temple').hidden = s !== 'temple';
+  $('tabR').setAttribute('aria-selected', s === 'resident');
+  $('tabT').setAttribute('aria-selected', s === 'temple');
+  if(s === 'temple') renderTemple(); else renderHome();
+  window.scrollTo(0, 0);
+}
+$('tabR').onclick = function(){ setSide('resident'); };
+$('tabT').onclick = function(){ setSide('temple'); };
+$('btnGoTemple').onclick = function(){ setSide('temple'); };
+$('btnGoResident').onclick = function(){ setSide('resident'); show('home'); };
+
+/* ===== 居民端流程：home → (form) → confirm → done
+   draft 是還沒送出的草稿；按「確認送出」才寫進 state、才更新統計。 */
+let view = 'home';
+let draft = null;
+function show(v){
+  view = v;
+  ['home', 'form', 'confirm', 'done'].forEach(function(k){ $('v-' + k).hidden = k !== v; });
+  if(v === 'home') renderHome();
+  if(v === 'form') renderForm();
+  if(v === 'confirm') renderConfirm();
+  if(v === 'done') renderDone();
+  window.scrollTo(0, 0);
+}
+function newDraft(status){
+  const m = me();
+  /* 修改本次回報：把已送出的內容帶回來；第一次填：用示範預填 */
+  const has = m.status !== 'none';
+  return {
+    status: status,
+    needs: has ? m.needs.slice() : [],
+    other: has ? m.other : '',
+    people: has && m.people > 0 ? m.people : 1,
+    place: has && m.place ? m.place : ME_DEFAULT.place,
+    contact: has && m.contact ? m.contact : ME_DEFAULT.contact,
+    note: has ? m.note : ''
+  };
+}
+function renderHome(){
+  const m = me(); const box = $('homeStatus');
+  if(m.status === 'none'){ box.innerHTML = ''; return; }
+  box.innerHTML = '<div class="hint" style="margin-bottom:4px">你在 ' + fmtTime(m.at) + ' 已回報：' + statusBadge(m.status)
+    + (m.status === 'help' ? '　' + esc(needsText(m)) : '') + '<br><span class="small">再按一次可以修改，會更新原本那筆，不會多算一筆。</span></div>';
+}
+$('btnSafe').onclick = function(){ draft = newDraft('safe'); show('confirm'); };
+$('btnHelp').onclick = function(){ draft = newDraft('help'); show('form'); };
+
+/* --- 填寫需求 --- */
+const CHECK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+function renderForm(){
+  const box = $('needBox'); box.innerHTML = '';
+  NEED_LIST.forEach(function(n){
+    const on = draft.needs.indexOf(n) >= 0;
+    const lb = document.createElement('label');
+    lb.className = on ? 'on' : '';
+    lb.innerHTML = '<input type="checkbox" value="' + esc(n) + '"' + (on ? ' checked' : '') + '><span class="box">' + CHECK_SVG + '</span>' + esc(n);
+    lb.querySelector('input').onchange = function(e){
+      if(e.target.checked){ if(draft.needs.indexOf(n) < 0) draft.needs.push(n); }
+      else draft.needs = draft.needs.filter(function(x){ return x !== n; });
+      lb.classList.toggle('on', e.target.checked);
+      $('otherWrap').classList.toggle('on', draft.needs.indexOf('其他') >= 0);
+      $('needErr').classList.remove('on');
+    };
+    box.appendChild(lb);
+  });
+  $('otherWrap').classList.toggle('on', draft.needs.indexOf('其他') >= 0);
+  $('otherText').value = draft.other;
+  $('pOut').textContent = draft.people;
+  $('pMinus').disabled = draft.people <= 1;
+  $('pPlus').disabled = draft.people >= 20;
+  $('fPlace').value = draft.place;
+  $('fContact').value = draft.contact;
+  $('fNote').value = draft.note;
+  $('needErr').classList.remove('on');
+}
+$('pMinus').onclick = function(){ if(draft.people > 1) draft.people--; $('pOut').textContent = draft.people; $('pMinus').disabled = draft.people <= 1; $('pPlus').disabled = false; };
+$('pPlus').onclick = function(){ if(draft.people < 20) draft.people++; $('pOut').textContent = draft.people; $('pPlus').disabled = draft.people >= 20; $('pMinus').disabled = false; };
+$('btnFormBack').onclick = function(){ show('home'); };
+$('btnToConfirm').onclick = function(){
+  draft.other = $('otherText').value.trim();
+  draft.place = $('fPlace').value.trim();
+  draft.contact = $('fContact').value.trim();
+  draft.note = $('fNote').value.trim();
+  const err = $('needErr');
+  if(!draft.needs.length){ err.textContent = '請至少選一項需要的協助。'; err.classList.add('on'); err.scrollIntoView({ block:'center' }); return; }
+  if(draft.needs.indexOf('其他') >= 0 && !draft.other){ err.textContent = '勾了「其他」，請寫一下是什麼協助。'; err.classList.add('on'); $('otherText').focus(); return; }
+  if(!draft.place) draft.place = ME_DEFAULT.place;
+  if(!draft.contact) draft.contact = ME_DEFAULT.contact;
+  show('confirm');
+};
+
+/* --- 確認 --- */
+function summaryRows(r, withTime){
+  let h = '';
+  if(withTime) h += '<div><dt>回報時間</dt><dd>' + fmtTime(r.at) + '</dd></div>';
+  h += '<div><dt>狀況</dt><dd>' + statusBadge(r.status) + '</dd></div>';
+  if(r.status === 'help'){
+    h += '<div><dt>協助需求</dt><dd>' + esc(needsText(r)) + '</dd></div>';
+    h += '<div><dt>需協助人數</dt><dd>' + r.people + ' 人</dd></div>';
+    h += '<div><dt>目前位置</dt><dd>' + esc(r.place) + '</dd></div>';
+    h += '<div><dt>聯絡方式</dt><dd>' + esc(r.contact) + '</dd></div>';
+    if(r.note) h += '<div><dt>補充說明</dt><dd>' + esc(r.note) + '</dd></div>';
+  } else {
+    h += '<div><dt>協助需求</dt><dd class="muted">無</dd></div>';
+  }
+  return h;
+}
+function renderConfirm(){
+  $('sumBox').innerHTML = summaryRows(draft, false);
+  const b = $('btnSubmit'); b.disabled = false; b.textContent = '確認送出';
+}
+$('btnEdit').onclick = function(){ show(draft.status === 'help' ? 'form' : 'home'); };
+
+/* 送出：同一位居民永遠只有 me 這一筆——改的是原紀錄，不新增。
+   由「需要協助」改成「我平安」時 needs/people 清空，需求計數自然就掉了。
+   submitting 旗標＋disabled 擋連點。 */
+let submitting = false;
+$('btnSubmit').onclick = function(){
+  if(submitting) return;
+  submitting = true;
+  const b = $('btnSubmit'); b.disabled = true; b.textContent = '送出中…';
+  const m = me();
+  const wasHelp = m.status === 'help';
+  m.status = draft.status;
+  m.at = nowIso();
+  if(draft.status === 'help'){
+    m.needs = draft.needs.slice(); m.other = draft.needs.indexOf('其他') >= 0 ? draft.other : '';
+    m.people = draft.people; m.place = draft.place; m.contact = draft.contact; m.note = draft.note;
+    if(!wasHelp || !m.follow) m.follow = 'pending';
+  } else {
+    m.needs = []; m.other = ''; m.people = 0; m.place = ''; m.contact = ''; m.note = ''; m.follow = null;
+  }
+  save();
+  /* 稍微停一下讓「送出中…」看得到，也讓連點在這段時間內完全無效 */
+  setTimeout(function(){ submitting = false; show('done'); }, 350);
+};
+
+/* --- 完成 --- */
+function renderDone(){ $('doneBox').innerHTML = summaryRows(me(), true); }
+$('btnModify').onclick = function(){
+  const m = me();
+  draft = newDraft(m.status);
+  show(m.status === 'help' ? 'form' : 'home');
+};
+
+/* ===== 宮廟端 ===== */
+function stats(){
+  const rs = state.residents;
+  const safe = rs.filter(function(r){ return r.status === 'safe'; }).length;
+  const helpRows = rs.filter(function(r){ return r.status === 'help'; });
+  const none = rs.filter(function(r){ return r.status === 'none'; }).length;
+  const people = helpRows.reduce(function(s, r){ return s + (r.people || 0); }, 0);
+  const byNeed = {}; NEED_LIST.forEach(function(n){ byNeed[n] = 0; });
+  const others = [];
+  helpRows.forEach(function(r){ r.needs.forEach(function(n){ if(byNeed[n] != null) byNeed[n]++; }); if(r.other) others.push(r.other); });
+  return { total:rs.length, safe:safe, help:helpRows.length, none:none, people:people, byNeed:byNeed, others:others };
+}
+function renderTemple(){
+  const s = stats();
+  $('askedLine').textContent = '最近一次模擬詢問：' + fmtTime(state.askedAt) + '　對象：福安里關懷名單 ' + s.total + ' 人（虛構）';
+  $('tiles').innerHTML =
+      '<div class="tile all"><div class="k">本次詢問對象</div><div class="v">' + s.total + '<small>人</small></div></div>'
+    + '<div class="tile safe"><div class="k">已回報平安</div><div class="v">' + s.safe + '<small>筆</small></div></div>'
+    + '<div class="tile help"><div class="k">需要協助</div><div class="v">' + s.help + '<small>筆</small></div></div>'
+    + '<div class="tile none"><div class="k">尚未回覆</div><div class="v">' + s.none + '<small>筆</small></div></div>';
+  const max = Math.max(1, s.help);
+  $('bars').innerHTML = NEED_LIST.map(function(n){
+    const c = s.byNeed[n];
+    return '<div class="bar"><span>' + esc(n) + '</span><span class="tr"><i style="width:' + (c / max * 100) + '%"></i></span><span class="n">' + c + '<small> 筆</small></span></div>';
+  }).join('') + (s.others.length ? '<div class="legend">其他內容：' + s.others.map(esc).join('；') + '</div>' : '');
+  $('peopleLine').innerHTML = '需要協助回報 <b>' + s.help + '</b> 筆，填報的需要協助人數合計 <b>' + s.people + '</b> 人。';
+
+  /* 清單：需要協助（待聯繫在前）→ 尚未回覆 → 平安 */
+  const order = { help:0, none:1, safe:2 }; const fo = { pending:0, contacted:1, closed:2 };
+  const rows = state.residents.slice().sort(function(a, b){
+    return (order[a.status] - order[b.status]) || ((fo[a.follow] || 0) - (fo[b.follow] || 0)) || (a.at || 'z').localeCompare(b.at || 'z');
+  });
+  $('rlist').innerHTML = rows.map(function(r){
+    let h = '<div class="rc' + (r.me ? ' me' : '') + '" data-id="' + r.id + '"><div class="top"><span class="nm">' + esc(r.name) + '</span>'
+      + statusBadge(r.status) + (r.me ? '<span class="badge demo">這支手機</span>' : '')
+      + '<span class="tm">' + (r.at ? fmtTime(r.at) : '未回覆') + '</span></div>';
+    h += '<div class="meta"><span><em>鄰別</em>' + esc(r.area) + '</span>';
+    if(r.status === 'help'){
+      h += '<span><em>需求</em>' + esc(needsText(r)) + '</span><span><em>人數</em>' + r.people + ' 人</span>'
+         + '<span><em>位置</em>' + esc(r.place) + '</span><span><em>聯絡</em>' + esc(r.contact) + '</span>'
+         + (r.note ? '<span><em>說明</em>' + esc(r.note) + '</span>' : '');
+    } else if(r.status === 'none'){
+      h += '<span class="muted">尚未收到回覆，不代表平安或受困。</span>';
+    }
+    h += '</div>';
+    if(r.status === 'help'){
+      h += '<div class="follow" role="group" aria-label="聯繫狀態">' + Object.keys(FOLLOW).map(function(k){
+        return '<button type="button" data-f="' + k + '" class="' + (k === 'closed' ? 'done' : '') + '" aria-pressed="' + (r.follow === k) + '">' + FOLLOW[k] + '</button>';
+      }).join('') + '</div>';
+    }
+    return h + '</div>';
+  }).join('');
+  $('rlist').querySelectorAll('.follow button').forEach(function(b){
+    b.onclick = function(){
+      const id = b.closest('.rc').getAttribute('data-id');
+      const r = state.residents.find(function(x){ return x.id === id; });
+      if(!r) return;
+      r.follow = b.getAttribute('data-f'); save(); renderTemple();
+    };
+  });
+}
+$('btnAsk').onclick = function(){
+  state.askedAt = nowIso(); save(); renderTemple();
+  toast('已模擬發出詢問，可切換居民端體驗回覆。');
+};
+
+/* 重設：只動 DEMO_KEY，收藏（fuan.fav）與香火簿（fuan.stamps）碰都不碰 */
+$('btnReset').onclick = function(){ $('modal').classList.add('on'); $('mCancel').focus(); };
+$('mCancel').onclick = function(){ $('modal').classList.remove('on'); };
+$('modal').onclick = function(e){ if(e.target === $('modal')) $('modal').classList.remove('on'); };
+$('mOk').onclick = function(){
+  state = seed();
+  try{ if(canStore) localStorage.removeItem(DEMO_KEY); }catch(_){}
+  draft = null;
+  $('modal').classList.remove('on');
+  renderTemple();
+  show('home');
+  toast('已恢復初始示範資料');
+};
+
+/* ===== 啟動：?side=temple 或 #temple 直接開宮廟端，其餘開居民端 ===== */
+(function boot(){
+  let s = 'resident';
+  try{
+    const q = new URLSearchParams(location.search);
+    if(q.get('side') === 'temple' || location.hash === '#temple') s = 'temple';
+  }catch(_){}
+  show('home');
+  setSide(s);
+})();
+</script>
+</body>
+</html>
