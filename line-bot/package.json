@@ -1,0 +1,12 @@
+{
+  "name": "fuan-line-safety-bot",
+  "version": "0.1.0",
+  "private": true,
+  "description": "福安 LINE・平安回報固定問答 Bot（LINE Messaging API webhook，無 AI 模型）",
+  "type": "module",
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "start": "node server-node.js",
+    "test": "node --test test/*.test.js"
+  }
+}
