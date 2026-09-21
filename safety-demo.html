@@ -3,22 +3,25 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
-<title>災時平安回報（展示）｜福安 LINE</title>
+<title>獅仔平安回報（展示）｜福安 LINE</title>
 <meta name="robots" content="noindex">
 <style>
-/* ===== 災時平安回報 Demo =====
-   純前端、不打任何 API。資料只存在這支手機（localStorage：fuan.safetyDemo.v1），
-   跟收藏（fuan.fav）、香火簿（fuan.stamps）分開存，重設示範只清自己的 key。
+/* ===== 獅仔平安回報 Demo（對話式）=====
+   純前端、沒有後端、不叫 LLM、不打任何 API。
+   回報紀錄、宮廟統計、模擬通知都只存在這支手機（localStorage：fuan.safetyDemo.v2 ＋ 草稿 fuan.safetyDemo.draft.v2）。
+   真實定位與 LINE 分享（liff.shareTargetPicker）留待下一階段；這一版不放任何會看起來像「已分享」的按鈕。
+   收藏（fuan.fav）、香火簿（fuan.stamps）與 LIFF 的資料一律不碰。
    白底、黑字、綠色重點；字大、鈕大，給長輩用。 */
 :root{
   --bg:#FFFFFF; --ink:#1F1A17; --muted:#5F5952; --line:#E4DFD6;
   --g:#0C8F3B; --gd:#0A7A32; --gt:#E7F7EC; --gline:#BFE3CB;
   --amber:#8C6A1E; --ambert:#FBF1D6; --red:#B4362A; --redt:#FBE9E6;
+  --blue:#1F5FA8; --bluet:#E8F0FB;
   --card:#fff; --soft:#F7F5F0;
   --font:"Noto Sans TC","PingFang TC","Microsoft JhengHei",-apple-system,sans-serif;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;padding:0;background:var(--bg);color:var(--ink)}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);max-width:100%;overflow-x:hidden}
 body{font-family:var(--font);font-size:18px;line-height:1.6;min-height:100vh;
      padding-bottom:calc(24px + env(safe-area-inset-bottom))}
 img{max-width:100%}
@@ -47,23 +50,45 @@ button:disabled{cursor:default}
 .storenote.on{display:block}
 
 /* ---- 共用 ---- */
-main{padding-top:16px}
+main{padding-top:14px}
 main[hidden]{display:none}
-.view[hidden]{display:none}
 h1{font-size:24px;line-height:1.35;margin:6px 0 10px;font-weight:800}
 h2{font-size:19px;margin:22px 0 10px;font-weight:800}
+h3{font-size:19px;margin:0 0 8px;font-weight:800}
 p{margin:6px 0}
 .muted{color:var(--muted)}
 .small{font-size:14.5px}
 .card{background:var(--card);border:1.5px solid var(--line);border-radius:16px;padding:16px}
-.lion{display:flex;align-items:flex-end;gap:12px;margin:4px 0 14px}
-.lion img{width:86px;height:auto;flex:none;filter:drop-shadow(0 2px 3px rgba(31,26,23,.22))}
-.bubble{position:relative;flex:1;background:var(--soft);border:1.5px solid var(--line);border-radius:16px;padding:14px 15px;font-size:17.5px;line-height:1.65;min-width:0}
-.bubble::before{content:"";position:absolute;left:-9px;bottom:22px;width:14px;height:14px;background:var(--soft);
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+/* 進度列：第幾題、上一題、重新開始 */
+.prog{display:flex;align-items:center;gap:8px;margin:0 0 10px}
+.prog .st{font-size:15px;font-weight:800;color:var(--g);background:var(--gt);border-radius:8px;padding:3px 10px;white-space:nowrap}
+.prog .sp{flex:1}
+.prog button{min-height:40px;border-radius:10px;border:1.5px solid var(--line);background:#fff;font-size:14.5px;font-weight:800;color:var(--muted);padding:0 12px}
+.prog button:disabled{opacity:.4}
+
+/* 對話：獅仔在左、使用者回答在右 */
+.chat{display:grid;gap:12px}
+.lion{display:flex;align-items:flex-end;gap:10px}
+.lion img{width:78px;height:auto;flex:none;filter:drop-shadow(0 2px 3px rgba(31,26,23,.22))}
+.lion.past img{width:44px;opacity:.85}
+.bubble{position:relative;flex:1;background:var(--soft);border:1.5px solid var(--line);border-radius:16px;padding:13px 15px;font-size:18px;line-height:1.6;min-width:0;word-break:break-word}
+.bubble::before{content:"";position:absolute;left:-9px;bottom:20px;width:14px;height:14px;background:var(--soft);
                 border-left:1.5px solid var(--line);border-bottom:1.5px solid var(--line);transform:rotate(45deg)}
+.lion.past .bubble{font-size:15.5px;padding:9px 13px;color:var(--muted)}
 .bubble b{font-weight:800}
 .bubble .tag{display:inline-block;font-size:13px;font-weight:800;color:var(--amber);background:var(--ambert);border-radius:6px;padding:0 7px;margin-bottom:6px}
+.ans{display:flex;justify-content:flex-end;align-items:center;gap:8px}
+.ans .ab{max-width:82%;background:var(--g);color:#fff;border-radius:16px 16px 4px 16px;padding:10px 14px;font-size:17px;font-weight:800;line-height:1.5;word-break:break-word}
+.ans .ab small{display:block;font-weight:600;font-size:13.5px;opacity:.9}
+.ans .edit{min-height:36px;border-radius:10px;border:1.5px solid var(--line);background:#fff;font-size:14px;font-weight:800;color:var(--g);padding:0 10px;flex:none}
+@keyframes pop{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.fresh{animation:pop .18s ease-out}
+@media (prefers-reduced-motion:reduce){.fresh{animation:none}}
 
+/* 控制區：一次只出現目前這題 */
+.ctl{margin-top:14px}
 .btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:64px;
      border-radius:16px;border:2px solid var(--line);background:#fff;color:var(--ink);
      font-size:22px;font-weight:800;padding:12px 16px;line-height:1.3;text-decoration:none;
@@ -74,60 +99,66 @@ p{margin:6px 0}
 .btn.out{border-color:var(--g);color:var(--g)}
 .btn.sm{min-height:52px;font-size:18px;border-radius:14px}
 .btn.xs{min-height:44px;font-size:16px;border-radius:12px;padding:8px 14px;width:auto;display:inline-flex}
+.btn.warn{border-color:#E6C2BC;color:var(--red)}
 .btn:disabled{opacity:.55}
 .btn svg{width:26px;height:26px;flex:none}
-.stack{display:grid;gap:12px;margin:14px 0}
+.stack{display:grid;gap:12px;margin:12px 0}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .note{font-size:14.5px;color:var(--muted);line-height:1.6;margin-top:8px}
 .ok{color:var(--g);font-weight:800}
 .hint{background:var(--gt);border:1.5px solid var(--gline);border-radius:12px;padding:10px 14px;font-size:15px;color:#0B5A27;line-height:1.6}
+.hint.amber{background:var(--ambert);border-color:#EFDFB5;color:var(--amber)}
+.hint.red{background:var(--redt);border-color:#E6C2BC;color:var(--red)}
+.hint.blue{background:var(--bluet);border-color:#C7D9F2;color:var(--blue)}
 
-/* 需求複選：一格一格大方塊 */
+/* 需求複選 */
 .choice{display:grid;gap:10px}
 .choice label{display:flex;align-items:center;gap:12px;border:2px solid var(--line);border-radius:14px;
-              padding:12px 14px;font-size:20px;font-weight:800;min-height:60px;cursor:pointer;background:#fff}
+              padding:12px 14px;font-size:20px;font-weight:800;min-height:60px;cursor:pointer;background:#fff;position:relative}
 .choice label.on{border-color:var(--g);background:var(--gt)}
 .choice input{position:absolute;opacity:0;width:0;height:0}
 .choice .box{width:28px;height:28px;border-radius:8px;border:2.5px solid #B9B2A8;flex:none;display:grid;place-items:center;background:#fff}
 .choice label.on .box{border-color:var(--g);background:var(--g)}
 .choice .box svg{width:20px;height:20px;display:none}
 .choice label.on .box svg{display:block}
-.field{margin:14px 0}
+.field{margin:12px 0}
 .field .lb{display:block;font-weight:800;font-size:17px;margin-bottom:6px}
 .field .lb small{font-weight:600;color:var(--muted);font-size:13.5px;margin-left:6px}
-.field input[type=text],.field textarea{width:100%;font:inherit;font-size:18px;padding:12px 14px;border:2px solid var(--line);
+.field input[type=text],.field input[type=number],.field textarea{width:100%;font:inherit;font-size:18px;padding:12px 14px;border:2px solid var(--line);
                           border-radius:12px;background:#fff;color:var(--ink)}
 .field textarea{min-height:84px;resize:vertical}
 .field input:focus,.field textarea:focus{border-color:var(--g);outline:none}
-.field .demoTag{display:inline-block;font-size:12.5px;font-weight:800;color:var(--amber);background:var(--ambert);border-radius:6px;padding:0 6px;margin-left:4px;vertical-align:2px}
-.stepper{display:inline-flex;align-items:center;border:2px solid var(--line);border-radius:14px;overflow:hidden}
-.stepper button{width:56px;height:56px;border:none;background:#fff;font-size:28px;font-weight:800;color:var(--g)}
-.stepper button:disabled{color:#C9C3B8}
-.stepper output{min-width:64px;text-align:center;font-size:22px;font-weight:800;border-left:2px solid var(--line);border-right:2px solid var(--line);height:56px;line-height:56px}
+.demoTag{display:inline-block;font-size:12.5px;font-weight:800;color:var(--amber);background:var(--ambert);border-radius:6px;padding:0 6px;margin-left:4px;vertical-align:2px}
 .err{display:none;color:var(--red);background:var(--redt);border-radius:10px;padding:8px 12px;font-weight:800;font-size:15px;margin-top:8px}
 .err.on{display:block}
-.sub{display:none;margin-top:10px}
-.sub.on{display:block}
+.geo{border:1.5px solid var(--line);border-radius:14px;padding:12px 14px;background:#fff;font-size:16px;line-height:1.6}
+.geo .co{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:16px;font-weight:800;word-break:break-all}
+.geo a{color:var(--blue);font-weight:800}
+.spin{display:inline-block;width:18px;height:18px;border:3px solid var(--gline);border-top-color:var(--g);border-radius:50%;animation:sp .8s linear infinite;vertical-align:-3px;margin-right:6px}
+@keyframes sp{to{transform:rotate(360deg)}}
 
 /* 摘要表 */
-.sum{border:1.5px solid var(--line);border-radius:14px;overflow:hidden}
+.sum{border:1.5px solid var(--line);border-radius:14px;overflow:hidden;background:#fff}
 .sum div{display:grid;grid-template-columns:96px 1fr;gap:10px;padding:11px 14px;border-top:1px solid var(--line);font-size:17px}
 .sum div:first-child{border-top:none}
 .sum dt{color:var(--muted);font-weight:700;margin:0}
 .sum dd{margin:0;font-weight:700;word-break:break-word}
-.badge{display:inline-block;border-radius:8px;padding:1px 9px;font-size:14px;font-weight:800;line-height:1.7}
+.badge{display:inline-block;border-radius:8px;padding:1px 9px;font-size:14px;font-weight:800;line-height:1.7;vertical-align:1px}
 .badge.safe{background:var(--gt);color:var(--g)}
 .badge.help{background:var(--redt);color:var(--red)}
 .badge.none{background:#EFECE6;color:#6B655E}
 .badge.demo{background:var(--ambert);color:var(--amber)}
-.chips{display:flex;flex-wrap:wrap;gap:6px}
-.chip{display:inline-block;background:#FBF3E4;color:#7A5A2B;border:1px solid #EFDFC2;border-radius:8px;padding:1px 9px;font-size:14px;font-weight:800}
+.badge.real{background:var(--bluet);color:var(--blue)}
 
 /* 完成畫面 */
-.doneHead{text-align:center;padding:10px 0 4px}
-.doneHead .ck{width:72px;height:72px;border-radius:50%;background:var(--gt);display:grid;place-items:center;margin:0 auto 10px}
-.doneHead .ck svg{width:40px;height:40px}
-.doneHead h1{margin:0 0 4px}
+.doneHead{text-align:center;padding:6px 0 2px}
+.doneHead .ck{width:64px;height:64px;border-radius:50%;background:var(--gt);display:grid;place-items:center;margin:0 auto 8px}
+.doneHead .ck svg{width:36px;height:36px}
+.doneHead h1{margin:0 0 2px;font-size:22px}
+.twocol{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.twocol .btn{font-size:17px;min-height:56px;padding:8px 10px}
+.kind{font-size:13.5px;font-weight:800;letter-spacing:.02em;margin:14px 0 6px;color:var(--muted)}
+.kind.real{color:var(--blue)}
 
 /* ---- 宮廟端 ---- */
 .tiles{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:12px 0}
@@ -153,7 +184,7 @@ p{margin:6px 0}
 .rc .nm{font-size:18px;font-weight:800}
 .rc .tm{margin-left:auto;font-size:13.5px;color:var(--muted);font-weight:700;white-space:nowrap}
 .rc .meta{font-size:15px;color:var(--ink);margin-top:6px;line-height:1.6}
-.rc .meta span{display:block}
+.rc .meta span{display:block;word-break:break-word}
 .rc .meta em{font-style:normal;color:var(--muted);font-weight:700;margin-right:6px}
 .follow{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
 .follow button{flex:1;min-width:84px;min-height:40px;border-radius:10px;border:1.5px solid var(--line);background:#fff;font-size:14.5px;font-weight:800;color:var(--muted)}
@@ -163,24 +194,35 @@ p{margin:6px 0}
 .split{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .split .small{margin-left:auto}
 
-/* toast 與確認框 */
+/* toast、確認框、分享面板 */
 .toast{position:fixed;left:50%;bottom:calc(28px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:60;
        background:rgba(31,26,23,.92);color:#fff;padding:12px 18px;border-radius:12px;font-size:16px;font-weight:700;
        line-height:1.5;max-width:86%;text-align:center;display:none}
-.modal{position:fixed;inset:0;z-index:50;background:rgba(31,26,23,.45);display:none;align-items:center;justify-content:center;padding:20px}
+.modal{position:fixed;inset:0;z-index:50;background:rgba(31,26,23,.45);display:none;align-items:flex-end;justify-content:center;padding:0}
 .modal.on{display:flex}
-.modal .box{background:#fff;border-radius:18px;padding:20px;max-width:400px;width:100%}
-.modal h3{margin:0 0 8px;font-size:20px}
-.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.modal .box{background:#fff;border-radius:18px 18px 0 0;padding:18px 18px calc(18px + env(safe-area-inset-bottom));max-width:520px;width:100%;max-height:92vh;overflow:auto}
+@media (min-width:600px){.modal{align-items:center;padding:20px}.modal .box{border-radius:18px}}
+.pre{white-space:pre-wrap;word-break:break-word;font-size:15.5px;line-height:1.6;background:var(--soft);border:1.5px solid var(--line);border-radius:12px;padding:12px 14px;margin:8px 0}
+.chk{display:flex;align-items:center;gap:12px;border:2px solid var(--line);border-radius:14px;padding:10px 14px;font-size:17px;font-weight:800;min-height:56px;cursor:pointer;background:#fff}
+.chk.on{border-color:var(--g);background:var(--gt)}
+.chk.off{opacity:.55;cursor:default}
+.chk input{width:24px;height:24px;accent-color:var(--g);flex:none}
+.status{font-size:15.5px;font-weight:800;border-radius:10px;padding:9px 12px;margin:10px 0;line-height:1.55;display:none}
+.status.on{display:block}
+.status.info{background:var(--soft);color:var(--muted)}
+.status.ok{background:var(--gt);color:#0B5A27}
+.status.warn{background:var(--ambert);color:var(--amber)}
+.status.err{background:var(--redt);color:var(--red)}
 .foot{margin-top:28px;text-align:center;font-size:13.5px;color:var(--muted);line-height:1.7}
-/* 窄機（320～360）：頂欄擠一點，標題不被切掉 */
 @media (max-width:360px){
   .ttl{font-size:15px}
   .seg button{font-size:14px;padding:6px 9px}
   .back{font-size:15px}
   .bubble{font-size:17px;padding:12px 13px}
-  .lion img{width:74px}
+  .lion img{width:66px}
   .tile .v{font-size:30px}
+  .btn{font-size:20px}
+  .twocol .btn{font-size:16px}
 }
 </style>
 </head>
@@ -191,113 +233,37 @@ p{margin:6px 0}
     <a class="back" href="index.html" aria-label="返回地圖">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>地圖
     </a>
-    <div class="ttl">災時平安回報</div>
+    <div class="ttl">獅仔平安回報</div>
     <div class="seg" role="tablist" aria-label="切換居民端或宮廟端">
       <button type="button" role="tab" id="tabR" aria-selected="true">居民端</button>
       <button type="button" role="tab" id="tabT" aria-selected="false">宮廟端</button>
     </div>
   </div>
 </header>
-<div class="demo"><b>展示模式</b>不會實際通知宮廟或派遣救援</div>
+<div class="demo"><b>展示模式</b>不會實際通知宮廟或派遣救援；回報只存在這支手機</div>
 <div class="storenote" id="storeNote">此瀏覽器無法儲存資料，示範照常可以操作，但重新整理後會重設。</div>
 
-<!-- ================= 居民端 ================= -->
+<!-- ================= 居民端（對話式）================= -->
 <main id="resident" class="wrap">
-
-  <!-- 1. 收到宮廟詢問 -->
-  <section class="view" id="v-home">
-    <div class="lion">
-      <img src="lion_full.webp" alt="福安宮的獅仔">
-      <div class="bubble">
-        <span class="tag">災害演練</span><br>
-        颱風過後，<b>福安宮</b>關心你。<br>
-        目前是否平安？如果需要協助，請告訴我們。
-      </div>
-    </div>
-    <div id="homeStatus"></div>
-    <div class="stack">
-      <button type="button" class="btn pri" id="btnSafe">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>我平安
-      </button>
-      <button type="button" class="btn out" id="btnHelp">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l9.5 17h-19z"/><path d="M12 10v4.5"/><circle cx="12" cy="17.2" r=".6" fill="currentColor"/></svg>需要協助
-      </button>
-    </div>
-    <div class="hint">平時累積關懷，災時快速掌握需求。<br>協助縮短物資準備時間，讓調配更有效率。</div>
-    <p class="note">這是比賽用的示範：情境、居民與回報內容都是虛構的，不需要輸入真實個資，也不會送到任何地方。</p>
-  </section>
-
-  <!-- 2. 需要協助：填寫需求 -->
-  <section class="view" id="v-form" hidden>
-    <h1>需要哪些協助？</h1>
-    <p class="muted small">可以複選，至少選一項。</p>
-    <div class="choice" id="needBox" role="group" aria-label="協助需求"></div>
-    <div class="sub" id="otherWrap">
-      <div class="field" style="margin-top:6px">
-        <label class="lb" for="otherText">「其他」是什麼？<small>必填</small></label>
-        <input type="text" id="otherText" maxlength="60" placeholder="例如：需要充電、需要藥局資訊（示範）" autocomplete="off">
-      </div>
-    </div>
-    <div class="err" id="needErr" role="alert"></div>
-
-    <div class="field">
-      <span class="lb" id="peopleLb">需要協助的人數<small>含自己</small></span>
-      <div class="stepper" role="group" aria-labelledby="peopleLb">
-        <button type="button" id="pMinus" aria-label="減少一人">−</button>
-        <output id="pOut" aria-live="polite">1</output>
-        <button type="button" id="pPlus" aria-label="增加一人">＋</button>
-      </div>
-    </div>
-    <div class="field">
-      <label class="lb" for="fPlace">目前位置<span class="demoTag">示範預填</span></label>
-      <input type="text" id="fPlace" maxlength="60" autocomplete="off">
-    </div>
-    <div class="field">
-      <label class="lb" for="fContact">聯絡方式<span class="demoTag">示範預填</span></label>
-      <input type="text" id="fContact" maxlength="40" autocomplete="off">
-      <p class="note" style="margin-top:4px">示範用，請不要填真實電話或住址。</p>
-    </div>
-    <div class="field">
-      <label class="lb" for="fNote">補充說明<small>選填</small></label>
-      <textarea id="fNote" maxlength="120" placeholder="例如：家裡停水兩天、樓梯不好走（示範）"></textarea>
-    </div>
-    <div class="stack">
-      <button type="button" class="btn pri" id="btnToConfirm">下一步：確認內容</button>
-      <button type="button" class="btn sm" id="btnFormBack">返回上一頁</button>
-    </div>
-  </section>
-
-  <!-- 3. 確認送出 -->
-  <section class="view" id="v-confirm" hidden>
-    <h1>請確認回報內容</h1>
-    <p class="muted small">按「確認送出」之後，宮廟端的示範統計才會更新。</p>
-    <dl class="sum" id="sumBox"></dl>
-    <div class="stack">
-      <button type="button" class="btn pri" id="btnSubmit">確認送出</button>
-      <button type="button" class="btn sm" id="btnEdit">返回修改</button>
-    </div>
-    <p class="note">展示模式：不會實際通知宮廟或派遣救援。</p>
-  </section>
-
-  <!-- 4. 完成 -->
-  <section class="view" id="v-done" hidden>
-    <div class="doneHead">
-      <div class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="#0C8F3B" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
-      <h1>示範回報已完成</h1>
-      <p class="muted small">本次資料僅更新此裝置的模擬統計，不會實際通知宮廟。</p>
-    </div>
-    <dl class="sum" id="doneBox" style="margin-top:12px"></dl>
-    <div class="stack">
-      <button type="button" class="btn sm out" id="btnModify">修改本次回報</button>
-      <button type="button" class="btn sm pri" id="btnGoTemple">查看宮廟端示範</button>
-      <a class="btn sm" href="index.html">返回地圖</a>
-    </div>
-  </section>
+  <div class="prog">
+    <span class="st" id="progText">第 1 題／共 4 題</span>
+    <span class="sp"></span>
+    <button type="button" id="btnPrev">上一題</button>
+    <button type="button" id="btnRestart">重新開始</button>
+  </div>
+  <div class="chat" id="chat" aria-live="polite"></div>
+  <div class="ctl" id="ctl"></div>
+  <p class="note" style="margin-top:22px">這是比賽用的示範：情境、居民與回報內容都是虛構的，不需要輸入真實個資。
+    回報紀錄與宮廟統計只存在這支手機，不會送到任何地方。</p>
+  <div class="tools" style="margin-top:14px">
+    <button type="button" class="btn xs warn" id="btnResetAllR">重設全部示範資料</button>
+  </div>
 </main>
 
 <!-- ================= 宮廟端 ================= -->
 <main id="temple" class="wrap" hidden>
   <h1>福安宮・平安回報總覽</h1>
+  <div class="hint amber" style="margin-bottom:10px">宮廟端是<b>本機示範</b>：畫面上的統計只來自這支手機的資料，不是宮廟真正收到的案件，也不會和其他手機同步。</div>
   <p class="muted small" id="askedLine"></p>
   <div class="tools">
     <button type="button" class="btn sm out" id="btnAsk">模擬發出詢問</button>
@@ -316,263 +282,504 @@ p{margin:6px 0}
   </div>
 
   <h2>居民回報清單</h2>
-  <p class="muted small" style="margin-top:-4px">示範用固定虛構居民；標示 <span class="badge demo">這支手機</span> 的那筆會隨你在居民端的回報更新。</p>
+  <p class="muted small" style="margin-top:-4px">示範用固定虛構居民；標示 <span class="badge demo">這支手機</span> 的那筆會隨你在居民端確認的回報更新。</p>
   <div class="rlist" id="rlist"></div>
 
   <h2>示範工具</h2>
   <div class="tools">
     <button type="button" class="btn sm" id="btnGoResident">切換到居民端</button>
-    <button type="button" class="btn sm" id="btnReset" style="color:var(--red);border-color:#E6C2BC">重設示範</button>
+    <button type="button" class="btn sm warn" id="btnResetAllT">重設全部示範資料</button>
   </div>
-  <p class="note">重設只清除這個 Demo 的資料，不會動到地圖的收藏與香火簿。</p>
+  <p class="note">重設只清除這個 Demo 自己的儲存鍵（回報紀錄與草稿），不會動到地圖的收藏、香火簿或 LINE 登入資料。</p>
 </main>
 
 <div class="foot wrap">展示模式：不會實際通知宮廟或派遣救援。<br>居民資料為虛構，只存在這支裝置。</div>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<!-- 通用確認框 -->
 <div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="mTitle">
   <div class="box">
-    <h3 id="mTitle">重設示範資料？</h3>
-    <p class="small muted" style="margin-top:0">會恢復成初始的虛構居民與統計，包含這支手機的回報。收藏與香火簿不受影響。</p>
+    <h3 id="mTitle"></h3>
+    <p class="small muted" id="mText" style="margin-top:0"></p>
     <div class="row2" style="margin-top:14px">
       <button type="button" class="btn sm" id="mCancel">取消</button>
-      <button type="button" class="btn sm pri" id="mOk">確定重設</button>
+      <button type="button" class="btn sm pri" id="mOk">確定</button>
+    </div>
+  </div>
+</div>
+
+<!-- 複製回報內容（純文字，只複製到剪貼簿，不送到任何地方）-->
+<div class="modal" id="copyBox" role="dialog" aria-modal="true" aria-labelledby="cTitle">
+  <div class="box">
+    <h3 id="cTitle">複製回報內容</h3>
+    <p class="small muted" style="margin-top:0">下面是依你確認的內容整理的文字。只會複製到剪貼簿，不會自動傳給任何人；要不要貼給家人由你決定。LINE 一鍵分享是下一階段的功能。</p>
+    <div class="pre" id="copyPreview"></div>
+    <div class="status" id="copyStatus" role="status"></div>
+    <div class="stack" style="margin-bottom:0">
+      <button type="button" class="btn sm pri" id="btnCopyGo">複製到剪貼簿</button>
+      <button type="button" class="btn sm" id="btnCopyClose">關閉</button>
     </div>
   </div>
 </div>
 
 <script>
-/* ===== 資料 =====
-   一份 state：askedAt（最近一次模擬詢問時間）＋ residents（固定虛構居民）。
-   id 'me' 那筆代表現在操作這支手機的居民；其他筆是固定情境，只有聯繫狀態可改。
-   三種數字分開算，不混：
-     回報筆數     = residents 裡 status 為 safe / help 的筆數
-     需要協助人數 = help 那幾筆的 people 加總（居民自己填的，含家人）
-     各項需求筆數 = 有勾那一項的 help 筆數（可複選，所以加總不等於人數） */
-const DEMO_KEY = 'fuan.safetyDemo.v1';
+/* ===== 一、資料 =====
+   state（fuan.safetyDemo.v2）：askedAt ＋ residents（固定虛構居民）。id 'me' 是操作這支手機的居民。
+   draft（fuan.safetyDemo.draft.v2）：還沒按「確認回報」的草稿；重新整理、登入跳轉後可恢復；不列入統計。
+   三種數字分開算：回報筆數 / 需要協助人數（people 加總）/ 各項需求筆數（可複選，加總≠人數） */
+const DEMO_KEY  = 'fuan.safetyDemo.v2';
+const DRAFT_KEY = 'fuan.safetyDemo.draft.v2';
+const LEGACY_KEYS = ['fuan.safetyDemo.v1'];           // 舊版 Demo 的鍵，重設時一起清，其他鍵一律不碰
 const NEED_LIST = ['飲水', '食物', '避難資訊', '行動協助', '其他'];
 const FOLLOW = { pending:'待聯繫', contacted:'已聯繫', closed:'已結案' };
-const ME_DEFAULT = { place:'福安里 2 鄰（示範地址）', contact:'LINE 訊息（示範）' };
+const PEOPLE_MAX = 50;
+const DEMO_LOC = { source:'demo', text:'福安里示範地址（福安街 1 號）' };
+const DEMO_EXTRA = { help:{ contact:'LINE 訊息（示範）', note:'示範：行動不便，請先聯繫確認。' },
+                     safe:{ contact:'LINE 訊息（示範）', note:'示範：家裡都好，不用擔心。' } };
 
+function p2(n){ return String(n).padStart(2, '0'); }
+function todayAt(hm){ const d = new Date(); const m = hm.split(':'); d.setHours(+m[0], +m[1], 0, 0); return d.toISOString(); }
+function blankLoc(){ return { source:'none', text:'', lat:null, lng:null, acc:null }; }
 function seed(){
-  /* 時間用「今天」的固定時刻，重設之後看起來永遠像剛發生 */
-  const d = new Date(); const day = d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate());
-  const t = function(hm){ return day + 'T' + hm + ':00'; };
   return {
-    askedAt: t('08:00'),
+    askedAt: todayAt('08:00'),
     residents: [
-      { id:'me',  name:'陳阿公', area:'福安里 2 鄰', me:true, status:'none', needs:[], other:'', people:0, place:'', contact:'', note:'', at:null, follow:null },
-      { id:'r2',  name:'王阿嬤', area:'福安里 1 鄰', status:'safe', needs:[], other:'', people:0, place:'', contact:'', note:'', at:t('08:12'), follow:null },
-      { id:'r3',  name:'李伯伯', area:'福安里 5 鄰', status:'help', needs:['飲水', '食物'], other:'', people:2, place:'福安里 5 鄰 自宅 2 樓', contact:'LINE 訊息', note:'停水兩天，太太行動不便', at:t('08:15'), follow:'pending' },
-      { id:'r4',  name:'張阿姨', area:'福安里 3 鄰', status:'safe', needs:[], other:'', people:0, place:'', contact:'', note:'', at:t('08:20'), follow:null },
-      { id:'r5',  name:'黃先生', area:'福安里 4 鄰', status:'help', needs:['行動協助'], other:'', people:1, place:'福安里 4 鄰 公寓 4 樓', contact:'LINE 訊息', note:'坐輪椅，電梯停電', at:t('08:26'), follow:'contacted' },
-      { id:'r6',  name:'劉奶奶', area:'福安里 6 鄰', status:'none', needs:[], other:'', people:0, place:'', contact:'', note:'', at:null, follow:null },
-      { id:'r7',  name:'吳大哥', area:'福安里 2 鄰', status:'safe', needs:[], other:'', people:0, place:'', contact:'', note:'', at:t('08:31'), follow:null },
-      { id:'r8',  name:'周阿婆', area:'福安里 7 鄰', status:'none', needs:[], other:'', people:0, place:'', contact:'', note:'', at:null, follow:null }
+      { id:'me', name:'陳阿公', area:'福安里 2 鄰', me:true, status:'none', needs:[], other:'', people:0, loc:blankLoc(), contact:'', note:'', at:null, follow:null, notifiedAt:null },
+      { id:'r2', name:'王阿嬤', area:'福安里 1 鄰', status:'safe', needs:[], other:'', people:0, loc:blankLoc(), contact:'', note:'', at:todayAt('08:12'), follow:null },
+      { id:'r3', name:'李伯伯', area:'福安里 5 鄰', status:'help', needs:['飲水', '食物'], other:'', people:2, loc:{ source:'manual', text:'福安里 5 鄰 自宅 2 樓' }, contact:'LINE 訊息', note:'停水兩天，太太行動不便', at:todayAt('08:15'), follow:'pending' },
+      { id:'r4', name:'張阿姨', area:'福安里 3 鄰', status:'safe', needs:[], other:'', people:0, loc:blankLoc(), contact:'', note:'', at:todayAt('08:20'), follow:null },
+      { id:'r5', name:'黃先生', area:'福安里 4 鄰', status:'help', needs:['行動協助'], other:'', people:1, loc:{ source:'manual', text:'福安里 4 鄰 公寓 4 樓' }, contact:'LINE 訊息', note:'坐輪椅，電梯停電', at:todayAt('08:26'), follow:'contacted' },
+      { id:'r6', name:'劉奶奶', area:'福安里 6 鄰', status:'none', needs:[], other:'', people:0, loc:blankLoc(), contact:'', note:'', at:null, follow:null },
+      { id:'r7', name:'吳大哥', area:'福安里 2 鄰', status:'safe', needs:[], other:'', people:0, loc:blankLoc(), contact:'', note:'', at:todayAt('08:31'), follow:null },
+      { id:'r8', name:'周阿婆', area:'福安里 7 鄰', status:'none', needs:[], other:'', people:0, loc:blankLoc(), contact:'', note:'', at:null, follow:null }
     ]
   };
 }
-function p2(n){ return String(n).padStart(2, '0'); }
 
-/* ===== 儲存：localStorage 能用就用；不能用（隱私模式、被擋）就只留在記憶體，畫面提醒重新整理會重設 ===== */
+/* ===== 儲存：localStorage 能用就用；不能用就只留在記憶體並提示 ===== */
 let canStore = true;
 (function probe(){
   try{ localStorage.setItem(DEMO_KEY + '.probe', '1'); localStorage.removeItem(DEMO_KEY + '.probe'); }
   catch(_){ canStore = false; }
 })();
-function load(){
+function readJSON(key){
   if(!canStore) return null;
-  try{
-    const raw = localStorage.getItem(DEMO_KEY); if(!raw) return null;
-    const o = JSON.parse(raw);
-    if(!o || !Array.isArray(o.residents) || !o.residents.some(function(r){ return r.id === 'me'; })) return null;
-    return o;
-  }catch(_){ return null; }
+  try{ const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : null; }catch(_){ return null; }
 }
-function save(){
+function writeJSON(key, val){
   if(!canStore) return;
-  try{ localStorage.setItem(DEMO_KEY, JSON.stringify(state)); }
-  catch(_){ canStore = false; document.getElementById('storeNote').classList.add('on'); }
+  try{ if(val == null) localStorage.removeItem(key); else localStorage.setItem(key, JSON.stringify(val)); }
+  catch(_){ canStore = false; $('storeNote').classList.add('on'); }
 }
-let state = load() || seed();
-if(!canStore) document.getElementById('storeNote').classList.add('on');
+function loadState(){
+  const o = readJSON(DEMO_KEY);
+  if(!o || !Array.isArray(o.residents) || !o.residents.some(function(r){ return r.id === 'me'; })) return null;
+  o.residents.forEach(function(r){ if(!r.loc) r.loc = blankLoc(); if(!Array.isArray(r.needs)) r.needs = []; });
+  return o;
+}
+function save(){ writeJSON(DEMO_KEY, state); }
+let state = loadState() || seed();
 function me(){ return state.residents.find(function(r){ return r.id === 'me'; }); }
 
 /* ===== 小工具 ===== */
 const $ = function(id){ return document.getElementById(id); };
 function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]; }); }
-function fmtTime(iso){
+const TZ = 'Asia/Taipei';
+function fmtTime(iso){       /* 9/21 21:30（台灣時間）*/
   if(!iso) return '—';
   const d = new Date(iso); if(isNaN(d)) return '—';
-  return (d.getMonth() + 1) + '/' + d.getDate() + ' ' + p2(d.getHours()) + ':' + p2(d.getMinutes());
+  try{ return new Intl.DateTimeFormat('zh-TW', { timeZone:TZ, month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit', hour12:false }).format(d).replace(/(\d+)\/(\d+)\s*/, '$1/$2 '); }
+  catch(_){ return (d.getMonth() + 1) + '/' + d.getDate() + ' ' + p2(d.getHours()) + ':' + p2(d.getMinutes()); }
 }
-function nowIso(){
-  const d = new Date();
-  return d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate()) + 'T' + p2(d.getHours()) + ':' + p2(d.getMinutes()) + ':' + p2(d.getSeconds());
+function fmtFull(iso){       /* 2026/09/21 21:30 */
+  const d = new Date(iso); if(isNaN(d)) return '—';
+  try{
+    const parts = {}; new Intl.DateTimeFormat('zh-TW', { timeZone:TZ, year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', hour12:false }).formatToParts(d).forEach(function(p){ parts[p.type] = p.value; });
+    return parts.year + '/' + parts.month + '/' + parts.day + ' ' + (parts.hour === '24' ? '00' : parts.hour) + ':' + parts.minute;
+  }catch(_){ return d.getFullYear() + '/' + p2(d.getMonth() + 1) + '/' + p2(d.getDate()) + ' ' + p2(d.getHours()) + ':' + p2(d.getMinutes()); }
 }
+function nowIso(){ return new Date().toISOString(); }
 let toastTimer;
 function toast(msg, ms){
   const el = $('toast'); el.textContent = msg; el.style.display = 'block';
   clearTimeout(toastTimer); toastTimer = setTimeout(function(){ el.style.display = 'none'; }, ms || 2800);
 }
-function needsText(r){
-  return r.needs.map(function(n){ return n === '其他' && r.other ? '其他（' + r.other + '）' : n; }).join('、');
-}
+function needsText(r){ return (r.needs || []).map(function(n){ return n === '其他' && r.other ? '其他（' + r.other + '）' : n; }).join('、'); }
 function statusBadge(s){
   return s === 'safe' ? '<span class="badge safe">平安</span>' : s === 'help' ? '<span class="badge help">需要協助</span>' : '<span class="badge none">尚未回覆</span>';
 }
+function mapUrl(loc){ return 'https://www.google.com/maps?q=' + loc.lat.toFixed(5) + ',' + loc.lng.toFixed(5); }
+function locLabel(loc){    /* 純文字（給分享訊息）*/
+  if(!loc || loc.source === 'none') return '未提供';
+  if(loc.source === 'demo') return loc.text + '（示範位置）';
+  if(loc.source === 'manual') return loc.text + '（手動輸入）';
+  if(loc.source === 'geo') return '約 ' + loc.lat.toFixed(5) + ', ' + loc.lng.toFixed(5) + '（真實定位' + (loc.acc ? '，誤差約 ' + Math.round(loc.acc) + ' 公尺' : '') + '）';
+  return '未提供';
+}
+function locHtml(loc){     /* HTML（給畫面）*/
+  if(!loc || loc.source === 'none') return '<span class="muted">未提供</span>';
+  if(loc.source === 'demo') return esc(loc.text) + ' <span class="badge demo">示範位置</span>';
+  if(loc.source === 'manual') return esc(loc.text) + ' <span class="badge none">手動輸入</span>';
+  if(loc.source === 'geo') return '<span class="geo co" style="border:none;padding:0">' + loc.lat.toFixed(5) + ', ' + loc.lng.toFixed(5) + '</span> <span class="badge real">真實定位</span>'
+    + (loc.acc ? '<br><span class="small muted">誤差約 ' + Math.round(loc.acc) + ' 公尺</span>' : '') + '<br><a href="' + esc(mapUrl(loc)) + '" target="_blank" rel="noopener" style="color:var(--blue);font-weight:800">在地圖上看座標</a>';
+  return '<span class="muted">未提供</span>';
+}
+function confirmBox(title, text, onOk){
+  $('mTitle').textContent = title; $('mText').textContent = text;
+  $('modal').classList.add('on'); $('mCancel').focus();
+  $('mOk').onclick = function(){ $('modal').classList.remove('on'); onOk(); };
+}
+$('mCancel').onclick = function(){ $('modal').classList.remove('on'); };
+$('modal').onclick = function(e){ if(e.target === $('modal')) $('modal').classList.remove('on'); };
 
 /* ===== 居民端／宮廟端切換 ===== */
-let side = 'resident';
 function setSide(s){
-  side = s;
   $('resident').hidden = s !== 'resident';
   $('temple').hidden = s !== 'temple';
   $('tabR').setAttribute('aria-selected', s === 'resident');
   $('tabT').setAttribute('aria-selected', s === 'temple');
-  if(s === 'temple') renderTemple(); else renderHome();
+  if(s === 'temple') renderTemple(); else render();
   window.scrollTo(0, 0);
 }
 $('tabR').onclick = function(){ setSide('resident'); };
 $('tabT').onclick = function(){ setSide('temple'); };
-$('btnGoTemple').onclick = function(){ setSide('temple'); };
-$('btnGoResident').onclick = function(){ setSide('resident'); show('home'); };
+$('btnGoResident').onclick = function(){ setSide('resident'); };
 
-/* ===== 居民端流程：home → (form) → confirm → done
-   draft 是還沒送出的草稿；按「確認送出」才寫進 state、才更新統計。 */
-let view = 'home';
-let draft = null;
-function show(v){
-  view = v;
-  ['home', 'form', 'confirm', 'done'].forEach(function(k){ $('v-' + k).hidden = k !== v; });
-  if(v === 'home') renderHome();
-  if(v === 'form') renderForm();
-  if(v === 'confirm') renderConfirm();
-  if(v === 'done') renderDone();
-  window.scrollTo(0, 0);
+/* =====================================================================
+   二、對話式流程（草稿）
+   steps：status → location → [needs → people]（只有需要協助才有）→ extra → confirm；phase 'done' 是完成畫面
+   ===================================================================== */
+function newDraft(){ return { phase:'flow', step:0, status:null, loc:null, needs:[], other:'', people:null, contact:'', note:'', extraDone:false }; }
+function draftFromRecord(m){    /* 「修改本次回報」：把已確認的內容帶回草稿，直接跳到確認頁 */
+  const d = newDraft();
+  d.status = m.status; d.loc = Object.assign(blankLoc(), m.loc || {});
+  d.needs = m.needs.slice(); d.other = m.other; d.people = m.status === 'help' ? m.people : null;
+  d.contact = m.contact; d.note = m.note; d.extraDone = true;
+  d.step = steps(d).length - 1;
+  return d;
 }
-function newDraft(status){
-  const m = me();
-  /* 修改本次回報：把已送出的內容帶回來；第一次填：用示範預填 */
-  const has = m.status !== 'none';
-  return {
-    status: status,
-    needs: has ? m.needs.slice() : [],
-    other: has ? m.other : '',
-    people: has && m.people > 0 ? m.people : 1,
-    place: has && m.place ? m.place : ME_DEFAULT.place,
-    contact: has && m.contact ? m.contact : ME_DEFAULT.contact,
-    note: has ? m.note : ''
-  };
+function loadDraft(){
+  const d = readJSON(DRAFT_KEY);
+  if(!d || typeof d !== 'object' || d.phase !== 'flow' && d.phase !== 'done') return null;
+  const base = newDraft();
+  Object.keys(base).forEach(function(k){ if(d[k] === undefined) d[k] = base[k]; });
+  if(!Array.isArray(d.needs)) d.needs = [];
+  d.step = Math.min(Math.max(0, d.step | 0), steps(d).length - 1);
+  return d;
 }
-function renderHome(){
-  const m = me(); const box = $('homeStatus');
-  if(m.status === 'none'){ box.innerHTML = ''; return; }
-  box.innerHTML = '<div class="hint" style="margin-bottom:4px">你在 ' + fmtTime(m.at) + ' 已回報：' + statusBadge(m.status)
-    + (m.status === 'help' ? '　' + esc(needsText(m)) : '') + '<br><span class="small">再按一次可以修改，會更新原本那筆，不會多算一筆。</span></div>';
+let draft = loadDraft() || newDraft();
+function saveDraft(){ writeJSON(DRAFT_KEY, draft); }
+function steps(d){ d = d || draft; return ['status', 'location'].concat(d.status === 'help' ? ['needs', 'people'] : []).concat(['extra', 'confirm']); }
+function answered(d, key){
+  if(key === 'status') return !!d.status;
+  if(key === 'location') return !!d.loc;
+  if(key === 'needs') return d.needs.length > 0 && (d.needs.indexOf('其他') < 0 || !!d.other);
+  if(key === 'people') return d.people != null;
+  if(key === 'extra') return !!d.extraDone;
+  return false;
 }
-$('btnSafe').onclick = function(){ draft = newDraft('safe'); show('confirm'); };
-$('btnHelp').onclick = function(){ draft = newDraft('help'); show('form'); };
+/* 回答完一題：往後找第一個還沒答的題；都答了就到確認頁 */
+function advance(fromIdx){
+  const st = steps();
+  let next = st.length - 1;
+  for(let i = fromIdx + 1; i < st.length - 1; i++){ if(!answered(draft, st[i])){ next = i; break; } }
+  draft.step = next; ui = {}; saveDraft(); render(true);
+}
+function goTo(idx){ draft.step = Math.max(0, Math.min(idx, steps().length - 1)); ui = {}; saveDraft(); render(true); }
 
-/* --- 填寫需求 --- */
+/* 這題畫面上的暫時狀態（手動輸入模式、其他人數輸入），不存進草稿 */
+let ui = {};
+
+const Q = {
+  status:   { full:'我是獅仔，來關心你。<b>你現在平安嗎？</b>', short:'你現在平安嗎？' },
+  location: { full:'方便提供<b>目前位置</b>嗎？也可以略過。', short:'方便提供目前位置嗎？' },
+  needs:    { full:'你需要<b>哪方面的協助</b>？可以選多項。', short:'需要哪方面的協助？' },
+  people:   { full:'包含你，<b>一共有幾位</b>需要協助？', short:'一共有幾位需要協助？' },
+  extra:    { full:'還有想<b>補充</b>的嗎？也可以留方便聯繫的方式。都可以略過。', short:'有想補充的嗎？' },
+  confirm:  { full:'我幫你整理好了，<b>請看一下對不對</b>。', short:'請確認內容' }
+};
+function answerHtml(key){
+  const d = draft;
+  if(key === 'status') return d.status === 'help' ? '需要協助' : '我平安';
+  if(key === 'location'){
+    if(d.loc.source === 'none') return '暫不提供';
+    if(d.loc.source === 'demo') return '使用示範位置<small>' + esc(d.loc.text) + '</small>';
+    if(d.loc.source === 'manual') return '手動輸入<small>' + esc(d.loc.text) + '</small>';
+    return '暫不提供';
+  }
+  if(key === 'needs') return esc(needsText(d));
+  if(key === 'people') return d.people + ' 人';
+  if(key === 'extra'){
+    if(!d.contact && !d.note) return '略過';
+    return (d.contact ? '聯絡：' + esc(d.contact) : '') + (d.contact && d.note ? '<small>' : '') + (d.note ? (d.contact ? '' : '') + esc(d.note) : '') + (d.contact && d.note ? '</small>' : '');
+  }
+  return '';
+}
+
+function render(fresh){
+  const chat = $('chat'), ctl = $('ctl');
+  const st = steps();
+  if(draft.phase === 'done'){ renderDone(fresh); return; }
+  const cur = st[draft.step];
+  $('progText').textContent = '第 ' + (draft.step + 1) + ' 題／共 ' + st.length + ' 題';
+  $('btnPrev').disabled = draft.step === 0;
+  /* 已回答的題目：獅仔小泡泡＋右邊綠色回答＋「修改」 */
+  let h = '';
+  for(let i = 0; i < draft.step; i++){
+    const k = st[i];
+    h += '<div class="lion past"><img src="lion_full.webp" alt=""><div class="bubble">' + Q[k].short + '</div></div>';
+    h += '<div class="ans"><div class="ab">' + answerHtml(k) + '</div><button type="button" class="edit" data-go="' + i + '" aria-label="修改第 ' + (i + 1) + ' 題">修改</button></div>';
+  }
+  /* 目前這題 */
+  h += '<div class="lion' + (fresh ? ' fresh' : '') + '"><img src="lion_full.webp" alt="福安宮的獅仔"><div class="bubble">' + (draft.step === 0 ? '<span class="tag">災害演練</span><br>' : '') + Q[cur].full + '</div></div>';
+  chat.innerHTML = h;
+  chat.querySelectorAll('[data-go]').forEach(function(b){ b.onclick = function(){ goTo(+b.getAttribute('data-go')); }; });
+  ctl.innerHTML = '';
+  ({ status:ctlStatus, location:ctlLocation, needs:ctlNeeds, people:ctlPeople, extra:ctlExtra, confirm:ctlConfirm })[cur](ctl);
+  if(fresh) ctl.classList.add('fresh'); else ctl.classList.remove('fresh');
+  if(fresh) setTimeout(function(){ window.scrollTo({ top: document.body.scrollHeight, behavior:'smooth' }); }, 30);
+}
+$('btnPrev').onclick = function(){ if(draft.phase === 'flow' && draft.step > 0) goTo(draft.step - 1); };
+$('btnRestart').onclick = function(){ restart(); };
+function restart(){   /* 重新開始：只丟掉草稿；已確認的本機紀錄與統計不動，要再按一次「確認回報」才會更新 */
+  draft = newDraft(); ui = {}; saveDraft(); render(true);
+  if(me().status !== 'none') toast('已重新開始。先前確認的回報還在，再次確認後才會更新。');
+}
+function btn(label, cls, onclick, id){
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'btn ' + (cls || ''); b.textContent = label; b.onclick = onclick; if(id) b.id = id; return b;
+}
+function stack(parent){ const s = document.createElement('div'); s.className = 'stack'; parent.appendChild(s); return s; }
+
+/* --- 第 1 題：狀況 --- */
+function ctlStatus(ctl){
+  const s = stack(ctl);
+  s.appendChild(btn('我平安', 'pri', function(){ setStatus('safe'); }, 'btnSafe'));
+  s.appendChild(btn('需要協助', 'out', function(){ setStatus('help'); }, 'btnHelp'));
+}
+function setStatus(v){
+  const changed = draft.status !== v;
+  draft.status = v;
+  if(v === 'safe'){ draft.needs = []; draft.other = ''; draft.people = null; }   /* 平安不殘留求助資訊 */
+  if(changed && draft.step > 0) draft.step = 0;
+  advance(0);
+}
+
+/* --- 第 2 題：位置 --- */
+function ctlLocation(ctl){
+  const mode = ui.locMode || 'menu';
+  if(mode === 'menu'){
+    const s = stack(ctl);
+    s.appendChild(btn('使用示範位置', 'pri', function(){ draft.loc = Object.assign(blankLoc(), DEMO_LOC); advance(1); }, 'btnLocDemo'));
+    s.appendChild(btn('手動輸入地址', 'out', function(){ ui.locMode = 'manual'; render(); }, 'btnLocManual'));
+    s.appendChild(btn('暫不提供', '', function(){ draft.loc = blankLoc(); advance(1); }, 'btnLocSkip'));
+    const n = document.createElement('p'); n.className = 'note'; n.textContent = '示範位置是固定的虛構地址。這一版不會請求手機定位（真實定位留待下一階段）。'; ctl.appendChild(n);
+    return;
+  }
+  /* mode === 'manual' */
+    ctl.innerHTML = '<div class="field"><label class="lb" for="locText">目前位置或地址<small>示範用，不必填真實住址</small></label>'
+      + '<input type="text" id="locText" maxlength="80" autocomplete="off" placeholder="例如：福安里 3 鄰 活動中心旁（示範）"></div><div class="err" id="locErr" role="alert"></div>';
+    $('locText').value = ui.locDraft || (draft.loc && draft.loc.source === 'manual' ? draft.loc.text : '');
+    $('locText').oninput = function(){ ui.locDraft = $('locText').value; };
+    const s = stack(ctl);
+    s.appendChild(btn('確定', 'pri', function(){
+      const t = $('locText').value.trim();
+      if(!t){ $('locErr').textContent = '請輸入位置，或按「返回」改用其他方式。'; $('locErr').classList.add('on'); $('locText').focus(); return; }
+      draft.loc = Object.assign(blankLoc(), { source:'manual', text:t }); advance(1);
+    }, 'btnLocManualOk'));
+  s.appendChild(btn('返回', 'sm', function(){ ui.locMode = 'menu'; render(); }));
+  setTimeout(function(){ $('locText').focus(); }, 50);
+}
+
+/* --- 第 3 題：協助需求（複選）--- */
 const CHECK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
-function renderForm(){
-  const box = $('needBox'); box.innerHTML = '';
+function ctlNeeds(ctl){
+  const box = document.createElement('div'); box.className = 'choice'; box.setAttribute('role', 'group'); box.setAttribute('aria-label', '協助需求');
   NEED_LIST.forEach(function(n){
     const on = draft.needs.indexOf(n) >= 0;
-    const lb = document.createElement('label');
-    lb.className = on ? 'on' : '';
+    const lb = document.createElement('label'); lb.className = on ? 'on' : '';
     lb.innerHTML = '<input type="checkbox" value="' + esc(n) + '"' + (on ? ' checked' : '') + '><span class="box">' + CHECK_SVG + '</span>' + esc(n);
     lb.querySelector('input').onchange = function(e){
       if(e.target.checked){ if(draft.needs.indexOf(n) < 0) draft.needs.push(n); }
       else draft.needs = draft.needs.filter(function(x){ return x !== n; });
       lb.classList.toggle('on', e.target.checked);
-      $('otherWrap').classList.toggle('on', draft.needs.indexOf('其他') >= 0);
-      $('needErr').classList.remove('on');
+      $('otherWrap').style.display = draft.needs.indexOf('其他') >= 0 ? 'block' : 'none';
+      $('needErr').classList.remove('on'); saveDraft();
     };
     box.appendChild(lb);
   });
-  $('otherWrap').classList.toggle('on', draft.needs.indexOf('其他') >= 0);
+  ctl.appendChild(box);
+  const ow = document.createElement('div'); ow.id = 'otherWrap'; ow.style.display = draft.needs.indexOf('其他') >= 0 ? 'block' : 'none';
+  ow.innerHTML = '<div class="field"><label class="lb" for="otherText">「其他」是什麼？<small>必填</small></label><input type="text" id="otherText" maxlength="60" placeholder="例如：需要充電、需要藥局資訊（示範）" autocomplete="off"></div>';
+  ctl.appendChild(ow);
   $('otherText').value = draft.other;
-  $('pOut').textContent = draft.people;
-  $('pMinus').disabled = draft.people <= 1;
-  $('pPlus').disabled = draft.people >= 20;
-  $('fPlace').value = draft.place;
-  $('fContact').value = draft.contact;
-  $('fNote').value = draft.note;
-  $('needErr').classList.remove('on');
+  $('otherText').oninput = function(){ draft.other = $('otherText').value.trim(); saveDraft(); };
+  const err = document.createElement('div'); err.className = 'err'; err.id = 'needErr'; err.setAttribute('role', 'alert'); ctl.appendChild(err);
+  stack(ctl).appendChild(btn('選好了', 'pri', function(){
+    draft.other = $('otherText').value.trim();
+    if(!draft.needs.length){ err.textContent = '請至少選一項需要的協助。'; err.classList.add('on'); return; }
+    if(draft.needs.indexOf('其他') >= 0 && !draft.other){ err.textContent = '勾了「其他」，請寫一下是什麼協助。'; err.classList.add('on'); $('otherText').focus(); return; }
+    if(draft.needs.indexOf('其他') < 0) draft.other = '';
+    advance(steps().indexOf('needs'));
+  }, 'btnNeedsOk'));
 }
-$('pMinus').onclick = function(){ if(draft.people > 1) draft.people--; $('pOut').textContent = draft.people; $('pMinus').disabled = draft.people <= 1; $('pPlus').disabled = false; };
-$('pPlus').onclick = function(){ if(draft.people < 20) draft.people++; $('pOut').textContent = draft.people; $('pPlus').disabled = draft.people >= 20; $('pMinus').disabled = false; };
-$('btnFormBack').onclick = function(){ show('home'); };
-$('btnToConfirm').onclick = function(){
-  draft.other = $('otherText').value.trim();
-  draft.place = $('fPlace').value.trim();
-  draft.contact = $('fContact').value.trim();
-  draft.note = $('fNote').value.trim();
-  const err = $('needErr');
-  if(!draft.needs.length){ err.textContent = '請至少選一項需要的協助。'; err.classList.add('on'); err.scrollIntoView({ block:'center' }); return; }
-  if(draft.needs.indexOf('其他') >= 0 && !draft.other){ err.textContent = '勾了「其他」，請寫一下是什麼協助。'; err.classList.add('on'); $('otherText').focus(); return; }
-  if(!draft.place) draft.place = ME_DEFAULT.place;
-  if(!draft.contact) draft.contact = ME_DEFAULT.contact;
-  show('confirm');
-};
 
-/* --- 確認 --- */
+/* --- 第 4 題：人數 --- */
+function ctlPeople(ctl){
+  if(!ui.peopleOther){
+    const s = stack(ctl); s.className = 'stack row2';
+    [1, 2, 3].forEach(function(n){ s.appendChild(btn(n + ' 人', draft.people === n ? 'pri' : 'out', function(){ draft.people = n; advance(steps().indexOf('people')); }, 'btnPeople' + n)); });
+    s.appendChild(btn('其他人數', '', function(){ ui.peopleOther = true; render(); }, 'btnPeopleOther'));
+    return;
+  }
+  ctl.innerHTML = '<div class="field"><label class="lb" for="peopleNum">需要協助的人數<small>含自己，1～' + PEOPLE_MAX + ' 的整數</small></label>'
+    + '<input type="number" id="peopleNum" inputmode="numeric" min="1" max="' + PEOPLE_MAX + '" step="1"></div><div class="err" id="peopleErr" role="alert"></div>';
+  $('peopleNum').value = draft.people != null && draft.people > 3 ? draft.people : '';
+  const s = stack(ctl);
+  s.appendChild(btn('確定', 'pri', function(){
+    const raw = $('peopleNum').value.trim(); const n = Number(raw);
+    if(!/^\d+$/.test(raw) || !Number.isInteger(n) || n < 1 || n > PEOPLE_MAX){
+      $('peopleErr').textContent = '請輸入 1 到 ' + PEOPLE_MAX + ' 之間的整數。'; $('peopleErr').classList.add('on'); $('peopleNum').focus(); return;
+    }
+    draft.people = n; advance(steps().indexOf('people'));
+  }, 'btnPeopleOk'));
+  s.appendChild(btn('返回', 'sm', function(){ ui = {}; render(); }));
+  setTimeout(function(){ $('peopleNum').focus(); }, 50);
+}
+
+/* --- 第 5 題：補充與聯絡方式（可略過）--- */
+function ctlExtra(ctl){
+  ctl.innerHTML = '<div class="field"><label class="lb" for="fContact">方便聯繫的方式<small>選填</small></label><input type="text" id="fContact" maxlength="40" autocomplete="off" placeholder="例如：LINE 訊息（示範）"></div>'
+    + '<div class="field"><label class="lb" for="fNote">補充說明<small>選填</small></label><textarea id="fNote" maxlength="120" placeholder="例如：家裡停水兩天、樓梯不好走（示範）"></textarea></div>'
+    + '<p class="note" style="margin-top:0">示範用，請不要填真實電話或住址。可以按「填入示範資料」快速展示。</p>';
+  $('fContact').value = draft.contact; $('fNote').value = draft.note;
+  $('fContact').oninput = function(){ draft.contact = $('fContact').value.trim(); saveDraft(); };
+  $('fNote').oninput = function(){ draft.note = $('fNote').value.trim(); saveDraft(); };
+  const s = stack(ctl);
+  const demoBtn = btn('填入示範資料', 'sm out', function(){
+    const d = DEMO_EXTRA[draft.status === 'help' ? 'help' : 'safe'];
+    $('fContact').value = d.contact; $('fNote').value = d.note; draft.contact = d.contact; draft.note = d.note; saveDraft();
+  }, 'btnExtraDemo');
+  demoBtn.innerHTML = '填入示範資料 <span class="demoTag">示範</span>';
+  s.appendChild(demoBtn);
+  s.appendChild(btn('下一步', 'pri', function(){ draft.contact = $('fContact').value.trim(); draft.note = $('fNote').value.trim(); draft.extraDone = true; advance(steps().indexOf('extra')); }, 'btnExtraOk'));
+  s.appendChild(btn('略過', 'sm', function(){ draft.contact = ''; draft.note = ''; draft.extraDone = true; advance(steps().indexOf('extra')); }, 'btnExtraSkip'));
+}
+
+/* --- 第 6 題：確認摘要 --- */
 function summaryRows(r, withTime){
   let h = '';
-  if(withTime) h += '<div><dt>回報時間</dt><dd>' + fmtTime(r.at) + '</dd></div>';
+  if(withTime) h += '<div><dt>回報時間</dt><dd>' + fmtTime(r.at) + '<span class="small muted">（台灣時間）</span></dd></div>';
   h += '<div><dt>狀況</dt><dd>' + statusBadge(r.status) + '</dd></div>';
+  h += '<div><dt>位置</dt><dd>' + locHtml(r.loc) + '</dd></div>';
   if(r.status === 'help'){
     h += '<div><dt>協助需求</dt><dd>' + esc(needsText(r)) + '</dd></div>';
     h += '<div><dt>需協助人數</dt><dd>' + r.people + ' 人</dd></div>';
-    h += '<div><dt>目前位置</dt><dd>' + esc(r.place) + '</dd></div>';
-    h += '<div><dt>聯絡方式</dt><dd>' + esc(r.contact) + '</dd></div>';
-    if(r.note) h += '<div><dt>補充說明</dt><dd>' + esc(r.note) + '</dd></div>';
-  } else {
-    h += '<div><dt>協助需求</dt><dd class="muted">無</dd></div>';
   }
+  if(r.contact) h += '<div><dt>聯絡方式</dt><dd>' + esc(r.contact) + '</dd></div>';
+  if(r.note) h += '<div><dt>補充說明</dt><dd>' + esc(r.note) + '</dd></div>';
   return h;
 }
-function renderConfirm(){
-  $('sumBox').innerHTML = summaryRows(draft, false);
-  const b = $('btnSubmit'); b.disabled = false; b.textContent = '確認送出';
-}
-$('btnEdit').onclick = function(){ show(draft.status === 'help' ? 'form' : 'home'); };
-
-/* 送出：同一位居民永遠只有 me 這一筆——改的是原紀錄，不新增。
-   由「需要協助」改成「我平安」時 needs/people 清空，需求計數自然就掉了。
-   submitting 旗標＋disabled 擋連點。 */
 let submitting = false;
-$('btnSubmit').onclick = function(){
+function ctlConfirm(ctl){
+  const dl = document.createElement('dl'); dl.className = 'sum'; dl.id = 'sumBox'; dl.innerHTML = summaryRows(draft, false); ctl.appendChild(dl);
+  const n = document.createElement('p'); n.className = 'note'; n.textContent = '按「確認回報」後，才會寫進這支手機的示範紀錄與宮廟端統計；沒確認的草稿不列入統計。'; ctl.appendChild(n);
+  const s = stack(ctl);
+  s.appendChild(btn('確認回報', 'pri', submit, 'btnSubmit'));
+  s.appendChild(btn('返回修改', 'sm', function(){ goTo(draft.step - 1); }, 'btnEdit'));
+}
+/* 確認：同一位居民永遠只有 me 這一筆——改的是原紀錄，不新增。
+   求助→平安：清掉 needs/people，需求計數自然掉；結案後再次求助：改回待聯繫。 */
+function submit(){
   if(submitting) return;
   submitting = true;
-  const b = $('btnSubmit'); b.disabled = true; b.textContent = '送出中…';
+  const b = $('btnSubmit'); if(b){ b.disabled = true; b.textContent = '記錄中…'; }
   const m = me();
   const wasHelp = m.status === 'help';
   m.status = draft.status;
   m.at = nowIso();
+  m.loc = Object.assign(blankLoc(), draft.loc || {});
+  m.contact = draft.contact || ''; m.note = draft.note || '';
   if(draft.status === 'help'){
     m.needs = draft.needs.slice(); m.other = draft.needs.indexOf('其他') >= 0 ? draft.other : '';
-    m.people = draft.people; m.place = draft.place; m.contact = draft.contact; m.note = draft.note;
-    if(!wasHelp || !m.follow) m.follow = 'pending';
+    m.people = draft.people;
+    if(!wasHelp || !m.follow || m.follow === 'closed') m.follow = 'pending';
   } else {
-    m.needs = []; m.other = ''; m.people = 0; m.place = ''; m.contact = ''; m.note = ''; m.follow = null;
+    m.needs = []; m.other = ''; m.people = 0; m.follow = null;
   }
+  m.notifiedAt = null;   /* 內容改了，之前的模擬通知不再代表這一版 */
   save();
-  /* 稍微停一下讓「送出中…」看得到，也讓連點在這段時間內完全無效 */
-  setTimeout(function(){ submitting = false; show('done'); }, 350);
-};
+  draft.phase = 'done'; saveDraft();
+  setTimeout(function(){ submitting = false; render(true); }, 300);
+}
 
-/* --- 完成 --- */
-function renderDone(){ $('doneBox').innerHTML = summaryRows(me(), true); }
-$('btnModify').onclick = function(){
-  const m = me();
-  draft = newDraft(m.status);
-  show(m.status === 'help' ? 'form' : 'home');
-};
+/* --- 第 7 步：完成與分享 --- */
+function renderDone(fresh){
+  const m = me(); const chat = $('chat'), ctl = $('ctl');
+  if(m.status === 'none'){ draft = newDraft(); saveDraft(); render(true); return; }
+  $('progText').textContent = '完成'; $('btnPrev').disabled = true;
+  chat.innerHTML = '<div class="lion' + (fresh ? ' fresh' : '') + '"><img src="lion_full.webp" alt="福安宮的獅仔"><div class="bubble">'
+    + (m.status === 'safe' ? '好，知道你平安我就放心了。' : '好，我把你的需求整理好了。') + '<br>可以<b>複製回報內容</b>，自己貼給家人。</div></div>';
+  ctl.innerHTML = '<div class="doneHead"><div class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="#0C8F3B" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>'
+    + '<h1>示範回報已記錄於本機</h1><p class="muted small" style="margin:0">只更新這支手機的示範紀錄與宮廟端統計，不會實際通知宮廟。</p></div>'
+    + '<dl class="sum" id="doneBox" style="margin-top:12px">' + summaryRows(m, true) + '</dl>'
+    + (m.notifiedAt ? '<div class="hint amber" style="margin-top:10px" id="notifyLine">模擬通知完成，未實際發送（' + fmtTime(m.notifiedAt) + '）</div>' : '<div id="notifyLine"></div>')
+    + '<div class="kind">複製到剪貼簿・不會自動傳給任何人</div>'
+    + '<div class="stack" style="margin-top:0"><button type="button" class="btn pri" id="btnCopyOpen">複製回報內容</button></div>'
+    + '<p class="note" style="margin-top:-4px">LINE 一鍵分享給親友是下一階段的功能，這一版不提供。</p>'
+    + '<div class="kind">本機示範・不會真的送出</div>'
+    + '<div class="twocol"><button type="button" class="btn" id="btnNotify">模擬通知宮廟</button><button type="button" class="btn" id="btnGoTemple">查看宮廟端</button>'
+    + '<button type="button" class="btn" id="btnModify">修改本次回報</button><button type="button" class="btn" id="btnRestart2">重新開始</button></div>';
+  $('btnCopyOpen').onclick = openCopy;
+  $('btnNotify').onclick = function(){
+    m.notifiedAt = nowIso(); save();
+    $('notifyLine').outerHTML = '<div class="hint amber" style="margin-top:10px" id="notifyLine">模擬通知完成，未實際發送（' + fmtTime(m.notifiedAt) + '）</div>';
+    toast('模擬通知完成，未實際發送');
+  };
+  $('btnGoTemple').onclick = function(){ setSide('temple'); };
+  $('btnModify').onclick = function(){ draft = draftFromRecord(m); ui = {}; saveDraft(); render(true); };
+  $('btnRestart2').onclick = restart;
+  if(fresh) setTimeout(function(){ window.scrollTo({ top:0, behavior:'smooth' }); }, 30);
+}
 
-/* ===== 宮廟端 ===== */
+/* ===== 三、複製回報內容（純文字，只進剪貼簿）=====
+   由「已確認」的紀錄產生，不是草稿；平安者不含任何求助資訊。
+   下一階段接 LINE 分享時，同一段文字就是 liff.shareTargetPicker() 的訊息內容。 */
+function reportText(r){
+  const lines = ['【展示演練，非真實求助】', '獅仔平安回報', '目前狀況：' + (r.status === 'help' ? '需要協助' : '平安')];
+  if(r.status === 'help'){ lines.push('需求：' + needsText(r)); lines.push('需要協助人數：' + r.people + ' 人'); }
+  lines.push('位置：' + locLabel(r.loc));
+  if(r.contact) lines.push('聯絡：' + r.contact);
+  if(r.note) lines.push('補充：' + r.note);
+  lines.push('回報時間：' + fmtFull(r.at) + '（台灣時間）');
+  lines.push('這是功能展示訊息，並非真實求助或救援派遣。');
+  return lines.join('\n');
+}
+function openCopy(){
+  const m = me(); if(m.status === 'none') return;
+  $('copyPreview').textContent = reportText(m);
+  const st = $('copyStatus'); st.className = 'status'; st.textContent = '';
+  $('copyBox').classList.add('on');
+}
+$('btnCopyGo').onclick = function(){
+  const text = reportText(me()); const st = $('copyStatus');
+  copyText(text).then(function(){ st.className = 'status on ok'; st.textContent = '已複製到剪貼簿。這只是複製，沒有傳給任何人。'; toast('已複製回報內容'); },
+                      function(){ st.className = 'status on err'; st.textContent = '無法自動複製，請長按上面的文字手動複製。'; });
+};
+function copyText(t){
+  if(navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(t);
+  return new Promise(function(res, rej){
+    try{ const ta = document.createElement('textarea'); ta.value = t; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select();
+      const ok = document.execCommand('copy'); document.body.removeChild(ta); ok ? res() : rej(); }catch(_){ rej(); }
+  });
+}
+$('btnCopyClose').onclick = function(){ $('copyBox').classList.remove('on'); };
+$('copyBox').onclick = function(e){ if(e.target === $('copyBox')) $('copyBox').classList.remove('on'); };
+
+
+/* =====================================================================
+   四、宮廟端（本機示範）
+   ===================================================================== */
 function stats(){
   const rs = state.residents;
   const safe = rs.filter(function(r){ return r.status === 'safe'; }).length;
@@ -599,21 +806,24 @@ function renderTemple(){
   }).join('') + (s.others.length ? '<div class="legend">其他內容：' + s.others.map(esc).join('；') + '</div>' : '');
   $('peopleLine').innerHTML = '需要協助回報 <b>' + s.help + '</b> 筆，填報的需要協助人數合計 <b>' + s.people + '</b> 人。';
 
-  /* 清單：需要協助（待聯繫在前）→ 尚未回覆 → 平安 */
   const order = { help:0, none:1, safe:2 }; const fo = { pending:0, contacted:1, closed:2 };
   const rows = state.residents.slice().sort(function(a, b){
-    return (order[a.status] - order[b.status]) || ((fo[a.follow] || 0) - (fo[b.follow] || 0)) || (a.at || 'z').localeCompare(b.at || 'z');
+    return (order[a.status] - order[b.status]) || ((fo[a.follow] || 0) - (fo[b.follow] || 0)) || String(a.at || 'z').localeCompare(String(b.at || 'z'));
   });
   $('rlist').innerHTML = rows.map(function(r){
-    let h = '<div class="rc' + (r.me ? ' me' : '') + '" data-id="' + r.id + '"><div class="top"><span class="nm">' + esc(r.name) + '</span>'
+    let h = '<div class="rc' + (r.me ? ' me' : '') + '" data-id="' + esc(r.id) + '"><div class="top"><span class="nm">' + esc(r.name) + '</span>'
       + statusBadge(r.status) + (r.me ? '<span class="badge demo">這支手機</span>' : '')
       + '<span class="tm">' + (r.at ? fmtTime(r.at) : '未回覆') + '</span></div>';
     h += '<div class="meta"><span><em>鄰別</em>' + esc(r.area) + '</span>';
     if(r.status === 'help'){
-      h += '<span><em>需求</em>' + esc(needsText(r)) + '</span><span><em>人數</em>' + r.people + ' 人</span>'
-         + '<span><em>位置</em>' + esc(r.place) + '</span><span><em>聯絡</em>' + esc(r.contact) + '</span>'
-         + (r.note ? '<span><em>說明</em>' + esc(r.note) + '</span>' : '');
-    } else if(r.status === 'none'){
+      h += '<span><em>需求</em>' + esc(needsText(r)) + '</span><span><em>人數</em>' + r.people + ' 人</span>';
+    }
+    if(r.status !== 'none'){
+      if(r.me || (r.loc && r.loc.source !== 'none')) h += '<span><em>位置</em>' + locHtml(r.loc) + '</span>';
+      if(r.contact) h += '<span><em>聯絡</em>' + esc(r.contact) + '</span>';
+      if(r.note) h += '<span><em>說明</em>' + esc(r.note) + '</span>';
+      if(r.me && r.notifiedAt) h += '<span><em>模擬通知</em>' + fmtTime(r.notifiedAt) + '（未實際發送）</span>';
+    } else {
       h += '<span class="muted">尚未收到回覆，不代表平安或受困。</span>';
     }
     h += '</div>';
@@ -635,31 +845,31 @@ function renderTemple(){
 }
 $('btnAsk').onclick = function(){
   state.askedAt = nowIso(); save(); renderTemple();
-  toast('已模擬發出詢問，可切換居民端體驗回覆。');
+  toast('已模擬發出詢問（未實際發送），可切換居民端體驗回覆。');
 };
 
-/* 重設：只動 DEMO_KEY，收藏（fuan.fav）與香火簿（fuan.stamps）碰都不碰 */
-$('btnReset').onclick = function(){ $('modal').classList.add('on'); $('mCancel').focus(); };
-$('mCancel').onclick = function(){ $('modal').classList.remove('on'); };
-$('modal').onclick = function(e){ if(e.target === $('modal')) $('modal').classList.remove('on'); };
-$('mOk').onclick = function(){
-  state = seed();
-  try{ if(canStore) localStorage.removeItem(DEMO_KEY); }catch(_){}
-  draft = null;
-  $('modal').classList.remove('on');
-  renderTemple();
-  show('home');
-  toast('已恢復初始示範資料');
-};
+/* 重設全部示範資料：只刪這個 Demo 自己的鍵（含舊版鍵）。收藏 fuan.fav、香火簿 fuan.stamps、LIFF 的儲存一律不碰。 */
+function resetAll(){
+  confirmBox('重設全部示範資料？', '會恢復成初始的虛構居民與統計，並清掉這支手機的回報與草稿。收藏、香火簿與 LINE 登入不受影響。', function(){
+    state = seed(); draft = newDraft(); ui = {};
+    try{ if(canStore){ [DEMO_KEY, DRAFT_KEY].concat(LEGACY_KEYS).forEach(function(k){ localStorage.removeItem(k); }); } }catch(_){}
+    renderTemple(); render(true);
+    toast('已恢復初始示範資料');
+  });
+}
+$('btnResetAllR').onclick = resetAll;
+$('btnResetAllT').onclick = resetAll;
 
-/* ===== 啟動：?side=temple 或 #temple 直接開宮廟端，其餘開居民端 ===== */
+/* ===== 啟動 ===== */
 (function boot(){
+  if(!canStore) $('storeNote').classList.add('on');
   let s = 'resident';
   try{
     const q = new URLSearchParams(location.search);
-    if(q.get('side') === 'temple' || location.hash === '#temple') s = 'temple';
+    let v = q.get('side');
+    if(!v && q.get('liff.state')) v = new URLSearchParams(q.get('liff.state').replace(/^\?/, '')).get('side');
+    if(v === 'temple' || location.hash === '#temple') s = 'temple';
   }catch(_){}
-  show('home');
   setSide(s);
 })();
 </script>
