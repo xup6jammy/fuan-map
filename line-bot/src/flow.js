@@ -14,7 +14,7 @@
      ・webhookEventId 記錄過就跳過：LINE 重送不會重複記錄、重複通知
      ・推播只在使用者按「確認通知」後，且同一次回報同一個 notifyId 只推一次
    ============================================================ */
-import { M, CMD, PAIR_JOIN_RE, NEED_LIST, PEOPLE_OPTIONS, DEMO_LOC, parsePb, text, familyNotifyText } from './messages.js';
+import { M, CMD, PAIR_JOIN_RE, NEED_LIST, PEOPLE_OPTIONS, DEMO_LOC, DEMO_FAMILY_NAME, DEMO_SELF_PREFIX, parsePb, text, familyNotifyText } from './messages.js';
 
 const SESSION_TTL = 24 * 60 * 60 * 1000;
 const PAIR_TTL = 10 * 60 * 1000;
@@ -60,7 +60,7 @@ export function createBot({ store, line, now = () => Date.now(), rand = defaultR
       case 'people': return M.askPeople(s.id);
       case 'confirm': return M.askConfirm(s.id, s);
       case 'done': return report ? M.done(s.id, report) : M.expired();
-      case 'notify_confirm': return report && s.preview ? M.notifyPreview(s.id, s.previewFamily || [], s.preview) : M.expired();
+      case 'notify_confirm': return report && s.preview ? M.notifyPreview(s.id, s.previewFamily || [], s.preview, s.demoSelf) : M.expired();
       default: return M.expired();
     }
   }
@@ -191,13 +191,16 @@ export function createBot({ store, line, now = () => Date.now(), rand = defaultR
       case 'notify': {
         const report = await store.get(S.report(uid));
         if (!report || report.id !== s.reportId) { await clearSession(uid); await reply(token, M.expired()); return { expired: true }; }
-        const family = (await store.get(S.family(uid))) || [];
-        if (!family.length) { await reply(token, M.noFamily(s.id)); return { noFamily: true }; }
+        let family = (await store.get(S.family(uid))) || [];
         const ownerName = s.ownerName || (s.ownerName = await nameOf(uid, '你的家人'));
         s.preview = familyNotifyText(report, ownerName);
+        /* 還沒配對家人：示範模式——把「家人會收到的訊息」真的推播到回報者自己的聊天室，
+           畫面上明講是示範、送到自己這裡；不假裝有別人收到 */
+        s.demoSelf = !family.length;
+        if (s.demoSelf) family = [{ userId: uid, name: DEMO_FAMILY_NAME }];
         s.previewFamily = family.map(f => ({ userId: f.userId, name: f.name }));
         s.notifyId = rand(); s.step = 'notify_confirm'; await saveSession(uid, s);
-        await reply(token, M.notifyPreview(s.id, family, s.preview)); return { step: s.step };
+        await reply(token, M.notifyPreview(s.id, family, s.preview, s.demoSelf)); return { step: s.step };
       }
       case 'notify_skip':
         await clearSession(uid); await reply(token, M.notifySkipped()); return { finished: 'skipped' };
@@ -225,15 +228,16 @@ export function createBot({ store, line, now = () => Date.now(), rand = defaultR
     await store.set(S.report(uid), report);
     const family = s.previewFamily || [];
     const ok = [], fail = [];
+    const body = s.demoSelf ? DEMO_SELF_PREFIX + '\n' + s.preview : s.preview;
     for (const f of family) {
-      try { await line.push(f.userId, text(s.preview)); ok.push(f.name || '家人'); }
+      try { await line.push(f.userId, text(body)); ok.push(f.name || '家人'); }
       catch (e) { log.error('[push failed]', short(f.userId), e && e.message); fail.push(f.name || '家人'); }
     }
     report.notifies[s.notifyId] = { startedAt: report.notifies[s.notifyId].startedAt, doneAt: now(), ok, fail };
     await store.set(S.report(uid), report);
     await clearSession(uid);
-    await reply(token, M.notifyResult(ok, fail));
-    return { notified: ok.length, failed: fail.length };
+    await reply(token, M.notifyResult(ok, fail, s.demoSelf));
+    return { notified: ok.length, failed: fail.length, demoSelf: !!s.demoSelf };
   }
 
   /* ============================================================

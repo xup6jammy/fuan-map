@@ -10,6 +10,9 @@
 export const DEMO_TAG = '【展示演練，非真實求助】';
 export const DEMO_FOOT = '這是功能展示訊息，並非真實求助或救援派遣。';
 export const DEMO_LOC = { source: 'demo', text: '福安里示範地址（福安街 1 號）' };
+/* 未配對家人時的示範模式：家人訊息推播到回報者自己的聊天室 */
+export const DEMO_FAMILY_NAME = '示範家人';
+export const DEMO_SELF_PREFIX = '（示範模式：尚未配對測試家人，以下是家人會收到的訊息，先送到你自己這裡）';
 
 export const NEED_LIST = ['飲水', '食物', '行動協助', '其他'];
 export const PEOPLE_OPTIONS = [
@@ -164,16 +167,21 @@ export const M = {
       qrPostback('暫不通知', pb('notify_skip', sid))
     ]);
   },
-  notifyPreview(sid, family, previewText) {
+  notifyPreview(sid, family, previewText, demoSelf) {
     const names = family.map(f => f.name || '（未取得名稱）').join('、');
-    return text([`將由本官方帳號推播給 ${family.length} 位測試家人：${names}`, '', '訊息內容：', previewText, '', '按「確認通知」才會真的送出。'].join('\n'), [
+    const head = demoSelf
+      ? `你還沒有配對測試家人，示範模式會把家人收到的訊息推播到「你自己的聊天室」（收件人顯示為「${DEMO_FAMILY_NAME}」）。要通知真正的家人，請先輸入「配對家人」。`
+      : `將由本官方帳號推播給 ${family.length} 位測試家人：${names}`;
+    return text([head, '', '訊息內容：', previewText, '', '按「確認通知」才會真的送出。'].join('\n'), [
       qrPostback('確認通知', pb('notify_go', sid)),
       qrPostback('取消通知', pb('notify_cancel', sid))
     ]);
   },
-  notifyResult(okList, failList) {
+  notifyResult(okList, failList, demoSelf) {
     const lines = [];
-    if (okList.length) lines.push(`已送出給 ${okList.length} 位：${okList.join('、')}（LINE API 回傳成功；系統無法得知是否已讀）`);
+    if (okList.length) lines.push(demoSelf
+      ? `已送出（示範模式）：家人會收到的訊息已推播到你自己的聊天室。要通知真正的家人，請先輸入「配對家人」。`
+      : `已送出給 ${okList.length} 位：${okList.join('、')}（LINE API 回傳成功；系統無法得知是否已讀）`);
     if (failList.length) lines.push(`發送失敗 ${failList.length} 位：${failList.join('、')}（可稍後再試，或請家人確認已加入官方帳號且未封鎖）`);
     lines.push('', '本次演練結束。要再演練一次請輸入「平安回報」。');
     return text(lines.join('\n'));
