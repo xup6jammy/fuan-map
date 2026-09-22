@@ -965,6 +965,79 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink)}
 .bear .msg .bbtn.pri{background:var(--g);border-color:var(--g);color:#fff}
 .bear .msg .bbtn:disabled{opacity:.42;cursor:default}
 .bear .msg .note{display:block;margin-top:4px;font-size:10.5px;color:#A29C8C;font-weight:600}
+/* ===== 神明行事曆 v2（月曆總覽）：白底、黑字、綠色重點；按鈕至少 44px 高 ===== */
+.calp{position:fixed;inset:0;z-index:1500;background:rgba(31,26,23,.38)}
+.calp[hidden]{display:none}
+.calp .cp{position:absolute;left:0;right:0;bottom:0;top:max(8px, env(safe-area-inset-top));margin:0 auto;max-width:560px;
+  background:#fff;color:#1F1A17;border-radius:16px 16px 0 0;display:flex;flex-direction:column;overflow:hidden;
+  box-shadow:0 -4px 24px rgba(31,26,23,.18)}
+.calp .cp-head{flex:none;padding:8px 10px 8px;border-bottom:1px solid #ECE6DA;background:#fff}
+.calp .cp-r1{display:flex;align-items:center;gap:8px}
+.calp .cp-name{font-size:16px;font-weight:800;margin-right:auto;padding-left:4px}
+.calp .cp-pill{min-height:40px;padding:0 14px;border-radius:20px;border:1.5px solid var(--g);background:#fff;color:#0A6B2C;font:inherit;font-size:15px;font-weight:800;cursor:pointer}
+.calp .cp-pill:disabled{border-color:#D9D2C3;color:#9A938C;cursor:default}
+.calp .cp-x{width:44px;height:44px;border-radius:22px;border:none;background:#F3F0E8;color:#1F1A17;font-size:26px;line-height:1;cursor:pointer}
+.calp .cp-r2{display:grid;grid-template-columns:48px 1fr 48px;align-items:center;margin-top:4px}
+.calp .cp-r2 h2{text-align:center;font-size:22px;font-weight:800;letter-spacing:.02em}
+.calp .cp-arrow{width:48px;height:48px;border-radius:24px;border:1.5px solid #D9D2C3;background:#fff;color:#1F1A17;font-size:28px;line-height:1;cursor:pointer;font-family:inherit}
+.calp .cp-arrow:disabled{opacity:.3;cursor:default}
+.calp .cp-r3{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.calp .seg{display:flex;gap:0;border:1.5px solid #D9D2C3;border-radius:12px;overflow:hidden;flex:1 1 auto}
+.calp .seg button{flex:1;min-height:44px;padding:0 10px;border:none;border-radius:0;background:#fff;color:#3A332D;font:inherit;font-size:15px;font-weight:800;cursor:pointer;white-space:nowrap}
+.calp .seg button+button{border-left:1.5px solid #D9D2C3}
+.calp .seg button[aria-pressed="true"]{background:var(--g);color:#fff}
+.calp .cp-body{flex:1;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:8px 8px calc(20px + env(safe-area-inset-bottom))}
+.calp .cp-notice{font-size:15px;font-weight:700;color:#0A6B2C;background:#E7F7EC;border-radius:10px;padding:8px 12px;margin:2px 2px 8px}
+.calp .cp-hint{font-size:15px;color:#3A332D;background:#F6F4ED;border-radius:10px;padding:10px 12px;margin:2px 2px 8px;line-height:1.55}
+.calp .cgrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px}
+.calp .cweek{margin:2px 0 3px}
+.calp .cweek span{text-align:center;font-size:14px;font-weight:800;color:#4A443E;padding:2px 0}
+.calp .cd{min-width:0;min-height:68px;border:1px solid #E6DFD0;border-radius:10px;background:#fff;color:#1F1A17;padding:3px 2px 4px;
+  display:flex;flex-direction:column;align-items:stretch;gap:2px;text-align:left;font:inherit;cursor:pointer;overflow:hidden}
+.calp .cd.blank{border-color:transparent;background:transparent;cursor:default}
+.calp .cd-top{display:flex;flex-direction:column;align-items:flex-start;gap:0;min-width:0}
+.calp .cd .n{flex:none;display:inline-grid;place-items:center;min-width:26px;height:26px;border-radius:13px;font-size:17px;font-weight:800;line-height:1}
+.calp .cd .lu{display:none;font-size:11px;color:#6B6560;font-weight:600;line-height:1.2;white-space:nowrap;padding-left:2px}
+.calp .cd .ev{font-size:12px;font-weight:800;line-height:15px;max-height:32px;color:#0A5C27;background:#E7F7EC;border-radius:5px;padding:1px 2px;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-all}
+.calp .cd .ev.k-folk{background:#F3F0E8;color:#3A332D}
+.calp .cd .ev.k-demo{background:#FFF1CC;color:#5C3F00}
+.calp .cd .more{font-size:11px;font-weight:700;color:#3A332D;line-height:1.2;padding-left:1px}
+.calp .cd.today .n{background:var(--g);color:#fff}
+.calp .cd.sel{border:2.5px solid #1F1A17;background:#F4FBF6;padding:2px 1px 3px}
+.calp .cd:focus-visible,.calp .cbtn:focus-visible,.calp .seg button:focus-visible,.calp .cp-arrow:focus-visible,.calp .cp-x:focus-visible,.calp .cp-pill:focus-visible{outline:3px solid #F2B93E;outline-offset:1px}
+@media (min-width:370px){
+  .calp .cgrid{gap:4px}
+  .calp .cd{min-height:76px;padding:4px 3px 5px}
+  .calp .cd.sel{padding:3px 2px 4px}
+  .calp .cd .lu{display:block}
+  .calp .cd .ev{font-size:12.5px;line-height:16px;max-height:34px;padding:1px 3px}
+}
+.calp .cp-day,.calp .cp-list{margin-top:12px}
+.calp .cp-day h3,.calp .cl-day h3{font-size:19px;font-weight:800;padding:0 4px;display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px}
+.calp .cp-day h3 small,.calp .cl-day h3 small{font-size:15px;font-weight:600;color:#4A443E}
+.calp .cl-day{padding-top:10px;border-top:1px solid #ECE6DA;margin-top:10px}
+.calp .cl-day:first-child{border-top:none;margin-top:0;padding-top:0}
+.calp .cp-none{font-size:16px;color:#3A332D;background:#F6F4ED;border-radius:12px;padding:14px;margin:10px 0}
+.calp .ci{border:1px solid #E6DFD0;border-radius:14px;padding:12px;margin:10px 0;background:#fff}
+.calp .ci .ctag{display:inline-block;font-size:13px;font-weight:800;padding:2px 8px;border-radius:6px;background:#F3F0E8;color:#3A332D}
+.calp .ci.k-birthday .ctag,.calp .ci.k-event .ctag{background:#E7F7EC;color:#0A5C27}
+.calp .ci.k-demo .ctag{background:#FFF1CC;color:#5C3F00}
+.calp .ci h4{font-size:18px;font-weight:800;margin:6px 0 6px;line-height:1.35}
+.calp .ci dl{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:16px;line-height:1.45}
+.calp .ci dt{color:#6B6560;font-weight:700}
+.calp .ci dd{min-width:0;overflow-wrap:anywhere}
+.calp .ctpl{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;padding:10px 0 2px;margin-top:8px;border-top:1px dashed #E6DFD0}
+.calp .ctpl b{font-size:16px;font-weight:800;overflow-wrap:anywhere}
+.calp .cmut{font-size:14px;color:#6B6560}
+.calp .cmore{margin-top:6px}
+.calp .cbtns{display:flex;gap:8px;flex:1 1 100%}
+.calp .cbtn{flex:1;min-height:44px;padding:0 12px;border-radius:10px;border:1.5px solid #CFC6B3;background:#fff;color:#1F1A17;font:inherit;font-size:15px;font-weight:800;cursor:pointer}
+.calp .cbtn.pri{background:var(--g);border-color:var(--g);color:#fff}
+.calp .cbtn.wide{width:100%;flex:none;display:block}
+.calp .cnote2{font-size:14px;color:#4A443E;margin-top:8px;line-height:1.5}
+.calp .cp-foot{margin-top:16px;padding:12px 4px 0;border-top:1px solid #ECE6DA;display:flex;flex-direction:column;gap:6px}
+.calp .cp-src{font-size:13px;color:#6B6560;line-height:1.55}
 .tact.off{opacity:.5;cursor:default}
 .bear .msg .lnks{margin-top:4px;display:flex;gap:12px}
 .bear .x{position:absolute;top:5px;right:6px;width:22px;height:22px;border:none;
@@ -1135,6 +1208,8 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink)}
   <div class="list" id="list"></div>
 </div>
 
+<div class="calp" id="calp" hidden></div>
+
 <div class="toast" id="toast"></div>
 
 <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
@@ -1186,7 +1261,11 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink)}
     var f = fetchJson('data/facilities.json').catch(function(){ return fetchJson('facilities.json'); })
       .then(function(j){ window.FACILITIES = j.facilities || j; })
       .catch(function(){ return loadScript('facilities.js').catch(function(){ window.FACILITIES = []; }); });
-    return Promise.all([t, f]);
+    /* 宮廟公告活動（神明行事曆用）：抓不到就當沒有，不影響地圖 */
+    var ev = fetchJson('data/events.json').catch(function(){ return fetchJson('events.json'); })
+      .then(function(j){ window.EVENTS = Array.isArray(j.events) ? j.events : (Array.isArray(j) ? j : []); })
+      .catch(function(){ window.EVENTS = window.EVENTS || []; });
+    return Promise.all([t, f, ev]);
   }
   window.addEventListener('DOMContentLoaded', function(){
     loadData().then(function(){
@@ -2080,14 +2159,227 @@ function applyFavParam(){
   return true;
 }
 let favNotice = '';
+/* ===== 神明行事曆 v2：月曆總覽＋日期明細（?do=calendar、圖文選單都進這裡） =====
+   ・每次都「查詢目前顯示的月份」：逐日算農曆，再對照神明聖誕、民俗節日、宮廟公告活動（data/events.json）。
+   ・三種資料分開標示，不混在一起：
+       民俗節日（初一、十五、春節、中秋…）＝日曆事實，不代表每間宮廟都有辦活動
+       神明誕辰（lunar.js 的 GOD_BIRTHDAY）＝民間通行說法，是否辦慶典以廟方公告為準
+       宮廟公告活動（data/events.json）＝有來源的實際活動；demo:true 的標「示範活動」
+   ・日期一律用台灣時間（Asia/Taipei）決定「今天」，月曆日期用當地正午建 Date，避免 UTC 差一天。
+   ・農曆對照表只涵蓋 2024/12～2031/02，超出範圍的月份不開放，不硬猜。 */
+const CAL_MIN = [2024, 12], CAL_MAX = [2031, 2];
+const CAL_KIND = {
+  event:{ tag:'宮廟公告活動', rank:0 }, demo:{ tag:'示範活動', rank:1 },
+  birthday:{ tag:'神明誕辰', rank:3 }, folk:{ tag:'民俗節日', rank:4 }
+};
+const calPad = n => String(n).padStart(2, '0');
+function twToday(){
+  const p = {};
+  new Intl.DateTimeFormat('en-CA', { timeZone:'Asia/Taipei', year:'numeric', month:'2-digit', day:'2-digit' })
+    .formatToParts(new Date()).forEach(function(x){ p[x.type] = x.value; });
+  return { y:+p.year, m:+p.month, d:+p.day };
+}
+function calDate(y, m, d){ return new Date(y, m - 1, d, 12); }          /* 正午：任何時區 getDate() 都是這一天 */
+function calDays(y, m){ return new Date(y, m, 0, 12).getDate(); }
+function calCmp(a, b){ return (a[0] - b[0]) * 12 + (a[1] - b[1]); }
+function calInRange(y, m){ return calCmp([y, m], CAL_MIN) >= 0 && calCmp([y, m], CAL_MAX) <= 0; }
+function calLunarShort(l){ return !l ? '' : l.day === 1 ? (l.leap ? '閏' : '') + LUNAR_MONTH_NAME[l.month] + '月' : LUNAR_DAY_NAME[l.day]; }
+function calLunarFull(l){ return !l ? '' : '農曆' + (l.leap ? '閏' : '') + LUNAR_MONTH_NAME[l.month] + '月' + LUNAR_DAY_NAME[l.day]; }
+function calPool(mode){ return mode === 'fav' ? (window.TEMPLES || []).filter(isFav) : (window.TEMPLES || []); }
+function calSortTemples(ts){
+  return ts.slice().sort(function(a, b){
+    const fa = isFav(a) ? 0 : 1, fb = isFav(b) ? 0 : 1;
+    if(fa !== fb) return fa - fb;
+    if(me) return haversine(me[0], me[1], a.lat, a.lng) - haversine(me[0], me[1], b.lat, b.lng);
+    return 0;
+  });
+}
+/* 查一個月：回傳 [null, day1 items, day2 items, …] */
+function calItemsForMonth(y, m, mode){
+  const n = calDays(y, m), out = [null];
+  const pool = calPool(mode);
+  const evs = (window.EVENTS || []).filter(function(e){
+    return e && typeof e.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(e.date) && e.title && e.date.slice(0, 7) === y + '-' + calPad(m);
+  });
+  for(let d = 1; d <= n; d++){
+    const items = [], l = lunarOf(calDate(y, m, d)), iso = y + '-' + calPad(m) + '-' + calPad(d);
+    /* 宮廟公告／示範活動 */
+    evs.filter(function(e){ return e.date === iso; }).forEach(function(e){
+      const t = (window.TEMPLES || []).find(function(x){ return x.name === e.temple; }) || null;
+      if(mode === 'fav' && !(t && isFav(t))) return;
+      items.push({ kind: e.demo ? 'demo' : 'event', title:String(e.title), short:String(e.short || e.title),
+                   temples: t ? [t] : [], templeName: String(e.temple || ''), time: e.time ? String(e.time) : '', src: e.src ? String(e.src) : '' });
+    });
+    if(l){
+      const md = l.month + '.' + l.day;
+      /* 神明誕辰：閏月不算（聖誕在正月份過）；只列資料裡真的有主祀這尊神的廟 */
+      if(!l.leap) (window.GOD_BIRTHDAY || []).forEach(function(b){
+        if(b.md !== md) return;
+        const ts = pool.filter(function(t){ return (t.deity || '').indexOf(b.key) >= 0; });
+        if(!ts.length) return;
+        items.push({ kind:'birthday', title:b.name, short:b.short || b.name, key:b.key, temples:calSortTemples(ts), time:'' });
+      });
+      /* 民俗節日：只在「全部」顯示（「我的最愛」只看跟你的廟有關的） */
+      if(mode !== 'fav'){
+        const fest = l.leap ? null : FESTIVALS.find(function(f){ return f.md === md; });
+        const plain = l.day === 1 ? '初一' : l.day === 15 ? '十五' : '';
+        if(fest || plain) items.push({ kind:'folk', title: fest ? (plain ? plain + '・' : '') + fest.name : plain,
+                                       short: fest ? fest.name : plain, temples:[], time:'', fest:!!fest });
+      }
+    }
+    /* 格子只放得下一項：公告活動 ＞ 示範活動 ＞ 有名字的節日（中秋…）＞ 神明誕辰 ＞ 初一／十五 */
+    const rk = function(it){ return it.kind === 'folk' && it.fest ? 2 : CAL_KIND[it.kind].rank; };
+    items.sort(function(a, b){ return rk(a) - rk(b); });
+    out.push({ d:d, iso:iso, lunar:l, items:items });
+  }
+  return out;
+}
+
+let calState = null;
+const calEl = document.getElementById('calp');
+function calInit(){
+  const t = twToday();
+  let y = t.y, m = t.m;
+  if(!calInRange(y, m)){ const c = calCmp([y, m], CAL_MIN) < 0 ? CAL_MIN : CAL_MAX; y = c[0]; m = c[1]; }
+  calState = { y:y, m:m, sel:(y === t.y && m === t.m) ? t.d : 1, mode:'all', view:'month' };
+}
+function calGo(y, m, sel){
+  if(!calInRange(y, m)) return;
+  const t = twToday();
+  calState.y = y; calState.m = m;
+  calState.sel = sel || ((y === t.y && m === t.m) ? t.d : 1);
+  calRender();
+}
+function calShift(k){ let y = calState.y, m = calState.m + k; if(m < 1){ m = 12; y--; } if(m > 12){ m = 1; y++; } calGo(y, m); }
+
+function calTempleRow(t){
+  return '<div class="ctpl"><b>' + esc(t.name) + '</b>' + (t.dist ? '<span class="cmut">' + esc((t.city || '') + t.dist) + '</span>' : '')
+    + '<div class="cbtns"><button type="button" class="cbtn js-calview" data-name="' + esc(t.name) + '">查看宮廟</button>'
+    + (isFinite(t.lat) && isFinite(t.lng) ? '<button type="button" class="cbtn pri js-calnav" data-name="' + esc(t.name) + '">導航</button>' : '')
+    + '</div></div>';
+}
+function calItemHtml(it){
+  let h = '<article class="ci k-' + it.kind + '"><span class="ctag">' + CAL_KIND[it.kind].tag + '</span><h4>' + esc(it.title) + '</h4><dl>';
+  if(it.kind === 'folk'){
+    h += '<dt>宮廟</dt><dd>不限特定宮廟</dd><dt>時間</dt><dd>時間待確認</dd></dl>'
+       + '<p class="cnote2">民俗節日不代表每間宮廟都有舉辦活動，請以各宮廟公告為準。</p>';
+  } else if(it.kind === 'birthday'){
+    h += '<dt>宮廟</dt><dd>收錄的宮廟中有 ' + it.temples.length + ' 間主祀' + esc(it.key) + '</dd><dt>時間</dt><dd>時間待確認</dd></dl>';
+    it.temples.slice(0, 3).forEach(function(t){ h += calTempleRow(t); });
+    if(it.temples.length > 3) h += '<p class="cmut cmore">另有 ' + (it.temples.length - 3) + ' 間主祀' + esc(it.key) + '的宮廟</p>';
+    h += '<p class="cnote2">神明聖誕為民間通行說法，是否舉辦慶典以廟方公告為準。</p>';
+  } else {
+    h += '<dt>宮廟</dt><dd>' + esc(it.templeName || '宮廟待確認') + '</dd><dt>時間</dt><dd>' + (it.time ? esc(it.time) : '時間待確認') + '</dd></dl>';
+    if(it.temples[0]) h += calTempleRow(it.temples[0]);
+    if(it.kind === 'demo') h += '<p class="cnote2">這是展示用的示範活動，不是宮廟實際公告。</p>';
+    else if(it.src) h += '<p class="cnote2">來源：' + esc(it.src) + '</p>';
+  }
+  return h + '</article>';
+}
+function calDayHead(y, m, x){
+  const wd = WEEK[calDate(y, m, x.d).getDay()];
+  return '<h3>' + m + ' 月 ' + x.d + ' 日（' + wd + '）' + (x.lunar ? '<small>' + calLunarFull(x.lunar) + '</small>' : '') + '</h3>';
+}
+function calRender(){
+  const s = calState, t = twToday(), isNow = s.y === t.y && s.m === t.m;
+  const days = calItemsForMonth(s.y, s.m, s.mode);
+  const total = days.reduce(function(a, x){ return a + (x ? x.items.length : 0); }, 0);
+  const canPrev = calCmp([s.y, s.m], CAL_MIN) > 0, canNext = calCmp([s.y, s.m], CAL_MAX) < 0;
+  let h = '<div class="cp" role="dialog" aria-modal="true" aria-labelledby="cpTitle"><div class="cp-head">'
+    + '<div class="cp-r1"><b class="cp-name">神明行事曆</b>'
+    + '<button type="button" class="cp-pill js-caltoday"' + (isNow && s.sel === t.d ? ' disabled' : '') + '>回到本月</button>'
+    + '<button type="button" class="cp-x js-calclose" aria-label="關閉行事曆">×</button></div>'
+    + '<div class="cp-r2"><button type="button" class="cp-arrow js-calprev" aria-label="上個月"' + (canPrev ? '' : ' disabled') + '>‹</button>'
+    + '<h2 id="cpTitle" aria-live="polite">' + s.y + ' 年 ' + s.m + ' 月</h2>'
+    + '<button type="button" class="cp-arrow js-calnext" aria-label="下個月"' + (canNext ? '' : ' disabled') + '>›</button></div>'
+    + '<div class="cp-r3"><div class="seg" role="group" aria-label="篩選">'
+    + '<button type="button" class="js-calmode" data-v="all" aria-pressed="' + (s.mode === 'all') + '">全部</button>'
+    + '<button type="button" class="js-calmode" data-v="fav" aria-pressed="' + (s.mode === 'fav') + '">我的最愛' + (favs.size ? '（' + favs.size + '）' : '') + '</button></div>'
+    + '<div class="seg" role="group" aria-label="顯示方式">'
+    + '<button type="button" class="js-calview2" data-v="month" aria-pressed="' + (s.view === 'month') + '">月曆</button>'
+    + '<button type="button" class="js-calview2" data-v="list" aria-pressed="' + (s.view === 'list') + '">清單</button></div></div>'
+    + '</div><div class="cp-body">';
+  if(favNotice){ h += '<div class="cp-notice">' + esc(favNotice) + '</div>'; favNotice = ''; }
+  if(s.mode === 'fav' && !favs.size) h += '<div class="cp-hint">還沒有加入最愛的宮廟。在地圖上點一間廟，按「加入最愛」，這裡就只列跟你的廟有關的日子。</div>';
+  else if(!total) h += '<div class="cp-hint">這個月目前沒有已收錄的活動。</div>';
+  if(s.view === 'month'){
+    h += '<div class="cgrid cweek" aria-hidden="true">' + WEEK.split('').map(function(w){ return '<span>' + w + '</span>'; }).join('') + '</div><div class="cgrid">';
+    const lead = calDate(s.y, s.m, 1).getDay();
+    for(let i = 0; i < lead; i++) h += '<span class="cd blank" aria-hidden="true"></span>';
+    days.forEach(function(x){
+      if(!x) return;
+      const today = isNow && x.d === t.d, sel = x.d === s.sel, top = x.items[0];
+      const lu = calLunarShort(x.lunar);
+      const label = m => m + ' 月 ' + x.d + ' 日' + (today ? '，今天' : '') + (x.lunar ? '，' + calLunarFull(x.lunar) : '')
+        + (x.items.length ? '，' + x.items.length + ' 項：' + x.items.map(function(it){ return it.title; }).join('、') : '，目前沒有已收錄的活動');
+      h += '<button type="button" class="cd js-calday' + (today ? ' today' : '') + (sel ? ' sel' : '') + '" data-d="' + x.d + '"'
+         + ' aria-pressed="' + sel + '"' + (today ? ' aria-current="date"' : '') + ' aria-label="' + esc(label(s.m)) + '">'
+         + '<span class="cd-top"><span class="n">' + x.d + '</span>' + (lu && !(top && top.short === lu) ? '<span class="lu">' + lu + '</span>' : '') + '</span>'
+         + (top ? '<span class="ev k-' + top.kind + '">' + esc(top.short) + '</span>' : '')
+         + (x.items.length > 1 ? '<span class="more">另有' + (x.items.length - 1) + '項</span>' : '')
+         + '</button>';
+    });
+    const cells = lead + days.length - 1;
+    for(let i = cells; i % 7; i++) h += '<span class="cd blank" aria-hidden="true"></span>';
+    h += '</div>';
+    const x = days[s.sel];
+    h += '<section class="cp-day" aria-live="polite">' + calDayHead(s.y, s.m, x)
+       + (x.items.length ? x.items.map(calItemHtml).join('') : '<p class="cp-none">目前沒有已收錄的活動</p>') + '</section>';
+  } else {
+    h += '<section class="cp-list">';
+    days.forEach(function(x){
+      if(!x || !x.items.length) return;
+      h += '<div class="cl-day" data-d="' + x.d + '">' + calDayHead(s.y, s.m, x) + x.items.map(calItemHtml).join('') + '</div>';
+    });
+    if(!total) h += '<p class="cp-none">目前沒有已收錄的活動</p>';
+    h += '</section>';
+  }
+  h += '<div class="cp-foot">';
+  if(favs.size) h += '<button type="button" class="cbtn pri wide js-sharefav">分享我的行事曆</button><span class="cmut">送一張卡給家人，他們打開就是你加入最愛的 ' + favs.size + ' 間廟</span>';
+  h += '<p class="cp-src">日期由農曆對照表計算（台灣時間）。神明聖誕為民間通行說法；初一、十五與節日不代表每間宮廟都有活動，法會與活動時間以廟方公告為準。</p></div></div></div>';
+  calEl.innerHTML = h;
+}
+function calTemple(name){ return (window.TEMPLES || []).find(function(t){ return t.name === name; }); }
+function calOpen(){
+  if(!calState) calInit();
+  calRender();
+  calEl.classList.add('on');
+  calEl.removeAttribute('hidden');
+}
+function calClose(){
+  calEl.classList.remove('on');
+  calEl.setAttribute('hidden', '');
+  if(map && map.invalidateSize) setTimeout(function(){ map.invalidateSize(); }, 0);
+}
+calEl.addEventListener('click', function(e){
+  if(e.target === calEl){ calClose(); return; }                     /* 點面板外的暗色區 */
+  const b = e.target.closest('button'); if(!b || b.disabled) return;
+  const s = calState;
+  if(b.classList.contains('js-calclose')) return calClose();
+  if(b.classList.contains('js-calprev')) return calShift(-1);
+  if(b.classList.contains('js-calnext')) return calShift(1);
+  if(b.classList.contains('js-caltoday')){ const t = twToday(); return calGo(t.y, t.m, t.d); }
+  if(b.classList.contains('js-calmode')){ s.mode = b.dataset.v; return calRender(); }
+  if(b.classList.contains('js-calview2')){ s.view = b.dataset.v; return calRender(); }
+  if(b.classList.contains('js-calday')){
+    s.sel = +b.dataset.d; calRender();
+    const d = calEl.querySelector('.cp-day'); if(d) d.scrollIntoView({ block:'nearest', behavior:'smooth' });
+    const nb = calEl.querySelector('.js-calday[data-d="' + s.sel + '"]'); if(nb) nb.focus({ preventScroll:true });
+    return;
+  }
+  if(b.classList.contains('js-sharefav')) return shareFavs();
+  const t = b.dataset.name ? calTemple(b.dataset.name) : null; if(!t) return;
+  if(b.classList.contains('js-calnav')) return navigate(t);
+  if(b.classList.contains('js-calview')){ calClose(); openTempleByName(t.name); }
+});
+document.addEventListener('keydown', function(e){ if(e.key === 'Escape' && calEl.classList.contains('on')) calClose(); });
 function showCalendar(){
   closePanel(false);
-  bearOff = false; bearHold = true; clearInterval(bearTimer);
-  bearCall.classList.remove('on'); bearEl.classList.remove('hide');
-  bearFocusT = null;
-  document.getElementById('bearMsg').innerHTML = calendarHtml();
-  setSheet(true);          /* 清單先收起來，泡泡才放得下 */
+  calOpen();
 }
+window.__fuanCal = { itemsForMonth: calItemsForMonth, open: calOpen, close: calClose, go: calGo,
+                     state: function(){ return calState; }, today: twToday, render: calRender, range:{ min:CAL_MIN, max:CAL_MAX } };
+
 /* 點行事曆裡的廟名 → 選中那間（不在 5 公里內也硬拉進來） */
 function openTempleByName(name){
   const i = shown.findIndex(function(t){ return t.name === name; });
