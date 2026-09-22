@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="800" height="450" role="img" aria-label="宮廟示意圖">
+<defs><linearGradient id="s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5BB6F0"/><stop offset="1" stop-color="#CDEBFB"/></linearGradient>
+<linearGradient id="r" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1E8C4E"/><stop offset="1" stop-color="#1c5e3a"/></linearGradient></defs>
+<rect width="800" height="450" fill="url(#s)"/>
+<circle cx="680" cy="80" r="38" fill="#FFE066" opacity=".95"/>
+<path d="M0 250 Q200 200 400 240 T800 230 V300 H0Z" fill="#7FB77E" opacity=".9"/>
+<rect y="330" width="800" height="120" fill="#E9D9B4"/>
+<path d="M0 360 H800" stroke="#fff" stroke-opacity=".25" stroke-width="3"/>
+<g fill="#3FA35B"><circle cx="70" cy="300" r="46"/><circle cx="120" cy="320" r="36"/><circle cx="730" cy="300" r="46"/><circle cx="680" cy="320" r="36"/></g><rect x="66" y="320" width="8" height="60" fill="#6b4226"/><rect x="726" y="320" width="8" height="60" fill="#6b4226"/>
+<rect x="250" y="220" width="300" height="120" fill="#D2382C"/>
+<rect x="370" y="250" width="60" height="90" fill="#8B1A12"/><circle cx="385" cy="298" r="3" fill="#F6C343"/><circle cx="415" cy="298" r="3" fill="#F6C343"/>
+<rect x="285" y="262" width="50" height="46" fill="#8B1A12"/><rect x="465" y="262" width="50" height="46" fill="#8B1A12"/>
+<g stroke="#F6C343" stroke-width="3"><line x1="285" y1="285" x2="335" y2="285"/><line x1="310" y1="262" x2="310" y2="308"/><line x1="465" y1="285" x2="515" y2="285"/><line x1="490" y1="262" x2="490" y2="308"/></g>
+<rect x="258" y="222" width="10" height="118" fill="#B3261E"/><rect x="532" y="222" width="10" height="118" fill="#B3261E"/>
+<path d="M200 226 Q400 196 600 226 L570 200 Q400 172 230 200Z" fill="url(#r)"/>
+<path d="M190 232 Q400 204 610 232" fill="none" stroke="#1E8C4E" stroke-width="10" stroke-linecap="round"/>
+<path d="M200 226 Q180 214 170 190" fill="none" stroke="#1E8C4E" stroke-width="8" stroke-linecap="round"/>
+<path d="M600 226 Q620 214 630 190" fill="none" stroke="#1E8C4E" stroke-width="8" stroke-linecap="round"/>
+<path d="M260 190 Q400 140 540 190 L520 168 Q400 132 280 168Z" fill="url(#r)"/>
+<path d="M250 194 Q400 150 550 194" fill="none" stroke="#1E8C4E" stroke-width="8" stroke-linecap="round"/>
+<path d="M260 190 Q240 176 236 156" fill="none" stroke="#1E8C4E" stroke-width="7" stroke-linecap="round"/>
+<path d="M540 190 Q560 176 564 156" fill="none" stroke="#1E8C4E" stroke-width="7" stroke-linecap="round"/>
+<circle cx="400" cy="140" r="12" fill="#F6C343"/><path d="M372 150 Q400 128 428 150" fill="none" stroke="#F6C343" stroke-width="5"/>
+<rect x="355" y="198" width="90" height="22" rx="3" fill="#1F1A17"/><rect x="360" y="202" width="80" height="14" rx="2" fill="#F6C343"/>
+<rect x="330" y="340" width="140" height="10" fill="#d9cdb4"/><rect x="310" y="350" width="180" height="10" fill="#cfc2a6"/>
+<g transform="translate(400,392)"><ellipse cx="0" cy="18" rx="34" ry="8" fill="#000" opacity=".15"/><path d="M-30 -6 H30 L24 18 H-24Z" fill="#C9962B"/><rect x="-34" y="-12" width="68" height="8" rx="3" fill="#E0B040"/><path d="M-6 -12 C-10 -30 6 -34 0 -52 M6 -12 C2 -28 16 -32 10 -48" stroke="#fff" stroke-opacity=".7" stroke-width="3" fill="none"/></g>
+<g transform="translate(250,238)"><line x1="0" y1="-14" x2="0" y2="0" stroke="#5a2a10" stroke-width="2"/><ellipse cx="0" cy="12" rx="11" ry="14" fill="#E8352B"/><rect x="-6" y="-2" width="12" height="4" fill="#F6C343"/><rect x="-6" y="24" width="12" height="4" fill="#F6C343"/></g><g transform="translate(300,232)"><line x1="0" y1="-14" x2="0" y2="0" stroke="#5a2a10" stroke-width="2"/><ellipse cx="0" cy="12" rx="11" ry="14" fill="#E8352B"/><rect x="-6" y="-2" width="12" height="4" fill="#F6C343"/><rect x="-6" y="24" width="12" height="4" fill="#F6C343"/></g><g transform="translate(500,232)"><line x1="0" y1="-14" x2="0" y2="0" stroke="#5a2a10" stroke-width="2"/><ellipse cx="0" cy="12" rx="11" ry="14" fill="#E8352B"/><rect x="-6" y="-2" width="12" height="4" fill="#F6C343"/><rect x="-6" y="24" width="12" height="4" fill="#F6C343"/></g><g transform="translate(550,238)"><line x1="0" y1="-14" x2="0" y2="0" stroke="#5a2a10" stroke-width="2"/><ellipse cx="0" cy="12" rx="11" ry="14" fill="#E8352B"/><rect x="-6" y="-2" width="12" height="4" fill="#F6C343"/><rect x="-6" y="24" width="12" height="4" fill="#F6C343"/></g>
+</svg>
