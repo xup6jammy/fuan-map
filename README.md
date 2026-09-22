@@ -38,9 +38,9 @@
 目前是**展示模式**（`index.html` 的 `CAL_DEMO = true`），頂部統一標示「展示模式｜活動與部分圖片為示意」：
 
 - 示範活動在 `data/events-demo.json`（全部虛構，8～10 月各 10～11 場，每月至少一天多場）。以 `anchorMonth` 為基準，展示當天若已是其他月份，整批自動平移到「本月與前後各一個月」。
-- `templeId` 以 `tp-` 開頭的是真實宮廟：用該廟自己的實景照片（`img/*.jpg`），導航按鈕寫「導航至參考宮廟」並說明不是真實活動場地。
-- `demo-` 開頭的是虛構宮廟（晴光示範宮、河岸示範廟、竹林示範堂）：使用宮廟示意圖 `img/demo-temple-1～3.svg`，不提供真實導航。
-- 圖片載入失敗時換本機備用圖 `img/demo-fallback.svg`，再失敗用內嵌圖，不會出現破圖。
+- 活動全部掛在雙北 15 間真實宮廟（`templeId` 為 `tp-xxx`），圖片一律用該廟自己的實景照片（`img/*.jpg`），不使用插圖；導航按鈕寫「導航至參考宮廟」並說明不是真實活動場地。
+- 程式仍支援虛構宮廟（`demo-` 開頭、放在 events-demo.json 的 `temples`，不提供導航），目前示範資料沒有使用。
+- 照片載入失敗時才會換成本機備用圖 `img/demo-fallback.svg`（插圖，只當防破圖用），再失敗用內嵌圖。
 - 正式活動放 `data/events.json`（欄位同上：id、templeId、date、start、end、title、short、summary、details、place）。正式上線把 `CAL_DEMO` 改成 `false` 即只顯示正式資料。
 
 ## 獅仔平安回報 Demo（`safety-demo.html`）

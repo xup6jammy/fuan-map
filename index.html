@@ -2503,7 +2503,7 @@ function calRender(focusSel){
   h += '<div class="cp-foot">';
   if(favs.size) h += '<div class="cp-sec"><button type="button" class="cbtn js-sharefav">分享我的行事曆</button></div>'
                    + '<span class="cmut">送一張卡給家人，他們打開就是你加入最愛的 ' + favs.size + ' 間廟</span>';
-  h += '<p class="cp-src">' + (CAL_DEMO ? '展示模式：活動為虛構示範內容；真實宮廟使用該廟照片，虛構宮廟使用宮廟示意圖。' : '活動以宮廟公告為準。')
+  h += '<p class="cp-src">' + (CAL_DEMO ? '展示模式：活動為虛構示範內容；圖片為各宮廟的實景照片，導航帶到參考宮廟，不是真實活動場地。' : '活動以宮廟公告為準。')
      + '日期以台灣時間計算。</p></div></div></div>';
   calEl.innerHTML = h;
   if(focusSel){ const f = calEl.querySelector(focusSel); if(f && !f.disabled) f.focus({ preventScroll:true }); else calFocusFirst(); }
