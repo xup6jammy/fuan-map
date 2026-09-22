@@ -1,0 +1,107 @@
+{
+ "note": "【示範資料】比賽展示用的虛構活動，不是宮廟公告。只在月曆開啟「示範模式」時顯示，畫面會標「示範活動」。宮廟與照片是真的，活動內容是編的。",
+ "events": [
+  {
+   "id": "demo-01",
+   "demo": true,
+   "templeId": "tp-xingtian",
+   "date": "2026-09-25",
+   "title": "中秋祈福法會",
+   "short": "祈福法會",
+   "time": "09:00–11:00",
+   "desc": "示範用活動說明：中秋當天上午的祈福儀式。"
+  },
+  {
+   "id": "demo-02",
+   "demo": true,
+   "templeId": "tp-longshan",
+   "date": "2026-09-25",
+   "title": "廟埕說故事",
+   "short": "說故事",
+   "time": "14:00–15:30",
+   "desc": "示範用活動說明：志工在廟埕講廟宇故事。"
+  },
+  {
+   "id": "demo-03",
+   "demo": true,
+   "templeId": "tp-ciyou",
+   "date": "2026-09-25",
+   "title": "長者平安茶會",
+   "short": "平安茶會",
+   "desc": "示範用活動說明：未提供時間的活動，畫面顯示「時間待確認」。"
+  },
+  {
+   "id": "demo-04",
+   "demo": true,
+   "templeId": "tp-baoan",
+   "date": "2026-09-26",
+   "title": "保安宮文化展",
+   "short": "文化展",
+   "time": "10:00–17:00",
+   "end": "2026-09-28",
+   "place": "大龍峒保安宮 後殿",
+   "desc": "示範用活動說明：連續三天的多日活動，每一天都會出現、同一天只算一次。"
+  },
+  {
+   "id": "demo-05",
+   "demo": true,
+   "templeId": "tp-xiahai",
+   "date": "2026-09-30",
+   "title": "月老祈福講座",
+   "short": "月老講座",
+   "time": "19:00–20:30"
+  },
+  {
+   "id": "demo-06",
+   "demo": true,
+   "templeId": "tp-zhinan",
+   "date": "2026-10-03",
+   "title": "登山健走祈福",
+   "short": "健走祈福",
+   "time": "08:00 集合",
+   "place": "貓空纜車 指南宮站",
+   "lat": 24.9837,
+   "lng": 121.5864,
+   "desc": "示範用活動說明：集合地點不在宮廟，導航會帶到集合地點。"
+  },
+  {
+   "id": "demo-07",
+   "demo": true,
+   "templeId": "tp-qingshui",
+   "date": "2026-10-10",
+   "title": "平安遶境",
+   "short": "平安遶境",
+   "time": "08:00 起"
+  },
+  {
+   "id": "demo-08",
+   "demo": true,
+   "templeId": "moi-1749886",
+   "date": "2026-10-17",
+   "title": "社區志工說明會",
+   "short": "志工說明",
+   "time": "14:00–15:00",
+   "desc": "示範用活動說明：這間宮廟沒有收錄照片，畫面會顯示統一的佔位圖。"
+  },
+  {
+   "id": "demo-09",
+   "demo": true,
+   "templeId": "tp-huiji",
+   "date": "2026-12-31",
+   "title": "跨年點燈祈福",
+   "short": "點燈祈福",
+   "time": "18:00–00:30",
+   "end": "2027-01-02",
+   "desc": "示範用活動說明：跨年的多日活動。"
+  },
+  {
+   "id": "demo-10",
+   "demo": true,
+   "templeId": "tp-confucius",
+   "date": "2026-09-28",
+   "title": "書法體驗營",
+   "short": "書法體驗",
+   "time": "14:00–16:00"
+  }
+ ]
+}
