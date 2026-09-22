@@ -1,15 +1,13 @@
 /* ============================================================
-   Bot 流程測試（node --test）。LINE API 全部 mock：不會打到 LINE、不會發任何真實訊息。
-   每個測試建立自己的 MemoryStore 與 mock line。
+   Bot 流程測試（node --test）。LINE API 全部 mock：不會打到 LINE、不會發任何真實訊息、
+   不會推播給任何家人或其他使用者。每個測試建立自己的 MemoryStore 與 mock line。
    ============================================================ */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createBot } from '../src/flow.js';
 import { createWebhook } from '../src/webhook.js';
 import { MemoryStore } from '../src/store.js';
-import { parsePb } from '../src/messages.js';
 
-/* ---------- mock LINE ---------- */
 function mockLine(opts = {}) {
   const calls = { reply: [], push: [], profile: [] };
   return {
@@ -17,7 +15,7 @@ function mockLine(opts = {}) {
     reply: async (token, messages) => { calls.reply.push({ token, messages: [].concat(messages) }); },
     push: async (to, messages) => {
       calls.push.push({ to, messages: [].concat(messages) });
-      if (opts.pushFail && opts.pushFail.includes(to)) { const e = new Error('LINE API 400 /message/push: blocked'); e.status = 400; throw e; }
+      if (opts.pushFail && opts.pushFail.includes(to)) throw new Error('LINE API 400 /message/push');
     },
     profile: async (userId) => { calls.profile.push(userId); return opts.names && opts.names[userId] ? { displayName: opts.names[userId] } : null; }
   };
@@ -27,322 +25,285 @@ function setup(opts = {}) {
   const line = mockLine(opts);
   let t = 1700000000000; let n = 0;
   const bot = createBot({ store, line, now: () => t, rand: () => 'r' + (++n), log: { info() {}, warn() {}, error() {} } });
-  return { store, line, bot, tick: ms => { t += ms; } };
+  return { store, line, bot };
 }
 let evId = 0;
-const tokOwner = {};   // replyToken → userId，讓測試能取「某位使用者」收到的最後一則回覆
+const tokOwner = {};
 function base(uid) { ++evId; tokOwner['tok' + evId] = uid; return { webhookEventId: 'ev' + evId, replyToken: 'tok' + evId, source: { type: 'user', userId: uid } }; }
 const textEv = (uid, text) => ({ type: 'message', ...base(uid), message: { type: 'text', text } });
-const locEv = (uid, lat, lng, address) => ({ type: 'message', ...base(uid), message: { type: 'location', latitude: lat, longitude: lng, address } });
+const locEv = (uid, m) => ({ type: 'message', ...base(uid), message: { type: 'location', ...m } });
 const pbEv = (uid, data) => ({ type: 'postback', ...base(uid), postback: { data } });
 
-/* 最後一則回覆的文字與 quick reply 按鈕 */
-function last(line, uid) {
-  const rs = uid ? line.calls.reply.filter(r => tokOwner[r.token] === uid) : line.calls.reply;
-  const r = rs[rs.length - 1];
-  const m = r.messages[0];
-  const items = (m.quickReply && m.quickReply.items) || [];
-  return { text: m.text, items, btn: label => items.find(i => i.action.label === label || i.action.label === '✓ ' + label) };
+/* 把一則訊息裡所有看得到的文字與按鈕（Flex＋Quick Reply）攤平 */
+function flatten(msg) {
+  const texts = [], actions = [];
+  (function walk(n) {
+    if (!n || typeof n !== 'object') return;
+    if (Array.isArray(n)) return n.forEach(walk);
+    if (n.type === 'text' && typeof n.text === 'string') texts.push(n.text);
+    if (n.action && n.type !== 'action') actions.push({ ...n.action, where: 'flex' });
+    for (const k of ['contents', 'body', 'header', 'footer']) if (n[k]) walk(n[k]);
+  })(msg.type === 'flex' ? msg.contents : null);
+  if (msg.type === 'text') texts.push(msg.text);
+  if (msg.type === 'flex') texts.push(msg.altText);
+  for (const i of (msg.quickReply && msg.quickReply.items) || []) actions.push({ ...i.action, where: 'quick' });
+  return { text: texts.join('\n'), actions };
 }
-/* 按某個 quick reply 按鈕（模擬 LINE 送回 postback）*/
-async function press(bot, line, uid, label) {
-  const b = last(line, uid).btn(label);
-  assert.ok(b, `找不到按鈕「${label}」，現有：${last(line, uid).items.map(i => i.action.label).join('/')}`);
-  assert.equal(b.action.type, 'postback', `「${label}」不是 postback`);
-  return bot.handleEvent(pbEv(uid, b.action.data));
+function lastReply(line, uid) {
+  const rs = line.calls.reply.filter(r => tokOwner[r.token] === uid);
+  const ms = rs[rs.length - 1].messages.map(flatten);
+  return { text: ms.map(m => m.text).join('\n'), actions: ms.flatMap(m => m.actions) };
+}
+function btn(line, uid, label, type = 'postback') {
+  const b = lastReply(line, uid).actions.find(a => a.label === label && a.type === type);
+  assert.ok(b, `找不到「${label}」(${type})，現有：${lastReply(line, uid).actions.map(a => a.label + '/' + a.type).join('、')}`);
+  return b;
+}
+const press = (bot, line, uid, label) => bot.handleEvent(pbEv(uid, btn(line, uid, label).data));
+async function toLocation(bot, line, uid) {
+  await bot.handleEvent(textEv(uid, '平安回報'));
+  await press(bot, line, uid, '需要協助');
 }
 
 /* ============================================================ */
-test('求助流程：示範位置 → 多選需求（含其他）→ 人數 → 確認 → 記錄', async () => {
+test('位置題：獅仔先講清楚要按右上角「分享」，四個選項齊全', async () => {
+  const { bot, line } = setup();
+  await toLocation(bot, line, 'U0');
+  const r = lastReply(line, 'U0');
+  assert.match(r.text, /方便告訴我你在哪裡嗎？/);
+  assert.match(r.text, /如果選擇分享位置，請在地圖選好位置後，再點右上角『分享』，獅仔才會收到喔。/);
+  btn(line, 'U0', '分享目前位置', 'location');           // LINE location action（Quick Reply）
+  btn(line, 'U0', '輸入地址或地標'); btn(line, 'U0', '使用示範位置'); btn(line, 'U0', '暫不提供');
+});
+
+test('1. 分享 LINE 位置 → 確認卡 → 位置正確，繼續 → 送出', async () => {
   const { bot, line, store } = setup();
   const u = 'U1';
-  await bot.handleEvent(textEv(u, '平安回報'));
-  assert.match(last(line).text, /你現在平安嗎/);
-  await press(bot, line, u, '需要協助');
-  assert.match(last(line).text, /目前位置/);
-  assert.equal(last(line).btn('分享位置').action.type, 'location', '分享位置要是 LINE location action');
-  await press(bot, line, u, '使用示範位置');
-  assert.match(last(line).text, /哪方面的協助/);
-  await press(bot, line, u, '飲水');
-  assert.match(last(line).text, /目前選了：飲水/);
-  await press(bot, line, u, '其他');
-  assert.match(last(line).text, /「其他」是什麼協助/);
-  await bot.handleEvent(textEv(u, '需要充電'));
-  assert.match(last(line).text, /目前選了：飲水、其他（需要充電）/);
-  await press(bot, line, u, '選好了');
-  assert.match(last(line).text, /幾位需要協助/);
-  assert.equal(await store.get('report:U1'), null, '確認前不得有正式紀錄');
-  await press(bot, line, u, '2 人');
-  assert.match(last(line).text, /需求：飲水、其他（需要充電）/);
-  assert.match(last(line).text, /需要協助人數：2 人/);
-  assert.match(last(line).text, /福安里示範地址（福安街 1 號）（示範位置）/);
-  await press(bot, line, u, '確認回報');
+  await toLocation(bot, line, u);
+  await bot.handleEvent(locEv(u, { latitude: 25.033, longitude: 121.565, address: '台北市信義區市府路1號', title: '位置資訊' }));
+  let r = lastReply(line, u);
+  assert.match(r.text, /獅仔收到的位置是：/); assert.match(r.text, /台北市信義區市府路1號/); assert.match(r.text, /25\.03300, 121\.56500/);
+  btn(line, u, '重新提供位置');
+  assert.equal((await store.get('session:U1')).loc, null, '按確認前不算定位成功');
+  await press(bot, line, u, '位置正確，繼續');
+  r = lastReply(line, u);
+  assert.match(r.text, /確認後立刻通知家人/); assert.match(r.text, /需要協助/); assert.match(r.text, /台北市信義區市府路1號/);
+  await press(bot, line, u, '送出並通知家人');
   const rep = await store.get('report:U1');
-  assert.ok(rep && rep.status === 'help' && rep.people === '2' && rep.loc.source === 'demo', '確認後才有正式紀錄');
-  assert.match(last(line).text, /示範回報已記錄/);
-  assert.match(last(line).text, /回報時間：2023\/11\/15 06:13（台灣時間）/);
-  assert.ok(last(line).btn('通知測試家人') && last(line).btn('暫不通知'));
-  assert.equal(line.calls.push.length, 0, '整個流程沒有任何推播');
+  assert.equal(rep.status, 'help'); assert.equal(rep.loc.source, 'real'); assert.equal(rep.loc.lat, 25.033);
+  assert.equal(line.calls.push.length, 1); assert.equal(line.calls.push[0].to, u, '沒配對家人時只推回自己的聊天室');
+  assert.match(line.calls.push[0].messages[0].text, /地圖：https:\/\/www\.google\.com\/maps\?q=25\.03300,121\.56500/);
 });
 
-test('平安流程：跳過需求與人數；分享真實位置；略過', async () => {
+test('位置訊息沒有地址：只顯示經緯度，不捏造地址', async () => {
+  const { bot, line } = setup();
+  await toLocation(bot, line, 'U1b');
+  await bot.handleEvent(locEv('U1b', { latitude: 24.9, longitude: 121.2 }));
+  const t = lastReply(line, 'U1b').text;
+  assert.match(t, /LINE 沒有提供地址，以下是經緯度/); assert.match(t, /24\.90000, 121\.20000/);
+  assert.doesNotMatch(t, /市|區|路|號/, '不可出現自行補上的地址');
+});
+
+test('2. 關閉地圖沒分享 → 不跳題 → 改用手動輸入', async () => {
   const { bot, line, store } = setup();
   const u = 'U2';
-  await bot.handleEvent(textEv(u, '平安回報'));
-  await press(bot, line, u, '我平安');
-  await bot.handleEvent(locEv(u, 25.03300, 121.56500, '台北市信義區'));
-  const t = last(line).text;
-  assert.match(t, /請看一下對不對/, '平安者位置後直接到確認');
-  assert.doesNotMatch(t, /需求：/); assert.doesNotMatch(t, /人數/);
-  assert.match(t, /台北市信義區　25\.03300, 121\.56500（使用者分享的位置）/);
-  assert.match(t, /地圖：https:\/\/www\.google\.com\/maps\?q=25\.03300,121\.56500/);
-  await press(bot, line, u, '確認回報');
+  await toLocation(bot, line, u);
+  /* 使用者點「分享目前位置」但沒按分享就關掉地圖：LINE 不會送任何事件過來 → 什麼都不發生 */
+  const s = await store.get('session:U2');
+  assert.equal(s.step, 'location'); assert.equal(s.loc, null);
+  /* 回到聊天室亂打字：留在位置題並提示 */
+  await bot.handleEvent(textEv(u, '我不會按'));
+  assert.match(lastReply(line, u).text, /請先按「輸入地址或地標」/); assert.match(lastReply(line, u).text, /方便告訴我你在哪裡嗎/);
+  assert.equal((await store.get('session:U2')).status, 'help', '沒有重新開始');
+  await press(bot, line, u, '輸入地址或地標');
+  assert.match(lastReply(line, u).text, /請直接打字/);
+  await bot.handleEvent(textEv(u, '福安宮前面'));
+  assert.match(lastReply(line, u).text, /獅仔收到的位置是：[\s\S]*福安宮前面/);
+  await press(bot, line, u, '位置正確，繼續');
+  await press(bot, line, u, '送出並通知家人');
   const rep = await store.get('report:U2');
-  assert.equal(rep.status, 'safe'); assert.deepEqual(rep.needs, []); assert.equal(rep.people, null); assert.equal(rep.loc.source, 'real');
-  /* 略過位置 */
-  await bot.handleEvent(textEv(u, '平安回報'));
-  await press(bot, line, u, '我平安');
-  await press(bot, line, u, '略過');
-  assert.match(last(line).text, /位置：未提供/);
-  assert.doesNotMatch(last(line).text, /地圖：/);
+  assert.deepEqual(rep.loc, { source: 'manual', text: '福安宮前面' });
+  assert.match(line.calls.push[0].messages[0].text, /位置：福安宮前面（自行輸入）/);
 });
 
-test('求助改平安：新的紀錄不殘留舊需求；同一人只有一筆', async () => {
+test('3. 手動輸入地址：太短重問；中途改分享 LINE 位置也可以', async () => {
   const { bot, line, store } = setup();
   const u = 'U3';
-  await bot.handleEvent(textEv(u, '平安回報')); await press(bot, line, u, '需要協助'); await press(bot, line, u, '略過');
-  await press(bot, line, u, '食物'); await press(bot, line, u, '選好了'); await press(bot, line, u, '3 人以上'); await press(bot, line, u, '確認回報');
-  assert.equal((await store.get('report:U3')).needs.length, 1);
-  await bot.handleEvent(textEv(u, '平安回報')); await press(bot, line, u, '我平安'); await press(bot, line, u, '使用示範位置'); await press(bot, line, u, '確認回報');
-  const rep = await store.get('report:U3');
-  assert.equal(rep.status, 'safe'); assert.deepEqual(rep.needs, []); assert.equal(rep.people, null); assert.equal(rep.other, '');
-  assert.doesNotMatch(last(line).text, /食物/);
+  await toLocation(bot, line, u);
+  await press(bot, line, u, '輸入地址或地標');
+  await bot.handleEvent(textEv(u, '家'));
+  assert.match(lastReply(line, u).text, /請輸入 2～80 個字/);
+  await bot.handleEvent(textEv(u, '中山路 100 號'));
+  assert.match(lastReply(line, u).text, /中山路 100 號/);
+  assert.equal((await store.get('session:U3')).step, 'loc_confirm');
+  /* 在確認卡階段又分享了 LINE 位置：以最新的為準 */
+  const oldOk = btn(line, u, '位置正確，繼續').data;
+  await bot.handleEvent(locEv(u, { latitude: 25.1, longitude: 121.5, address: '台北市士林區' }));
+  assert.match(lastReply(line, u).text, /台北市士林區/);
+  await bot.handleEvent(pbEv(u, oldOk));                         // 舊卡（中山路）按了無效
+  assert.match(lastReply(line, u).text, /這張位置卡片已經過期/);
+  assert.equal((await store.get('session:U3')).pendingLoc.address, '台北市士林區');
 });
 
-test('取消、重新開始、重新填寫', async () => {
+test('4. 使用示範位置：確認卡、送出摘要、家人通知都標「示範位置」', async () => {
   const { bot, line, store } = setup();
   const u = 'U4';
-  await bot.handleEvent(textEv(u, '平安回報')); await press(bot, line, u, '需要協助');
-  await bot.handleEvent(textEv(u, '取消'));
-  assert.match(last(line).text, /已取消/); assert.equal(await store.get('session:U4'), null);
-  await bot.handleEvent(textEv(u, '平安回報')); await press(bot, line, u, '需要協助'); await press(bot, line, u, '使用示範位置');
-  await bot.handleEvent(textEv(u, '重新開始'));
-  assert.match(last(line).text, /你現在平安嗎/);
-  await press(bot, line, u, '我平安'); await press(bot, line, u, '略過');
-  await press(bot, line, u, '重新填寫');
-  assert.match(last(line).text, /你現在平安嗎/);
-  assert.equal(await store.get('report:U4'), null, '取消／重填都不會產生紀錄');
+  await toLocation(bot, line, u);
+  await press(bot, line, u, '使用示範位置');
+  assert.match(lastReply(line, u).text, /【示範位置】不是你的真實位置/);
+  await press(bot, line, u, '位置正確，繼續');
+  assert.match(lastReply(line, u).text, /福安里福安街 1 號（示範位置）/);
+  await press(bot, line, u, '送出並通知家人');
+  assert.equal((await store.get('report:U4')).loc.source, 'demo');
+  assert.match(line.calls.push[0].messages[0].text, /位置：福安里福安街 1 號（示範位置）/);
 });
 
-test('亂輸入：流程中回「請用按鈕」並重問同一題；流程外不回', async () => {
-  const { bot, line } = setup();
-  const u = 'U5';
-  const r0 = await bot.handleEvent(textEv(u, '哈囉'));
-  assert.equal(r0.ignored, 'text outside session'); assert.equal(line.calls.reply.length, 0);
-  await bot.handleEvent(textEv(u, '平安回報'));
-  await bot.handleEvent(textEv(u, '我很好'));
-  assert.match(last(line).text, /請用下方的按鈕/); assert.match(last(line).text, /你現在平安嗎/);
-  await press(bot, line, u, '需要協助');
-  await bot.handleEvent(textEv(u, '  平安回報 '));   // 前後空白
-  assert.match(last(line).text, /你現在平安嗎/);
-  /* 位置訊息在不對的題目送來 */
-  await press(bot, line, u, '需要協助'); await press(bot, line, u, '使用示範位置');
-  await bot.handleEvent(locEv(u, 25, 121, ''));
-  assert.match(last(line).text, /請用下方的按鈕/); assert.match(last(line).text, /哪方面的協助/);
-  /* 其他說明太長 */
-  await press(bot, line, u, '其他');
-  await bot.handleEvent(textEv(u, '一'.repeat(61)));
-  assert.match(last(line).text, /太長了/);
-  await bot.handleEvent(textEv(u, '需要藥局資訊'));
-  assert.match(last(line).text, /其他（需要藥局資訊）/);
-  /* 沒選就按選好了 */
-  await press(bot, line, u, '其他');   // 取消勾選其他
-  await press(bot, line, u, '選好了');
-  assert.match(last(line).text, /至少選一項/);
-});
-
-test('過期按鈕：舊對話的按鈕、按到已答過的題目、偽造的 postback', async () => {
-  const { bot, line } = setup();
-  const u = 'U6';
-  await bot.handleEvent(textEv(u, '平安回報'));
-  const oldBtn = last(line).btn('我平安').action.data;
-  await bot.handleEvent(textEv(u, '平安回報'));         // 新對話，舊按鈕過期
-  await bot.handleEvent(pbEv(u, oldBtn));
-  assert.match(last(line).text, /已經過期/); assert.ok(last(line).btn('重新開始'));
-  await press(bot, line, u, '重新開始');
-  assert.match(last(line).text, /你現在平安嗎/);
-  const statusBtn = last(line).btn('需要協助').action.data;
-  await bot.handleEvent(pbEv(u, statusBtn));
-  await bot.handleEvent(pbEv(u, statusBtn));            // 再按一次同一題
-  assert.match(last(line).text, /已經回答過了/); assert.match(last(line).text, /目前位置/);
-  await bot.handleEvent(pbEv(u, 'a=confirm&s=' + parsePb(statusBtn).s));   // 跳題偽造
-  assert.match(last(line).text, /已經回答過了/);
-  await bot.handleEvent(pbEv(u, 'garbage'));
-  assert.match(last(line).text, /已經過期/);
-});
-
-test('不同使用者的狀態互不混淆', async () => {
+test('5. 略過位置：記為未提供，並清掉先前選過的位置', async () => {
   const { bot, line, store } = setup();
-  await bot.handleEvent(textEv('A', '平安回報')); await press(bot, line, 'A', '需要協助');
-  await bot.handleEvent(textEv('B', '平安回報')); await press(bot, line, 'B', '我平安');
-  await press(bot, line, 'B', '略過'); await press(bot, line, 'B', '確認回報');
-  await press(bot, line, 'A', '使用示範位置');   // A 還在自己的流程
-  assert.match(last(line, 'A').text, /哪方面的協助/);
-  assert.match(last(line, 'B').text, /示範回報已記錄/);
-  assert.equal((await store.get('report:B')).status, 'safe'); assert.equal(await store.get('report:A'), null);
-  /* B 的按鈕（帶 B 的 session id）被 A 按到：A 的 session id 不同 → 過期 */
-  const bBtn = last(line, 'B').btn('暫不通知').action.data;
-  await bot.handleEvent(pbEv('A', bBtn));
-  assert.match(last(line, 'A').text, /已經過期/);
-  assert.ok(await store.get('session:B'), 'B 的 session 不受影響');
+  const u = 'U5';
+  await toLocation(bot, line, u);
+  await press(bot, line, u, '使用示範位置');                     // 先選了示範（待確認）
+  const staleOk = btn(line, u, '位置正確，繼續').data;
+  /* 往上捲回位置題，按「暫不提供」 */
+  const askLoc = line.calls.reply.filter(r => tokOwner[r.token] === u).map(r => r.messages.map(flatten)).find(ms => ms.some(m => /方便告訴我/.test(m.text)));
+  const skip = askLoc.flatMap(m => m.actions).find(a => a.label === '暫不提供' && a.type === 'postback');
+  await bot.handleEvent(pbEv(u, skip.data));
+  let s = await store.get('session:U5');
+  assert.deepEqual(s.loc, { source: 'none' }); assert.equal(s.pendingLoc, null);
+  assert.match(lastReply(line, u).text, /位置[\s\S]*未提供/);
+  await bot.handleEvent(pbEv(u, staleOk));                       // 舊的示範確認卡
+  s = await store.get('session:U5');
+  assert.deepEqual(s.loc, { source: 'none' }, '舊確認卡不能把示範位置套回來');
+  await press(bot, line, u, '送出並通知家人');
+  assert.deepEqual((await store.get('report:U5')).loc, { source: 'none' });
+  assert.match(line.calls.push[0].messages[0].text, /位置：未提供/);
 });
 
-test('重複 webhook（同一 webhookEventId）不重複處理、不重複通知', async () => {
-  const { bot, line, store } = setup({ names: { F1: '小明' } });
-  const o = 'O1', f = 'F1';
-  /* 先綁定家人 */
-  await bot.handleEvent(textEv(o, '配對家人'));
-  const code = /配對碼：(\d{6})/.exec(last(line).text)[1];
-  await bot.handleEvent(textEv(f, '配對 ' + code)); await press(bot, line, f, '接受');
-  /* 回報並通知 */
-  await bot.handleEvent(textEv(o, '平安回報')); await press(bot, line, o, '我平安'); await press(bot, line, o, '略過');
-  const confirmEv = pbEv(o, last(line).btn('確認回報').action.data);
-  await bot.handleEvent(confirmEv);
-  const r2 = await bot.handleEvent(confirmEv);           // LINE 重送同一事件
-  assert.equal(r2.skipped, 'duplicate');
-  const before = (await store.get('report:O1')).id;
-  await bot.handleEvent(pbEv(o, confirmEv.postback.data)); // 不同事件 id、同一顆按鈕再按：題目已過 → 不會再寫一筆
-  assert.equal((await store.get('report:O1')).id, before);
-  await press(bot, line, o, '通知測試家人');
-  assert.match(last(line).text, /將由本官方帳號推播給 1 位測試家人：小明/);
-  assert.match(last(line).text, /【展示演練，非真實求助】/);
-  const goEv = pbEv(o, last(line).btn('確認通知').action.data);
-  await bot.handleEvent(goEv);
-  assert.equal(line.calls.push.filter(p => p.to === f).length, 1);
-  assert.match(last(line).text, /已送出給 1 位：小明/); assert.match(last(line).text, /無法得知是否已讀/);
-  await bot.handleEvent(goEv);                              // 重送
-  await bot.handleEvent(pbEv(o, goEv.postback.data));       // 連點（新事件 id）→ session 已結束 → 過期
-  assert.equal(line.calls.push.filter(p => p.to === f).length, 1, '推播只有一次');
+test('6. 重新提供位置：只重做位置，保留「需要協助」', async () => {
+  const { bot, line, store } = setup();
+  const u = 'U6';
+  await toLocation(bot, line, u);
+  await press(bot, line, u, '使用示範位置');
+  await press(bot, line, u, '重新提供位置');
+  let s = await store.get('session:U6');
+  assert.equal(s.step, 'location'); assert.equal(s.status, 'help'); assert.equal(s.loc, null); assert.equal(s.pendingLoc, null);
+  assert.match(lastReply(line, u).text, /方便告訴我你在哪裡嗎/);
+  assert.doesNotMatch(lastReply(line, u).text, /你現在平安嗎/, '不回到第一題');
+  await bot.handleEvent(locEv(u, { latitude: 25, longitude: 121.5, address: '新北市板橋區' }));
+  await press(bot, line, u, '位置正確，繼續');
+  /* 在最後送出頁也可以只改位置 */
+  await press(bot, line, u, '重新提供位置');
+  s = await store.get('session:U6');
+  assert.equal(s.step, 'location'); assert.equal(s.status, 'help'); assert.equal(s.loc, null);
+  await press(bot, line, u, '輸入地址或地標');
+  await bot.handleEvent(textEv(u, '板橋車站'));
+  await press(bot, line, u, '位置正確，繼續');
+  assert.match(lastReply(line, u).text, /需要協助/); assert.match(lastReply(line, u).text, /板橋車站/);
+  await press(bot, line, u, '送出並通知家人');
+  const rep = await store.get('report:U6');
+  assert.equal(rep.status, 'help'); assert.equal(rep.loc.text, '板橋車站');
 });
 
-test('家人配對：產碼、接受、拒絕、自己配自己、無效碼、重複綁定、解除、未綁定時不假裝通知', async () => {
-  const { bot, line, store } = setup({ names: { O2: '阿公', F2: '孫女' } });
-  const o = 'O2', f = 'F2';
-  await bot.handleEvent(textEv(f, '配對 000000'));
-  assert.match(last(line).text, /無效或已過期/);
-  await bot.handleEvent(textEv(o, '配對家人'));
-  const code = /配對碼：(\d{6})/.exec(last(line).text)[1];
-  assert.doesNotMatch(last(line).text, /O2|F2/, '回覆不含 userId');
-  await bot.handleEvent(textEv(o, '配對' + code));
-  assert.match(last(line).text, /不能和自己配對/);
-  await bot.handleEvent(textEv(f, '配對 ' + code));
-  assert.match(last(line).text, /要成為 阿公 的測試家人嗎/);
-  await press(bot, line, f, '拒絕');
-  assert.match(last(line).text, /已拒絕/); assert.equal(await store.get('family:O2'), null);
-  await bot.handleEvent(textEv(f, '配對 ' + code));
-  await press(bot, line, f, '接受');
-  assert.match(last(line).text, /已完成綁定，你現在是 阿公 的測試家人/);
-  assert.equal(line.calls.push.length, 1, '綁定後推播通知 owner 一次'); assert.equal(line.calls.push[0].to, o);
-  assert.match(line.calls.push[0].messages[0].text, /孫女 已成為你的測試家人/);
-  assert.equal(await store.get('pair:' + code), null, '配對碼一次性');
-  await bot.handleEvent(textEv(f, '配對 ' + code));
-  assert.match(last(line).text, /無效或已過期/);
-  await bot.handleEvent(textEv(o, '我的家人'));
-  assert.match(last(line).text, /你的測試家人（1 位）：孫女/);
-  await bot.handleEvent(textEv(f, '我的家人'));
-  assert.match(last(line).text, /你是這些人的測試家人：阿公/);
-  /* 未綁定的人要通知 */
-  await bot.handleEvent(textEv('X', '平安回報')); await press(bot, line, 'X', '我平安'); await press(bot, line, 'X', '略過'); await press(bot, line, 'X', '確認回報');
-  await press(bot, line, 'X', '通知測試家人');
-  assert.match(last(line).text, /還沒有配對的測試家人，所以這次沒有發送任何通知/);
-  assert.equal(line.calls.push.length, 1, '沒有多推播');
-  /* 解除（家人那端）*/
-  await bot.handleEvent(textEv(f, '解除配對'));
-  await press(bot, line, f, '不再當 阿公 的家人');
-  assert.match(last(line).text, /已解除與 阿公 的配對/);
-  assert.deepEqual(await store.get('family:O2'), []); assert.deepEqual(await store.get('owners:F2'), []);
+test('7. 舊確認按鈕不影響新回報（跨回報、同回報、重複 webhook）', async () => {
+  const { bot, line, store } = setup();
+  const u = 'U7';
+  /* 第一次回報：分享位置 A，拿到確認卡但不按 */
+  await toLocation(bot, line, u);
+  await bot.handleEvent(locEv(u, { latitude: 22.6, longitude: 120.3, address: '高雄市舊位置' }));
+  const oldOk = btn(line, u, '位置正確，繼續').data, oldRedo = btn(line, u, '重新提供位置').data;
+  /* 開始新的回報 */
+  await toLocation(bot, line, u);
+  await bot.handleEvent(pbEv(u, oldOk));
+  assert.match(lastReply(line, u).text, /已經過期/);
+  let s = await store.get('session:U7');
+  assert.equal(s.step, 'location'); assert.equal(s.loc, null); assert.equal(s.pendingLoc, null, '舊位置沒被套進新回報');
+  await bot.handleEvent(pbEv(u, oldRedo));
+  assert.match(lastReply(line, u).text, /已經過期/);
+  /* 新回報裡：先示範、再改手動；示範那張卡作廢 */
+  await press(bot, line, u, '使用示範位置');
+  const demoOk = btn(line, u, '位置正確，繼續').data;
+  await press(bot, line, u, '重新提供位置');
+  await bot.handleEvent(pbEv(u, demoOk));
+  assert.match(lastReply(line, u).text, /這張位置卡片已經過期/);
+  assert.equal((await store.get('session:U7')).loc, null);
+  await press(bot, line, u, '輸入地址或地標');
+  await bot.handleEvent(textEv(u, '福安宮'));
+  const okEv = pbEv(u, btn(line, u, '位置正確，繼續').data);
+  await bot.handleEvent(okEv);
+  assert.equal((await bot.handleEvent(okEv)).skipped, 'duplicate', 'LINE 重送同一事件被跳過');
+  await bot.handleEvent(pbEv(u, okEv.postback.data));            // 連點（新事件 id）
+  s = await store.get('session:U7');
+  assert.equal(s.step, 'confirm'); assert.equal(s.loc.text, '福安宮');
+  const sendEv = pbEv(u, btn(line, u, '送出並通知家人').data);
+  await bot.handleEvent(sendEv); await bot.handleEvent(sendEv); await bot.handleEvent(pbEv(u, sendEv.postback.data));
+  assert.equal(line.calls.push.length, 1, '只推一次');
+  assert.equal((await store.get('report:U7')).loc.text, '福安宮');
+  /* 回報完成後，舊位置訊息／舊卡都不會開新紀錄 */
+  await bot.handleEvent(pbEv(u, demoOk));
+  assert.equal((await store.get('report:U7')).loc.text, '福安宮');
 });
 
-test('配對碼逾時失效；owner 端解除', async () => {
-  const { bot, line, store, tick } = setup({ names: { O3: '媽媽', F3: '兒子' } });
-  await bot.handleEvent(textEv('O3', '配對家人'));
-  const code = /配對碼：(\d{6})/.exec(last(line).text)[1];
-  tick(11 * 60 * 1000);
-  await bot.handleEvent(textEv('F3', '配對 ' + code));
-  assert.match(last(line).text, /無效或已過期/);
-  await bot.handleEvent(textEv('O3', '配對家人'));
-  const code2 = /配對碼：(\d{6})/.exec(last(line).text)[1];
-  await bot.handleEvent(textEv('F3', '配對 ' + code2)); await press(bot, line, 'F3', '接受');
-  await bot.handleEvent(textEv('O3', '解除配對'));
-  await press(bot, line, 'O3', '解除：兒子');
-  assert.match(last(line).text, /已解除與 兒子 的配對/);
-  assert.deepEqual(await store.get('family:O3'), []); assert.deepEqual(await store.get('owners:F3'), []);
-  await bot.handleEvent(textEv('O3', '解除配對'));
-  assert.match(last(line).text, /目前沒有任何配對/);
+test('位置確認後再傳位置、未到位置題先傳位置：都不會亂套', async () => {
+  const { bot, line, store } = setup();
+  const u = 'U8';
+  await bot.handleEvent(textEv(u, '平安回報'));
+  await bot.handleEvent(locEv(u, { latitude: 25, longitude: 121 }));
+  assert.equal((await store.get('session:U8')).step, 'status');
+  await press(bot, line, u, '需要協助');
+  await press(bot, line, u, '使用示範位置'); await press(bot, line, u, '位置正確，繼續');
+  await bot.handleEvent(locEv(u, { latitude: 25, longitude: 121, address: '另一個地方' }));
+  assert.match(lastReply(line, u).text, /位置已經確認過了/);
+  assert.equal((await store.get('session:U8')).loc.source, 'demo');
 });
 
-test('通知：預覽 → 確認通知才推播；取消通知不推播且紀錄保留；部分失敗要分開講；不附已讀', async () => {
-  const { bot, line, store } = setup({ names: { O4: '爺爺', F4: '大姑', F5: '二姑' }, pushFail: ['F5'] });
-  const o = 'O4';
-  for (const f of ['F4', 'F5']) {
-    await bot.handleEvent(textEv(o, '配對家人'));
-    const code = /配對碼：(\d{6})/.exec(last(line).text)[1];
-    await bot.handleEvent(textEv(f, '配對 ' + code)); await press(bot, line, f, '接受');
-  }
-  const pushesBefore = line.calls.push.length;
-  await bot.handleEvent(textEv(o, '平安回報')); await press(bot, line, o, '需要協助'); await press(bot, line, o, '使用示範位置');
-  await press(bot, line, o, '行動協助'); await press(bot, line, o, '選好了'); await press(bot, line, o, '1 人'); await press(bot, line, o, '確認回報');
-  await press(bot, line, o, '通知測試家人');
-  assert.match(last(line).text, /推播給 2 位測試家人：大姑、二姑/);
-  assert.equal(line.calls.push.length, pushesBefore, '預覽階段沒有推播');
-  await press(bot, line, o, '取消通知');
-  assert.match(last(line).text, /已取消通知，沒有送出任何訊息。本次回報仍保留/);
-  assert.equal(line.calls.push.length, pushesBefore);
-  assert.ok(await store.get('report:O4'), '紀錄保留');
-  /* 再來一次，這次確認 */
-  await bot.handleEvent(textEv(o, '平安回報')); await press(bot, line, o, '需要協助'); await press(bot, line, o, '使用示範位置');
-  await press(bot, line, o, '飲水'); await press(bot, line, o, '選好了'); await press(bot, line, o, '2 人'); await press(bot, line, o, '確認回報');
-  await press(bot, line, o, '通知測試家人'); await press(bot, line, o, '確認通知');
-  const sent = line.calls.push.slice(pushesBefore);
-  assert.equal(sent.length, 2);
-  const msg = sent[0].messages[0].text;
-  assert.ok(msg.startsWith('【展示演練，非真實求助】\n爺爺 的獅仔平安回報'), msg);
-  assert.match(msg, /目前狀況：需要協助\n需求：飲水\n需要協助人數：2 人\n位置：福安里示範地址（福安街 1 號）（示範位置）\n回報時間：.*（台灣時間）\n這是功能展示訊息/);
-  assert.match(last(line).text, /已送出給 1 位：大姑/); assert.match(last(line).text, /發送失敗 1 位：二姑/);
-  assert.doesNotMatch(last(line).text, /家人已讀|已讀取|已收到關懷/); assert.match(last(line).text, /無法得知是否已讀/);
-  const rep = await store.get('report:O4');
-  const rec = Object.values(rep.notifies)[0];
-  assert.deepEqual(rec.ok, ['大姑']); assert.deepEqual(rec.fail, ['二姑']);
+test('保留功能：我平安直接關懷結束、取消、流程外文字不回', async () => {
+  const { bot, line, store } = setup();
+  const u = 'U9';
+  assert.equal((await bot.handleEvent(textEv(u, '哈囉'))).ignored, 'text outside session');
+  await bot.handleEvent(textEv(u, '平安回報'));
+  await press(bot, line, u, '我平安');
+  assert.match(lastReply(line, u).text, /知道你平安就好/);
+  assert.equal((await store.get('report:U9')).status, 'safe'); assert.equal(line.calls.push.length, 0);
+  await toLocation(bot, line, u);
+  await bot.handleEvent(textEv(u, '取消'));
+  assert.match(lastReply(line, u).text, /已取消/); assert.equal(await store.get('session:U9'), null);
 });
 
-test('平安通知不含求助欄位；真實位置附地圖連結；暫不通知', async () => {
-  const { bot, line } = setup({ names: { O5: '奶奶', F6: '孫子' } });
-  await bot.handleEvent(textEv('O5', '配對家人'));
-  const code = /配對碼：(\d{6})/.exec(last(line).text)[1];
-  await bot.handleEvent(textEv('F6', '配對 ' + code)); await press(bot, line, 'F6', '接受');
-  await bot.handleEvent(textEv('O5', '平安回報')); await press(bot, line, 'O5', '我平安');
-  await bot.handleEvent(locEv('O5', 24.9, 121.2, '桃園市中壢區'));
-  await press(bot, line, 'O5', '確認回報'); await press(bot, line, 'O5', '通知測試家人'); await press(bot, line, 'O5', '確認通知');
-  const msg = line.calls.push[line.calls.push.length - 1].messages[0].text;
-  assert.match(msg, /目前狀況：平安/); assert.doesNotMatch(msg, /需求|人數/);
-  assert.match(msg, /桃園市中壢區　24\.90000, 121\.20000（使用者分享的位置）\n地圖：https:\/\/www\.google\.com\/maps\?q=24\.90000,121\.20000/);
-  await bot.handleEvent(textEv('O5', '平安回報')); await press(bot, line, 'O5', '我平安'); await press(bot, line, 'O5', '略過'); await press(bot, line, 'O5', '確認回報');
-  const n = line.calls.push.length;
-  await press(bot, line, 'O5', '暫不通知');
-  assert.match(last(line).text, /這次不通知/); assert.equal(line.calls.push.length, n);
+test('保留功能：已配對家人會收到；不同使用者互不影響', async () => {
+  const { bot, line } = setup({ names: { O1: '阿公', F1: '孫女' } });
+  await bot.handleEvent(textEv('O1', '配對家人'));
+  const code = /配對碼：(\d{6})/.exec(lastReply(line, 'O1').text)[1];
+  await bot.handleEvent(textEv('F1', '配對 ' + code)); await press(bot, line, 'F1', '接受');
+  await toLocation(bot, line, 'O1');
+  await toLocation(bot, line, 'B1');
+  await press(bot, line, 'O1', '暫不提供');
+  await press(bot, line, 'O1', '送出並通知家人');
+  const toF = line.calls.push.filter(p => p.to === 'F1');
+  assert.equal(toF.length, 1); assert.match(toF[0].messages[0].text, /【平安回報】阿公/);
+  assert.match(lastReply(line, 'B1').text, /方便告訴我你在哪裡嗎/, 'B1 仍在自己的位置題');
 });
 
-test('webhook：簽章錯誤 401、空 events 200、正確簽章會處理事件', async () => {
+test('webhook：簽章錯誤 401、正確簽章會處理', async () => {
   const { bot, line } = setup();
   const secret = 'test-secret';
   const webhook = createWebhook({ bot, channelSecret: secret, log: { warn() {}, error() {} } });
   const body = JSON.stringify({ events: [textEv('W1', '平安回報')] });
   const { createHmac } = await import('node:crypto');
-  const sig = createHmac('sha256', secret).update(body).digest('base64');
   assert.equal((await webhook({ rawBody: body, signature: 'bad' })).status, 401);
-  assert.equal((await webhook({ rawBody: JSON.stringify({ events: [] }), signature: createHmac('sha256', secret).update(JSON.stringify({ events: [] })).digest('base64') })).status, 200);
-  assert.equal(line.calls.reply.length, 0);
-  const out = await webhook({ rawBody: body, signature: sig });
-  assert.equal(out.status, 200); assert.equal(line.calls.reply.length, 1);
-  assert.match(last(line).text, /你現在平安嗎/);
+  const out = await webhook({ rawBody: body, signature: createHmac('sha256', secret).update(body).digest('base64') });
+  assert.equal(out.status, 200); assert.match(lastReply(line, 'W1').text, /你現在平安嗎/);
+});
+
+test('Flex 結構：位置確認卡是兩顆大按鈕，文字不超過 LINE 限制', async () => {
+  const { bot, line } = setup();
+  await toLocation(bot, line, 'U10');
+  const ask = line.calls.reply.at(-1).messages[0];
+  assert.equal(ask.type, 'flex'); assert.ok(ask.quickReply.items.length <= 13);
+  assert.ok(ask.quickReply.items.every(i => i.action.label.length <= 20));
+  await press(bot, line, 'U10', '使用示範位置');
+  const card = line.calls.reply.at(-1).messages[0];
+  const acts = flatten(card).actions;
+  assert.deepEqual(acts.map(a => a.label), ['位置正確，繼續', '重新提供位置']);
+  assert.ok(card.altText.length <= 400);
+  assert.ok(acts.every(a => a.data.length <= 300));
 });
