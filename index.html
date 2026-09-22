@@ -965,79 +965,142 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink)}
 .bear .msg .bbtn.pri{background:var(--g);border-color:var(--g);color:#fff}
 .bear .msg .bbtn:disabled{opacity:.42;cursor:default}
 .bear .msg .note{display:block;margin-top:4px;font-size:10.5px;color:#A29C8C;font-weight:600}
-/* ===== 神明行事曆 v2（月曆總覽）：白底、黑字、綠色重點；按鈕至少 44px 高 ===== */
-.calp{position:fixed;inset:0;z-index:1500;background:rgba(31,26,23,.38)}
+/* ===== 宮廟活動月曆 v3：白底、黑字、綠色重點、照片鮮豔；按鈕至少 44px 高 ===== */
+body.calopen{overflow:hidden}
+.calp{position:fixed;inset:0;z-index:1500;background:rgba(31,26,23,.42);touch-action:auto}
 .calp[hidden]{display:none}
-.calp .cp{position:absolute;left:0;right:0;bottom:0;top:max(8px, env(safe-area-inset-top));margin:0 auto;max-width:560px;
+.calp .cp{position:absolute;left:0;right:0;bottom:0;top:max(6px, env(safe-area-inset-top));margin:0 auto;max-width:600px;
   background:#fff;color:#1F1A17;border-radius:16px 16px 0 0;display:flex;flex-direction:column;overflow:hidden;
   box-shadow:0 -4px 24px rgba(31,26,23,.18)}
-.calp .cp-head{flex:none;padding:8px 10px 8px;border-bottom:1px solid #ECE6DA;background:#fff}
+.calp .cp-head{flex:none;padding:6px 10px 8px;border-bottom:1px solid #ECE6DA;background:#fff}
 .calp .cp-r1{display:flex;align-items:center;gap:8px}
-.calp .cp-name{font-size:16px;font-weight:800;margin-right:auto;padding-left:4px}
-.calp .cp-pill{min-height:40px;padding:0 14px;border-radius:20px;border:1.5px solid var(--g);background:#fff;color:#0A6B2C;font:inherit;font-size:15px;font-weight:800;cursor:pointer}
-.calp .cp-pill:disabled{border-color:#D9D2C3;color:#9A938C;cursor:default}
-.calp .cp-x{width:44px;height:44px;border-radius:22px;border:none;background:#F3F0E8;color:#1F1A17;font-size:26px;line-height:1;cursor:pointer}
-.calp .cp-r2{display:grid;grid-template-columns:48px 1fr 48px;align-items:center;margin-top:4px}
-.calp .cp-r2 h2{text-align:center;font-size:22px;font-weight:800;letter-spacing:.02em}
-.calp .cp-arrow{width:48px;height:48px;border-radius:24px;border:1.5px solid #D9D2C3;background:#fff;color:#1F1A17;font-size:28px;line-height:1;cursor:pointer;font-family:inherit}
+.calp .cp-lion{width:44px;height:44px;object-fit:contain;flex:none}
+.calp .cp-name{font-size:19px;font-weight:800;margin-right:auto;letter-spacing:.02em}
+.calp .cp-x{width:44px;height:44px;border-radius:22px;border:none;background:#F3F0E8;color:#1F1A17;font-size:26px;line-height:1;cursor:pointer;flex:none}
+.calp .cp-r2{display:grid;grid-template-columns:44px minmax(0,1fr) 44px auto;align-items:center;gap:6px;margin-top:4px}
+.calp .cp-r2 h2{text-align:center;font-size:20px;font-weight:800;letter-spacing:.02em;white-space:nowrap}
+.calp .cp-arrow{width:44px;height:44px;border-radius:22px;border:1.5px solid #D9D2C3;background:#fff;color:#1F1A17;font-size:28px;line-height:1;cursor:pointer;font-family:inherit;padding:0 0 3px}
 .calp .cp-arrow:disabled{opacity:.3;cursor:default}
-.calp .cp-r3{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
-.calp .seg{display:flex;gap:0;border:1.5px solid #D9D2C3;border-radius:12px;overflow:hidden;flex:1 1 auto}
-.calp .seg button{flex:1;min-height:44px;padding:0 10px;border:none;border-radius:0;background:#fff;color:#3A332D;font:inherit;font-size:15px;font-weight:800;cursor:pointer;white-space:nowrap}
+.calp .cp-pill{min-height:44px;padding:0 12px;border-radius:22px;border:1.5px solid var(--g);background:#fff;color:#0A6B2C;font:inherit;font-size:15px;font-weight:800;cursor:pointer;white-space:nowrap}
+.calp .cp-pill:disabled{border-color:#E3DDD0;color:#A39C90;cursor:default}
+.calp .cp-r3{display:flex;align-items:center;gap:10px;margin-top:8px}
+.calp .seg{display:flex;border:1.5px solid #D9D2C3;border-radius:12px;overflow:hidden;flex:1 1 auto;min-width:0}
+.calp .seg button{flex:1;min-height:44px;padding:0 6px;border:none;border-radius:0;background:#fff;color:#3A332D;font:inherit;font-size:15px;font-weight:800;cursor:pointer;white-space:nowrap}
 .calp .seg button+button{border-left:1.5px solid #D9D2C3}
 .calp .seg button[aria-pressed="true"]{background:var(--g);color:#fff}
-.calp .cp-body{flex:1;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:8px 8px calc(20px + env(safe-area-inset-bottom))}
+.calp .cp-count{flex:none;font-size:14px;font-weight:800;color:#0A6B2C;white-space:nowrap}
+.calp .cp-body{flex:1;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:8px 6px calc(20px + env(safe-area-inset-bottom))}
 .calp .cp-notice{font-size:15px;font-weight:700;color:#0A6B2C;background:#E7F7EC;border-radius:10px;padding:8px 12px;margin:2px 2px 8px}
+.calp .cp-demo{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;font-size:14px;line-height:1.5;color:#4A3200;background:#FFF1CC;border:1.5px solid #F2C94C;border-radius:10px;padding:8px 10px;margin:2px 2px 8px}
+.calp .cp-demo b{font-size:15px}
+.calp .cp-demo-x{margin-left:auto;min-height:40px;padding:0 12px;border-radius:10px;border:1.5px solid #C9A227;background:#fff;color:#4A3200;font:inherit;font-size:14px;font-weight:800;cursor:pointer}
 .calp .cp-hint{font-size:15px;color:#3A332D;background:#F6F4ED;border-radius:10px;padding:10px 12px;margin:2px 2px 8px;line-height:1.55}
+.calp .cp-hint b{display:block;font-size:16px;margin-bottom:2px}
+.calp .cp-hint .cbtn{margin-top:8px;flex:none}
 .calp .cgrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px}
 .calp .cweek{margin:2px 0 3px}
 .calp .cweek span{text-align:center;font-size:14px;font-weight:800;color:#4A443E;padding:2px 0}
-.calp .cd{min-width:0;min-height:68px;border:1px solid #E6DFD0;border-radius:10px;background:#fff;color:#1F1A17;padding:3px 2px 4px;
-  display:flex;flex-direction:column;align-items:stretch;gap:2px;text-align:left;font:inherit;cursor:pointer;overflow:hidden}
+.calp .cweek span.we{color:#0A6B2C}
+.calp .cd{min-width:0;min-height:62px;border:1px solid #ECE6DA;border-radius:10px;background:#fff;color:#1F1A17;padding:3px 2px 4px;
+  display:flex;flex-direction:column;align-items:stretch;gap:2px;text-align:left;font:inherit;cursor:pointer;overflow:hidden;position:relative}
 .calp .cd.blank{border-color:transparent;background:transparent;cursor:default}
-.calp .cd-top{display:flex;flex-direction:column;align-items:flex-start;gap:0;min-width:0}
-.calp .cd .n{flex:none;display:inline-grid;place-items:center;min-width:26px;height:26px;border-radius:13px;font-size:17px;font-weight:800;line-height:1}
-.calp .cd .lu{display:none;font-size:11px;color:#6B6560;font-weight:600;line-height:1.2;white-space:nowrap;padding-left:2px}
-.calp .cd .ev{font-size:12px;font-weight:800;line-height:15px;max-height:32px;color:#0A5C27;background:#E7F7EC;border-radius:5px;padding:1px 2px;
-  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-all}
-.calp .cd .ev.k-folk{background:#F3F0E8;color:#3A332D}
-.calp .cd .ev.k-demo{background:#FFF1CC;color:#5C3F00}
-.calp .cd .more{font-size:11px;font-weight:700;color:#3A332D;line-height:1.2;padding-left:1px}
+.calp .cd-top{display:flex;align-items:baseline;gap:2px;min-width:0}
+.calp .cd .n{flex:none;display:inline-grid;place-items:center;min-width:24px;height:24px;border-radius:12px;font-size:16px;font-weight:800;line-height:1}
+.calp .cd .lu{display:none;font-size:11px;color:#6B6560;font-weight:600;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+/* 照片：固定 1:1 比例、cover 裁切，不拉伸 */
+.calp .cd .phw{position:relative;display:block}
+.calp .cd .ph{display:block;width:100%;aspect-ratio:1/1;border-radius:7px;overflow:hidden;background:#EDE7D6}
+.calp .cd .ph img{display:block;width:100%;height:100%;object-fit:cover}
+.calp .noimg{background:#F1ECDF url(temple.webp) center 42%/46% auto no-repeat !important}
+.calp .cd .plus{position:absolute;right:2px;bottom:2px;font-size:12px;font-weight:800;line-height:1;color:#fff;background:rgba(10,92,39,.92);border-radius:8px;padding:3px 4px}
+.calp .cd .plus2{font-size:12px;font-weight:800;color:#0A5C27;line-height:1.2;padding-left:1px}
+.calp .cd .cap{display:flex;flex-direction:column;min-width:0;line-height:1.25}
+.calp .cd .cap b,.calp .cd .cap span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-all;font-size:11.5px}
+.calp .cd .cap b{font-weight:800;color:#1F1A17}
+.calp .cd .cap span{font-weight:700;color:#0A5C27}
+.calp .cd .cap span.k-demo{color:#6B4A00}
+.calp .cd .ev{font-size:11.5px;font-weight:800;line-height:15px;color:#3A332D;background:#F3F0E8;border-radius:5px;padding:1px 2px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .calp .cd.today .n{background:var(--g);color:#fff}
-.calp .cd.sel{border:2.5px solid #1F1A17;background:#F4FBF6;padding:2px 1px 3px}
-.calp .cd:focus-visible,.calp .cbtn:focus-visible,.calp .seg button:focus-visible,.calp .cp-arrow:focus-visible,.calp .cp-x:focus-visible,.calp .cp-pill:focus-visible{outline:3px solid #F2B93E;outline-offset:1px}
+.calp .cd.sel{border:2.5px solid #1F1A17;background:#F2FAF4;padding:2px 1px 3px}
+.calp .cd.has{background:#FBFDFB}
+.calp .cd.sel.has{background:#F2FAF4}
+.calp .cp:focus{outline:none}
+.calp .cd:focus-visible,.calp .cbtn:focus-visible,.calp .seg button:focus-visible,.calp .cp-arrow:focus-visible,.calp .cp-x:focus-visible,.calp .cp-pill:focus-visible,.calp .cp-demo-x:focus-visible{outline:3px solid #F2B93E;outline-offset:1px}
 @media (min-width:370px){
+  .calp .cp-body{padding-left:8px;padding-right:8px}
   .calp .cgrid{gap:4px}
-  .calp .cd{min-height:76px;padding:4px 3px 5px}
+  .calp .cd{min-height:70px;padding:4px 3px 5px}
   .calp .cd.sel{padding:3px 2px 4px}
-  .calp .cd .lu{display:block}
-  .calp .cd .ev{font-size:12.5px;line-height:16px;max-height:34px;padding:1px 3px}
+  .calp .cd .cap b,.calp .cd .cap span,.calp .cd .ev{font-size:12px}
 }
-.calp .cp-day,.calp .cp-list{margin-top:12px}
-.calp .cp-day h3,.calp .cl-day h3{font-size:19px;font-weight:800;padding:0 4px;display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px}
-.calp .cp-day h3 small,.calp .cl-day h3 small{font-size:15px;font-weight:600;color:#4A443E}
-.calp .cl-day{padding-top:10px;border-top:1px solid #ECE6DA;margin-top:10px}
-.calp .cl-day:first-child{border-top:none;margin-top:0;padding-top:0}
+@media (max-width:359px){
+  .calp .cd{padding:3px 1px 4px}
+  .calp .cd.sel{padding:2px 0 3px}
+  .calp .cd .cap b,.calp .cd .cap span,.calp .cd .ev{font-size:11px}
+  .calp .cp-pill{padding:0 8px;font-size:14px}
+  .calp .cp-r2 h2{font-size:18px}
+  .calp .seg button{font-size:14px}
+}
+/* 選取日期的活動卡片 */
+.calp .cp-day{margin-top:14px}
+.calp .cp-day h3{font-size:20px;font-weight:800;padding:0 4px;display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 10px}
+.calp .cp-day h3 small{font-size:15px;font-weight:600;color:#4A443E}
 .calp .cp-none{font-size:16px;color:#3A332D;background:#F6F4ED;border-radius:12px;padding:14px;margin:10px 0}
-.calp .ci{border:1px solid #E6DFD0;border-radius:14px;padding:12px;margin:10px 0;background:#fff}
-.calp .ci .ctag{display:inline-block;font-size:13px;font-weight:800;padding:2px 8px;border-radius:6px;background:#F3F0E8;color:#3A332D}
-.calp .ci.k-birthday .ctag,.calp .ci.k-event .ctag{background:#E7F7EC;color:#0A5C27}
-.calp .ci.k-demo .ctag{background:#FFF1CC;color:#5C3F00}
-.calp .ci h4{font-size:18px;font-weight:800;margin:6px 0 6px;line-height:1.35}
-.calp .ci dl{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:16px;line-height:1.45}
-.calp .ci dt{color:#6B6560;font-weight:700}
-.calp .ci dd{min-width:0;overflow-wrap:anywhere}
-.calp .ctpl{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;padding:10px 0 2px;margin-top:8px;border-top:1px dashed #E6DFD0}
-.calp .ctpl b{font-size:16px;font-weight:800;overflow-wrap:anywhere}
+.calp .ec-group{font-size:15px;font-weight:800;color:#0A5C27;margin:14px 4px 0}
+.calp .ec{border:1px solid #E6DFD0;border-radius:14px;margin:10px 0;background:#fff;overflow:hidden}
+.calp .ec-phw{position:relative}
+.calp .ec-ph{display:block;width:100%;aspect-ratio:2/1;background:#EDE7D6;position:relative}
+.calp .ec-ph img{display:block;width:100%;height:100%;object-fit:cover}
+.calp .ec-ph em{display:none}
+.calp .ec-ph.noimg em{display:block;position:absolute;left:0;right:0;bottom:12%;text-align:center;font-style:normal;font-size:14px;font-weight:700;color:#6B6560}
+.calp .ec-ph.noimg{background-size:22% auto !important;background-position:center 36% !important}
+.calp .ec-tag{position:absolute;left:10px;top:10px;font-size:13px;font-weight:800;padding:3px 9px;border-radius:8px;background:rgba(255,255,255,.95);color:#0A5C27}
+.calp .ec.k-demo .ec-tag{background:#FFF1CC;color:#4A3200;border:1.5px solid #F2C94C}
+.calp .ec.k-birthday .ec-tag{color:#3A332D}
+.calp .ec-b{padding:12px 14px 14px}
+.calp .ec-tag2{display:inline-block;font-size:13px;font-weight:800;padding:2px 8px;border-radius:6px;background:#F3F0E8;color:#3A332D}
+.calp .ec-tp{font-size:15px;font-weight:800;color:#0A5C27;display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 8px;overflow-wrap:anywhere}
+.calp .ec-tp small{font-size:13px;font-weight:600;color:#6B6560}
+.calp .ec h4{font-size:19px;font-weight:800;margin:4px 0 6px;line-height:1.35;overflow-wrap:anywhere}
+.calp .ec-time{font-size:16px;line-height:1.55;overflow-wrap:anywhere}
+.calp .ec-time span{display:inline-block;min-width:3em;color:#6B6560;font-weight:700;margin-right:6px}
+.calp .ec-btns{display:flex;gap:8px;margin-top:12px}
+.calp .ec-navto{font-size:13.5px;color:#4A443E;margin-top:6px;line-height:1.5}
+.calp .ec-more{margin-top:10px;padding-top:10px;border-top:1px dashed #E6DFD0}
+.calp .ec-more dl{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:15px;line-height:1.5;margin-bottom:10px}
+.calp .ec-more dt{color:#6B6560;font-weight:700}
+.calp .ec-more dd{min-width:0;overflow-wrap:anywhere}
+.calp .ec-more a{color:#0A6B2C;font-weight:800}
+.calp .ec-more .cbtn{width:100%;flex:none}
+.calp .ec-credit{font-size:11.5px;color:#8C8778;margin-top:8px}
 .calp .cmut{font-size:14px;color:#6B6560}
-.calp .cmore{margin-top:6px}
-.calp .cbtns{display:flex;gap:8px;flex:1 1 100%}
-.calp .cbtn{flex:1;min-height:44px;padding:0 12px;border-radius:10px;border:1.5px solid #CFC6B3;background:#fff;color:#1F1A17;font:inherit;font-size:15px;font-weight:800;cursor:pointer}
+.calp .cmore{margin:4px 4px 0}
+.calp .cbtn{flex:1;display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:0 12px;border-radius:10px;border:1.5px solid #CFC6B3;background:#fff;color:#1F1A17;font:inherit;font-size:16px;font-weight:800;cursor:pointer;text-decoration:none;text-align:center}
 .calp .cbtn.pri{background:var(--g);border-color:var(--g);color:#fff}
-.calp .cbtn.wide{width:100%;flex:none;display:block}
 .calp .cnote2{font-size:14px;color:#4A443E;margin-top:8px;line-height:1.5}
-.calp .cp-foot{margin-top:16px;padding:12px 4px 0;border-top:1px solid #ECE6DA;display:flex;flex-direction:column;gap:6px}
+.calp .cp-foot{margin-top:18px;padding:12px 4px 0;border-top:1px solid #ECE6DA;display:flex;flex-direction:column;gap:8px}
+.calp .cp-sec{display:flex;flex-wrap:wrap;gap:8px}
+.calp .cp-sec .cbtn{flex:0 1 auto;min-height:44px;font-size:14px;color:#4A443E;border-color:#E0D9CA}
+.calp .cp-sec .cbtn[aria-pressed="true"]{border-color:#C9A227;background:#FFF8E1;color:#4A3200}
 .calp .cp-src{font-size:13px;color:#6B6560;line-height:1.55}
+/* 桌面：較寬面板，左月曆、右活動卡片 */
+@media (min-width:900px){
+  .calp .cp{top:3vh;bottom:3vh;max-width:1120px;width:calc(100% - 48px);border-radius:18px}
+  .calp .cp-head{padding:10px 18px 10px}
+  .calp .cp-r2,.calp .cp-r3{max-width:640px}
+  .calp .cp-body{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(320px,1fr);gap:0 24px;padding:14px 18px 20px;align-items:start}
+  .calp .cp-main{grid-column:1}
+  .calp .cp-day{grid-column:2;grid-row:1 / span 2;margin-top:0;position:sticky;top:0}
+  .calp .cp-foot{grid-column:1}
+  .calp .cd{min-height:84px;padding:4px 5px 5px}
+  .calp .cd.sel{padding:3px 4px 4px}
+  .calp .cd .lu{display:block}
+  .calp .cd .cap b,.calp .cd .cap span{font-size:13px}
+  .calp .cd .cap span{-webkit-line-clamp:1}
+  .calp .cd .ev{font-size:13px}
+  .calp .cd .ph{aspect-ratio:16/9}
+}
 .tact.off{opacity:.5;cursor:default}
 .bear .msg .lnks{margin-top:4px;display:flex;gap:12px}
 .bear .x{position:absolute;top:5px;right:6px;width:22px;height:22px;border:none;
@@ -1735,11 +1798,12 @@ function parkMapUrl(t){
      "img/xxx.jpg" 或 https://…    自己放的照片，直接用。
    沒有 photo 就顯示小廟圖示——沒資料就不顯示，不拿別間廟的圖充數。
    Google 的照片依規定要標作者（photoBy），面板裡會列出來。 */
-function photoUrl(t){
+function photoUrl(t, px){
   if(!t.photo) return '';
   if(t.photo.indexOf('places/') === 0){
     if(!GOOGLE_MAPS_KEY) return '';
-    return 'https://places.googleapis.com/v1/' + t.photo + '/media?maxWidthPx=160&maxHeightPx=160&key=' + GOOGLE_MAPS_KEY;
+    px = px || 160;
+    return 'https://places.googleapis.com/v1/' + t.photo + '/media?maxWidthPx=' + px + '&maxHeightPx=' + px + '&key=' + GOOGLE_MAPS_KEY;
   }
   return t.photo;
 }
@@ -2159,19 +2223,23 @@ function applyFavParam(){
   return true;
 }
 let favNotice = '';
-/* ===== 神明行事曆 v2：月曆總覽＋日期明細（?do=calendar、圖文選單都進這裡） =====
-   ・每次都「查詢目前顯示的月份」：逐日算農曆，再對照神明聖誕、民俗節日、宮廟公告活動（data/events.json）。
-   ・三種資料分開標示，不混在一起：
-       民俗節日（初一、十五、春節、中秋…）＝日曆事實，不代表每間宮廟都有辦活動
-       神明誕辰（lunar.js 的 GOD_BIRTHDAY）＝民間通行說法，是否辦慶典以廟方公告為準
-       宮廟公告活動（data/events.json）＝有來源的實際活動；demo:true 的標「示範活動」
-   ・日期一律用台灣時間（Asia/Taipei）決定「今天」，月曆日期用當地正午建 Date，避免 UTC 差一天。
+/* ===== 宮廟活動月曆（v3：日期格裡直接看到宮廟照片）=====
+   入口：?do=calendar（圖文選單「神明行事曆」、分享連結都進這裡）。
+   ・每次都查「目前顯示的月份」整個月：逐日算農曆，再對照三種資料，分開標示、不混在一起：
+       宮廟公告活動（data/events.json）＝有來源的實際活動，用 templeId 對宮廟（配照片、導航）
+       神明誕辰（lunar.js 的 GOD_BIRTHDAY）＝民間通行說法，只配「真的主祀這尊神」的宮廟，是否辦慶典以廟方公告為準
+       民俗節日（初一、十五、中秋…）＝日曆事實，不代表每間宮廟都有活動 → 只顯示文字，不配任何宮廟照片
+   ・示範活動放在 data/events-demo.json，只有開「示範模式」才讀，畫面全程標「示範活動」。
+   ・照片只用「那一間」宮廟自己的照片（以宮廟 ID 對應）；沒有或載入失敗就是統一的佔位圖，不拿別間廟充數。
+   ・日期一律用台灣時間（Asia/Taipei）決定「今天」；月曆日期用當地正午建 Date，避免 UTC 差一天。
+   ・多日活動（date～end）出現在每一天，同一天同一活動只算一次；本月件數也不重複算。
    ・農曆對照表只涵蓋 2024/12～2031/02，超出範圍的月份不開放，不硬猜。 */
 const CAL_MIN = [2024, 12], CAL_MAX = [2031, 2];
 const CAL_KIND = {
-  event:{ tag:'宮廟公告活動', rank:0 }, demo:{ tag:'示範活動', rank:1 },
-  birthday:{ tag:'神明誕辰', rank:3 }, folk:{ tag:'民俗節日', rank:4 }
+  event:{ tag:'宮廟公告', rank:0 }, demo:{ tag:'示範活動', rank:1 },
+  birthday:{ tag:'神明誕辰', rank:2 }, folk:{ tag:'民俗節日', rank:3 }
 };
+const CAL_ISO = /^\d{4}-\d{2}-\d{2}$/;
 const calPad = n => String(n).padStart(2, '0');
 function twToday(){
   const p = {};
@@ -2185,6 +2253,29 @@ function calCmp(a, b){ return (a[0] - b[0]) * 12 + (a[1] - b[1]); }
 function calInRange(y, m){ return calCmp([y, m], CAL_MIN) >= 0 && calCmp([y, m], CAL_MAX) <= 0; }
 function calLunarShort(l){ return !l ? '' : l.day === 1 ? (l.leap ? '閏' : '') + LUNAR_MONTH_NAME[l.month] + '月' : LUNAR_DAY_NAME[l.day]; }
 function calLunarFull(l){ return !l ? '' : '農曆' + (l.leap ? '閏' : '') + LUNAR_MONTH_NAME[l.month] + '月' + LUNAR_DAY_NAME[l.day]; }
+function calIsoDate(iso){ const p = iso.split('-'); return calDate(+p[0], +p[1], +p[2]); }
+function calMD(iso){ const d = calIsoDate(iso); return (d.getMonth() + 1) + '月' + d.getDate() + '日（' + WEEK[d.getDay()] + '）'; }
+function calShortName(n){ return String(n || '').replace(/[（(][^）)]*[）)]/g, '').trim() || String(n || ''); }
+
+/* 宮廟 ID：雙北示範 15 間是 data/temples.json 的 id（tp-xxx）；官方名冊資料用 moi-<sourceId> */
+function templeKey(t){ return !t ? '' : t.id ? String(t.id) : t.sourceId ? 'moi-' + t.sourceId : ''; }
+let calTempleIdx = null;
+function templeById(id){
+  if(!calTempleIdx){
+    calTempleIdx = {};
+    (window.TEMPLES || []).forEach(function(t){ const k = templeKey(t); if(k) calTempleIdx[k] = t; });
+  }
+  return calTempleIdx[id] || null;
+}
+/* 有 templeId 就只認 ID（對不到寧可不配，也不拿名稱猜）；舊資料只有名稱時，名稱要剛好只對到一間 */
+function calEventTemple(e){
+  if(e.templeId) return templeById(String(e.templeId));
+  if(e.temple){
+    const hits = (window.TEMPLES || []).filter(function(t){ return t.name === e.temple; });
+    return hits.length === 1 ? hits[0] : null;
+  }
+  return null;
+}
 function calPool(mode){ return mode === 'fav' ? (window.TEMPLES || []).filter(isFav) : (window.TEMPLES || []); }
 function calSortTemples(ts){
   return ts.slice().sort(function(a, b){
@@ -2194,21 +2285,51 @@ function calSortTemples(ts){
     return 0;
   });
 }
-/* 查一個月：回傳 [null, day1 items, day2 items, …] */
-function calItemsForMonth(y, m, mode){
+let calDemoEvents = null;                                  /* 示範模式才載入 */
+function calLoadDemo(){
+  if(calDemoEvents) return Promise.resolve(true);
+  function get(u){ return fetch(u, { cache:'no-cache' }).then(function(r){ return r.ok ? r.json() : Promise.reject(r.status); }); }
+  return get('data/events-demo.json').catch(function(){ return get('events-demo.json'); })
+    .then(function(j){
+      calDemoEvents = (Array.isArray(j.events) ? j.events : []).map(function(e){ return Object.assign({}, e, { demo:true }); });
+      return true;
+    }).catch(function(){ return false; });
+}
+function calEventSource(demo){
+  const real = (window.EVENTS || []).filter(function(e){ return e && !e.demo; });   /* 真實資料裡誤放的 demo 一律不顯示 */
+  return demo ? real.concat(calDemoEvents || []) : real;
+}
+function calSafeUrl(u){ return /^https?:\/\//i.test(String(u || '')) ? String(u) : ''; }
+
+/* 查一個月：回傳 { days:[null, {d, iso, lunar, items}, …], count } */
+function calItemsForMonth(y, m, mode, demo){
   const n = calDays(y, m), out = [null];
+  const first = y + '-' + calPad(m) + '-01', last = y + '-' + calPad(m) + '-' + calPad(n);
   const pool = calPool(mode);
-  const evs = (window.EVENTS || []).filter(function(e){
-    return e && typeof e.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(e.date) && e.title && e.date.slice(0, 7) === y + '-' + calPad(m);
+  const seenEv = new Set();
+  const evs = calEventSource(demo).filter(function(e){
+    return e && typeof e.date === 'string' && CAL_ISO.test(e.date) && e.title;
+  }).map(function(e){
+    const end = (typeof e.end === 'string' && CAL_ISO.test(e.end) && e.end >= e.date) ? e.end : e.date;
+    return { e:e, start:e.date, end:end, key:String(e.id || [e.date, e.title, e.templeId || e.temple || ''].join('|')) };
+  }).filter(function(x){
+    if(x.start > last || x.end < first) return false;                   /* 跟這個月有交集才留（跨月的多日活動也算） */
+    if(seenEv.has(x.key)) return false;                                 /* 資料重複列同一活動只算一次 */
+    seenEv.add(x.key); return true;
   });
+  const monthKeys = new Set();
   for(let d = 1; d <= n; d++){
     const items = [], l = lunarOf(calDate(y, m, d)), iso = y + '-' + calPad(m) + '-' + calPad(d);
-    /* 宮廟公告／示範活動 */
-    evs.filter(function(e){ return e.date === iso; }).forEach(function(e){
-      const t = (window.TEMPLES || []).find(function(x){ return x.name === e.temple; }) || null;
+    evs.forEach(function(x){
+      if(iso < x.start || iso > x.end) return;
+      const e = x.e, t = calEventTemple(e);
       if(mode === 'fav' && !(t && isFav(t))) return;
-      items.push({ kind: e.demo ? 'demo' : 'event', title:String(e.title), short:String(e.short || e.title),
-                   temples: t ? [t] : [], templeName: String(e.temple || ''), time: e.time ? String(e.time) : '', src: e.src ? String(e.src) : '' });
+      const lat = +e.lat, lng = +e.lng, hasLoc = e.lat != null && e.lng != null && isFinite(lat) && isFinite(lng);
+      items.push({ kind: e.demo ? 'demo' : 'event', key:x.key, title:String(e.title), short:String(e.short || e.title),
+                   temple:t, templeName: t ? t.name : String(e.temple || ''),
+                   time: e.time ? String(e.time) : '', url: calSafeUrl(e.url), desc: e.desc ? String(e.desc) : '',
+                   src: e.src ? String(e.src) : '', place: e.place ? String(e.place) : '',
+                   loc: hasLoc ? { lat:lat, lng:lng } : null, start:x.start, end:x.end });
     });
     if(l){
       const md = l.month + '.' + l.day;
@@ -2217,168 +2338,280 @@ function calItemsForMonth(y, m, mode){
         if(b.md !== md) return;
         const ts = pool.filter(function(t){ return (t.deity || '').indexOf(b.key) >= 0; });
         if(!ts.length) return;
-        items.push({ kind:'birthday', title:b.name, short:b.short || b.name, key:b.key, temples:calSortTemples(ts), time:'' });
+        const sorted = calSortTemples(ts);
+        items.push({ kind:'birthday', key:'bd|' + iso + '|' + b.md + '|' + b.key, title:b.name, short:b.short || b.name, deity:b.key,
+                     temples:sorted, temple:sorted[0], templeName:sorted[0].name, time:'' });
       });
-      /* 民俗節日：只在「全部」顯示（「我的最愛」只看跟你的廟有關的） */
+      /* 民俗節日：只在「全部」顯示（「我的最愛」只看跟你的廟有關的日子）；不配宮廟照片 */
       if(mode !== 'fav'){
         const fest = l.leap ? null : FESTIVALS.find(function(f){ return f.md === md; });
         const plain = l.day === 1 ? '初一' : l.day === 15 ? '十五' : '';
-        if(fest || plain) items.push({ kind:'folk', title: fest ? (plain ? plain + '・' : '') + fest.name : plain,
-                                       short: fest ? fest.name : plain, temples:[], time:'', fest:!!fest });
+        if(fest || plain) items.push({ kind:'folk', key:'folk|' + iso, title: fest ? (plain ? plain + '・' : '') + fest.name : plain,
+                                       short: fest ? fest.name : plain, temple:null, time:'', fest:!!fest });
       }
     }
-    /* 格子只放得下一項：公告活動 ＞ 示範活動 ＞ 有名字的節日（中秋…）＞ 神明誕辰 ＞ 初一／十五 */
-    const rk = function(it){ return it.kind === 'folk' && it.fest ? 2 : CAL_KIND[it.kind].rank; };
+    /* 格子先放一項代表：公告活動 ＞ 示範活動 ＞ 神明誕辰（有宮廟照片）＞ 有名字的節日 ＞ 初一／十五 */
+    const rk = function(it){ return it.kind === 'folk' ? (it.fest ? 3 : 4) : CAL_KIND[it.kind].rank; };
     items.sort(function(a, b){ return rk(a) - rk(b); });
+    items.forEach(function(it){ monthKeys.add(it.key); });
     out.push({ d:d, iso:iso, lunar:l, items:items });
   }
-  return out;
+  return { days:out, count:monthKeys.size };
 }
 
-let calState = null;
+let calState = null, calLastFocus = null, calNav = [];
 const calEl = document.getElementById('calp');
 function calInit(){
   const t = twToday();
   let y = t.y, m = t.m;
   if(!calInRange(y, m)){ const c = calCmp([y, m], CAL_MIN) < 0 ? CAL_MIN : CAL_MAX; y = c[0]; m = c[1]; }
-  calState = { y:y, m:m, sel:(y === t.y && m === t.m) ? t.d : 1, mode:'all', view:'month' };
+  calState = { y:y, m:m, sel:(y === t.y && m === t.m) ? t.d : 1, mode:'all', demo:false };
 }
-function calGo(y, m, sel){
+/* 換月：本月選今天；其他月份選第一個有活動的日子，沒有就選 1 號（不殘留上個月選的日期） */
+function calGo(y, m, sel, focusSel){
   if(!calInRange(y, m)) return;
-  const t = twToday();
-  calState.y = y; calState.m = m;
-  calState.sel = sel || ((y === t.y && m === t.m) ? t.d : 1);
-  calRender();
+  const t = twToday(), s = calState;
+  s.y = y; s.m = m;
+  if(sel) s.sel = Math.min(sel, calDays(y, m));
+  else if(y === t.y && m === t.m) s.sel = t.d;
+  else {
+    const r = calItemsForMonth(y, m, s.mode, s.demo);
+    const hit = r.days.find(function(x){ return x && x.items.length; });
+    s.sel = hit ? hit.d : 1;
+  }
+  calRender(focusSel);
 }
-function calShift(k){ let y = calState.y, m = calState.m + k; if(m < 1){ m = 12; y--; } if(m > 12){ m = 1; y++; } calGo(y, m); }
+function calShift(k, focusSel){ let y = calState.y, m = calState.m + k; if(m < 1){ m = 12; y--; } if(m > 12){ m = 1; y++; } calGo(y, m, 0, focusSel); }
 
-function calTempleRow(t){
-  return '<div class="ctpl"><b>' + esc(t.name) + '</b>' + (t.dist ? '<span class="cmut">' + esc((t.city || '') + t.dist) + '</span>' : '')
-    + '<div class="cbtns"><button type="button" class="cbtn js-calview" data-name="' + esc(t.name) + '">查看宮廟</button>'
-    + (isFinite(t.lat) && isFinite(t.lng) ? '<button type="button" class="cbtn pri js-calnav" data-name="' + esc(t.name) + '">導航</button>' : '')
-    + '</div></div>';
+/* 照片：只用這間廟自己的照片；沒有／載入失敗 → 統一佔位圖 */
+function calPhoto(t, cls, big){
+  const u = t ? photoUrl(t, big ? 640 : 200) : '';
+  const name = t ? t.name : '';
+  if(!u) return '<span class="' + cls + ' noimg"' + (big ? ' role="img" aria-label="' + esc(name ? name + '：照片待補' : '照片待補') + '"' : '') + '>'
+              + (big ? '<em>照片待補</em>' : '') + '</span>';
+  return '<span class="' + cls + '"><img src="' + esc(u) + '" alt="' + (big ? esc(name + '照片') : '') + '" loading="lazy" decoding="async" onerror="calImgFail(this)">'
+       + (big ? '<em>照片待補</em>' : '') + '</span>';
 }
-function calItemHtml(it){
-  let h = '<article class="ci k-' + it.kind + '"><span class="ctag">' + CAL_KIND[it.kind].tag + '</span><h4>' + esc(it.title) + '</h4><dl>';
+window.calImgFail = function(img){
+  const w = img.parentNode; if(!w) return;
+  w.classList.add('noimg');
+  if(img.alt){ w.setAttribute('role', 'img'); w.setAttribute('aria-label', img.alt.replace(/照片$/, '') + '：照片待補'); }
+  img.remove();
+};
+
+function calCell(x, today, sel){
+  const s = calState, top = x.items[0], more = x.items.length - 1;
+  const lu = calLunarShort(x.lunar);
+  const label = s.m + '月' + x.d + '日' + (today ? '，今天' : '') + (x.lunar ? '，' + calLunarFull(x.lunar) : '')
+    + (x.items.length ? '，' + x.items.length + ' 項：' + x.items.map(function(it){
+        return (it.templeName && it.kind !== 'folk' ? calShortName(it.templeName) + ' ' : '') + it.title; }).join('、')
+      : '，目前沒有已收錄的活動');
+  let h = '<button type="button" class="cd js-calday' + (today ? ' today' : '') + (sel ? ' sel' : '') + (top ? ' has' : '') + '" data-d="' + x.d + '"'
+    + ' aria-pressed="' + sel + '"' + (today ? ' aria-current="date"' : '') + ' aria-label="' + esc(label) + '"' + (sel ? '' : ' tabindex="-1"') + '>'
+    + '<span class="cd-top"><span class="n">' + x.d + '</span>' + (lu ? '<span class="lu">' + lu + '</span>' : '') + '</span>';
+  if(top && top.temple){
+    h += '<span class="phw">' + calPhoto(top.temple, 'ph', false) + (more > 0 ? '<span class="plus">＋' + more + '</span>' : '') + '</span>'
+       + '<span class="cap"><b>' + esc(calShortName(top.templeName)) + (top.kind === 'birthday' && top.temples.length > 1 ? '等' : '') + '</b>'
+       + '<span class="k-' + top.kind + '">' + esc(top.short) + '</span></span>';
+  } else if(top){
+    h += '<span class="ev k-' + top.kind + '">' + esc(top.short) + '</span>'
+       + (more > 0 ? '<span class="plus2">＋' + more + '</span>' : '');
+  }
+  return h + '</button>';
+}
+
+/* 活動卡片：大照片、宮廟、活動、時間、查看活動、導航過去 */
+function calNavBtn(target, label, note){
+  calNav.push(target);
+  return { btn:'<button type="button" class="cbtn pri js-calnav" data-i="' + (calNav.length - 1) + '">' + label + '</button>', note:note };
+}
+function calCard(it, t, idx){
+  const id = 'cm-' + idx;
+  const ev = it.kind === 'event' || it.kind === 'demo';
+  const when = ev && it.start !== it.end ? calMD(it.start) + '～' + calMD(it.end) : '';
+  let nav = null;
+  if(ev && it.loc) nav = calNavBtn(it.loc, '導航過去', '導航至活動地點：' + (it.place || '活動地點'));
+  else if(t && isFinite(t.lat) && isFinite(t.lng)) nav = calNavBtn({ lat:t.lat, lng:t.lng }, ev && !it.place ? '導航過去' : '導航至宮廟',
+      ev && it.place ? '這項活動只有地點名稱，沒有座標；導航會帶你到宮廟：' + t.name : '導航至宮廟：' + t.name);
+  let h = '<article class="ec k-' + it.kind + '"><div class="ec-phw">' + calPhoto(t, 'ec-ph', true)
+    + '<span class="ec-tag">' + CAL_KIND[it.kind].tag + '</span></div><div class="ec-b">'
+    + '<p class="ec-tp">' + esc(t ? t.name : (it.templeName || '宮廟待確認'))
+    + (t && (t.city || t.dist) ? '<small>' + esc((t.city || '') + (t.dist || '')) + '</small>' : '') + '</p>'
+    + '<h4>' + esc(it.title) + '</h4>'
+    + '<p class="ec-time"><span>時間</span>' + (it.time ? esc(it.time) : '時間待確認') + (when ? '<br><span>日期</span>' + when : '') + '</p>'
+    + (it.place ? '<p class="ec-time"><span>地點</span>' + esc(it.place) + '</p>' : '')
+    + '<div class="ec-btns">'
+    + (it.url ? '<a class="cbtn" href="' + esc(it.url) + '" target="_blank" rel="noopener">查看活動</a>'
+              : '<button type="button" class="cbtn js-calmore" aria-expanded="false" aria-controls="' + id + '">查看活動</button>')
+    + (nav ? nav.btn : '') + '</div>'
+    + (nav ? '<p class="ec-navto">' + esc(nav.note) + '</p>' : '<p class="ec-navto">地點待確認，暫時無法導航</p>');
+  if(!it.url){
+    let dl = '';
+    if(it.desc) dl += '<dt>說明</dt><dd>' + esc(it.desc) + '</dd>';
+    if(it.kind === 'birthday') dl += '<dt>說明</dt><dd>這間宮廟主祀' + esc(it.deity) + '。神明聖誕為民間通行說法，是否舉辦慶典、幾點開始，以廟方公告為準。</dd>';
+    if(t && t.deity) dl += '<dt>主祀</dt><dd>' + esc(t.deity) + '</dd>';
+    if(t && t.addr) dl += '<dt>地址</dt><dd>' + esc(t.addr) + '</dd>';
+    if(t && t.tel) dl += '<dt>電話</dt><dd><a href="tel:' + esc(t.tel.replace(/[^\d+#]/g, '')) + '">' + esc(t.tel) + '</a></dd>';
+    if(it.kind === 'demo') dl += '<dt>資料</dt><dd>示範活動：展示用假資料，不是宮廟實際公告。</dd>';
+    else if(it.src) dl += '<dt>來源</dt><dd>' + esc(it.src) + '</dd>';
+    h += '<div class="ec-more" id="' + id + '" hidden>' + (dl ? '<dl>' + dl + '</dl>' : '<p class="cmut">目前沒有更多已收錄的資料。</p>')
+       + (t ? '<button type="button" class="cbtn js-calview" data-k="' + esc(templeKey(t) || t.name) + '">在地圖上看這間廟</button>' : '') + '</div>';
+  }
+  h += (t && t.photo ? '<p class="ec-credit">' + photoCredit(t) + '</p>' : '');
+  return h + '</div></article>';
+}
+function calItemHtml(it, idx){
   if(it.kind === 'folk'){
-    h += '<dt>宮廟</dt><dd>不限特定宮廟</dd><dt>時間</dt><dd>時間待確認</dd></dl>'
-       + '<p class="cnote2">民俗節日不代表每間宮廟都有舉辦活動，請以各宮廟公告為準。</p>';
-  } else if(it.kind === 'birthday'){
-    h += '<dt>宮廟</dt><dd>收錄的宮廟中有 ' + it.temples.length + ' 間主祀' + esc(it.key) + '</dd><dt>時間</dt><dd>時間待確認</dd></dl>';
-    it.temples.slice(0, 3).forEach(function(t){ h += calTempleRow(t); });
-    if(it.temples.length > 3) h += '<p class="cmut cmore">另有 ' + (it.temples.length - 3) + ' 間主祀' + esc(it.key) + '的宮廟</p>';
-    h += '<p class="cnote2">神明聖誕為民間通行說法，是否舉辦慶典以廟方公告為準。</p>';
-  } else {
-    h += '<dt>宮廟</dt><dd>' + esc(it.templeName || '宮廟待確認') + '</dd><dt>時間</dt><dd>' + (it.time ? esc(it.time) : '時間待確認') + '</dd></dl>';
-    if(it.temples[0]) h += calTempleRow(it.temples[0]);
-    if(it.kind === 'demo') h += '<p class="cnote2">這是展示用的示範活動，不是宮廟實際公告。</p>';
-    else if(it.src) h += '<p class="cnote2">來源：' + esc(it.src) + '</p>';
+    return '<article class="ec ec-text k-folk"><div class="ec-b"><span class="ec-tag2">民俗節日</span><h4>' + esc(it.title) + '</h4>'
+      + '<p class="ec-time"><span>宮廟</span>不限特定宮廟<br><span>時間</span>時間待確認</p>'
+      + '<p class="cnote2">民俗節日不代表每間宮廟都有舉辦活動，請以各宮廟公告為準。</p></div></article>';
   }
-  return h + '</article>';
+  if(it.kind === 'birthday'){
+    const shown = it.temples.slice(0, 3);
+    let h = '<p class="ec-group">' + esc(it.title) + '：收錄的宮廟中有 ' + it.temples.length + ' 間主祀' + esc(it.deity)
+          + (it.temples.length > 3 ? '，先列 3 間' : '') + '</p>';
+    shown.forEach(function(t, j){ h += calCard(it, t, idx + '-' + j); });
+    if(it.temples.length > 3) h += '<p class="cmut cmore">另有 ' + (it.temples.length - 3) + ' 間主祀' + esc(it.deity) + '的宮廟</p>';
+    return h;
+  }
+  return calCard(it, it.temple, idx);
 }
-function calDayHead(y, m, x){
-  const wd = WEEK[calDate(y, m, x.d).getDay()];
-  return '<h3>' + m + ' 月 ' + x.d + ' 日（' + wd + '）' + (x.lunar ? '<small>' + calLunarFull(x.lunar) + '</small>' : '') + '</h3>';
-}
-function calRender(){
+function calRender(focusSel){
   const s = calState, t = twToday(), isNow = s.y === t.y && s.m === t.m;
-  const days = calItemsForMonth(s.y, s.m, s.mode);
-  const total = days.reduce(function(a, x){ return a + (x ? x.items.length : 0); }, 0);
+  const r = calItemsForMonth(s.y, s.m, s.mode, s.demo), days = r.days;
+  if(!days[s.sel]) s.sel = 1;
   const canPrev = calCmp([s.y, s.m], CAL_MIN) > 0, canNext = calCmp([s.y, s.m], CAL_MAX) < 0;
-  let h = '<div class="cp" role="dialog" aria-modal="true" aria-labelledby="cpTitle"><div class="cp-head">'
-    + '<div class="cp-r1"><b class="cp-name">神明行事曆</b>'
-    + '<button type="button" class="cp-pill js-caltoday"' + (isNow && s.sel === t.d ? ' disabled' : '') + '>回到本月</button>'
-    + '<button type="button" class="cp-x js-calclose" aria-label="關閉行事曆">×</button></div>'
+  calNav = [];
+  let h = '<div class="cp" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="cpName"><div class="cp-head">'
+    + '<div class="cp-r1"><img class="cp-lion" src="lion_full.webp" alt="" aria-hidden="true"><b class="cp-name" id="cpName">宮廟活動月曆</b>'
+    + '<button type="button" class="cp-x js-calclose" aria-label="關閉月曆，回到地圖">×</button></div>'
     + '<div class="cp-r2"><button type="button" class="cp-arrow js-calprev" aria-label="上個月"' + (canPrev ? '' : ' disabled') + '>‹</button>'
-    + '<h2 id="cpTitle" aria-live="polite">' + s.y + ' 年 ' + s.m + ' 月</h2>'
-    + '<button type="button" class="cp-arrow js-calnext" aria-label="下個月"' + (canNext ? '' : ' disabled') + '>›</button></div>'
-    + '<div class="cp-r3"><div class="seg" role="group" aria-label="篩選">'
-    + '<button type="button" class="js-calmode" data-v="all" aria-pressed="' + (s.mode === 'all') + '">全部</button>'
+    + '<h2 aria-live="polite">' + s.y + ' 年 ' + s.m + ' 月</h2>'
+    + '<button type="button" class="cp-arrow js-calnext" aria-label="下個月"' + (canNext ? '' : ' disabled') + '>›</button>'
+    + '<button type="button" class="cp-pill js-caltoday"' + (isNow && s.sel === t.d ? ' disabled' : '') + '>回到本月</button></div>'
+    + '<div class="cp-r3"><div class="seg" role="group" aria-label="篩選宮廟">'
+    + '<button type="button" class="js-calmode" data-v="all" aria-pressed="' + (s.mode === 'all') + '">全部宮廟</button>'
     + '<button type="button" class="js-calmode" data-v="fav" aria-pressed="' + (s.mode === 'fav') + '">我的最愛' + (favs.size ? '（' + favs.size + '）' : '') + '</button></div>'
-    + '<div class="seg" role="group" aria-label="顯示方式">'
-    + '<button type="button" class="js-calview2" data-v="month" aria-pressed="' + (s.view === 'month') + '">月曆</button>'
-    + '<button type="button" class="js-calview2" data-v="list" aria-pressed="' + (s.view === 'list') + '">清單</button></div></div>'
-    + '</div><div class="cp-body">';
+    + '<span class="cp-count" aria-live="polite">本月 ' + r.count + ' 項</span></div>'
+    + '</div><div class="cp-body"><div class="cp-main">';
+  if(s.demo) h += '<div class="cp-demo"><b>示範模式</b>標「示範活動」的是展示用假資料，不是宮廟公告。<button type="button" class="cp-demo-x js-caldemo">關閉示範</button></div>';
   if(favNotice){ h += '<div class="cp-notice">' + esc(favNotice) + '</div>'; favNotice = ''; }
-  if(s.mode === 'fav' && !favs.size) h += '<div class="cp-hint">還沒有加入最愛的宮廟。在地圖上點一間廟，按「加入最愛」，這裡就只列跟你的廟有關的日子。</div>';
-  else if(!total) h += '<div class="cp-hint">這個月目前沒有已收錄的活動。</div>';
-  if(s.view === 'month'){
-    h += '<div class="cgrid cweek" aria-hidden="true">' + WEEK.split('').map(function(w){ return '<span>' + w + '</span>'; }).join('') + '</div><div class="cgrid">';
-    const lead = calDate(s.y, s.m, 1).getDay();
-    for(let i = 0; i < lead; i++) h += '<span class="cd blank" aria-hidden="true"></span>';
-    days.forEach(function(x){
-      if(!x) return;
-      const today = isNow && x.d === t.d, sel = x.d === s.sel, top = x.items[0];
-      const lu = calLunarShort(x.lunar);
-      const label = m => m + ' 月 ' + x.d + ' 日' + (today ? '，今天' : '') + (x.lunar ? '，' + calLunarFull(x.lunar) : '')
-        + (x.items.length ? '，' + x.items.length + ' 項：' + x.items.map(function(it){ return it.title; }).join('、') : '，目前沒有已收錄的活動');
-      h += '<button type="button" class="cd js-calday' + (today ? ' today' : '') + (sel ? ' sel' : '') + '" data-d="' + x.d + '"'
-         + ' aria-pressed="' + sel + '"' + (today ? ' aria-current="date"' : '') + ' aria-label="' + esc(label(s.m)) + '">'
-         + '<span class="cd-top"><span class="n">' + x.d + '</span>' + (lu && !(top && top.short === lu) ? '<span class="lu">' + lu + '</span>' : '') + '</span>'
-         + (top ? '<span class="ev k-' + top.kind + '">' + esc(top.short) + '</span>' : '')
-         + (x.items.length > 1 ? '<span class="more">另有' + (x.items.length - 1) + '項</span>' : '')
-         + '</button>';
-    });
-    const cells = lead + days.length - 1;
-    for(let i = cells; i % 7; i++) h += '<span class="cd blank" aria-hidden="true"></span>';
-    h += '</div>';
-    const x = days[s.sel];
-    h += '<section class="cp-day" aria-live="polite">' + calDayHead(s.y, s.m, x)
-       + (x.items.length ? x.items.map(calItemHtml).join('') : '<p class="cp-none">目前沒有已收錄的活動</p>') + '</section>';
-  } else {
-    h += '<section class="cp-list">';
-    days.forEach(function(x){
-      if(!x || !x.items.length) return;
-      h += '<div class="cl-day" data-d="' + x.d + '">' + calDayHead(s.y, s.m, x) + x.items.map(calItemHtml).join('') + '</div>';
-    });
-    if(!total) h += '<p class="cp-none">目前沒有已收錄的活動</p>';
-    h += '</section>';
-  }
-  h += '<div class="cp-foot">';
-  if(favs.size) h += '<button type="button" class="cbtn pri wide js-sharefav">分享我的行事曆</button><span class="cmut">送一張卡給家人，他們打開就是你加入最愛的 ' + favs.size + ' 間廟</span>';
-  h += '<p class="cp-src">日期由農曆對照表計算（台灣時間）。神明聖誕為民間通行說法；初一、十五與節日不代表每間宮廟都有活動，法會與活動時間以廟方公告為準。</p></div></div></div>';
+  if(s.mode === 'fav' && !favs.size){
+    h += '<div class="cp-hint"><b>還沒有加入最愛的宮廟</b>在地圖上點一間廟，按「加入最愛」，這裡就只列跟你的廟有關的活動與神明誕辰。'
+       + '<button type="button" class="cbtn js-calmode" data-v="all">看全部宮廟</button></div>';
+  } else if(!r.count) h += '<div class="cp-hint">這個月目前沒有已收錄的活動。</div>';
+  h += '<div class="cgrid cweek" aria-hidden="true">' + WEEK.split('').map(function(w, i){ return '<span' + (i === 0 || i === 6 ? ' class="we"' : '') + '>' + w + '</span>'; }).join('') + '</div>'
+     + '<div class="cgrid cmonth" role="group" aria-label="' + s.y + '年' + s.m + '月，方向鍵換日期">';
+  const lead = calDate(s.y, s.m, 1).getDay();
+  for(let i = 0; i < lead; i++) h += '<span class="cd blank" aria-hidden="true"></span>';
+  days.forEach(function(x){ if(x) h += calCell(x, isNow && x.d === t.d, x.d === s.sel); });
+  for(let i = lead + days.length - 1; i % 7; i++) h += '<span class="cd blank" aria-hidden="true"></span>';   /* 補滿最後一週，不裁切 */
+  h += '</div></div>';
+  const x = days[s.sel];
+  h += '<section class="cp-day" aria-live="polite" aria-labelledby="cpDayH"><h3 id="cpDayH">' + calMD(x.iso) + '活動'
+     + (x.lunar ? '<small>' + calLunarFull(x.lunar) + '</small>' : '') + '</h3>'
+     + (x.items.length ? x.items.map(function(it, i){ return calItemHtml(it, i); }).join('') : '<p class="cp-none">這一天目前沒有已收錄的活動</p>')
+     + '</section>';
+  h += '<div class="cp-foot"><div class="cp-sec">';
+  if(favs.size) h += '<button type="button" class="cbtn js-sharefav">分享我的行事曆</button>';
+  h += '<button type="button" class="cbtn js-caldemo" aria-pressed="' + s.demo + '">' + (s.demo ? '關閉示範模式' : '示範模式') + '</button></div>'
+     + (favs.size ? '<span class="cmut">分享：送一張卡給家人，他們打開就是你加入最愛的 ' + favs.size + ' 間廟</span>' : '')
+     + '<p class="cp-src">日期由農曆對照表計算（台灣時間）。宮廟公告活動來自 data/events.json；神明聖誕為民間通行說法；初一、十五與節日不代表每間宮廟都有活動，法會與活動時間以廟方公告為準。</p></div>'
+     + '</div></div>';
   calEl.innerHTML = h;
+  if(focusSel){ const f = calEl.querySelector(focusSel); if(f && !f.disabled) f.focus({ preventScroll:true }); else calFocusFirst(); }
 }
-function calTemple(name){ return (window.TEMPLES || []).find(function(t){ return t.name === name; }); }
+function calFocusFirst(){ const f = calEl.querySelector('.cp'); if(f) f.focus({ preventScroll:true }); }
 function calOpen(){
   if(!calState) calInit();
+  if(!calEl.classList.contains('on')) calLastFocus = document.activeElement;
   calRender();
   calEl.classList.add('on');
   calEl.removeAttribute('hidden');
+  document.body.classList.add('calopen');
+  /* 面板開著時背景地圖不跟著動；關閉時原樣恢復（不 setView、不重設位置） */
+  if(map){ ['dragging', 'touchZoom', 'scrollWheelZoom', 'doubleClickZoom', 'keyboard'].forEach(function(k){ if(map[k] && map[k].disable) map[k].disable(); }); }
+  calFocusFirst();
 }
 function calClose(){
   calEl.classList.remove('on');
   calEl.setAttribute('hidden', '');
-  if(map && map.invalidateSize) setTimeout(function(){ map.invalidateSize(); }, 0);
+  document.body.classList.remove('calopen');
+  if(map){ ['dragging', 'touchZoom', 'scrollWheelZoom', 'doubleClickZoom', 'keyboard'].forEach(function(k){ if(map[k] && map[k].enable) map[k].enable(); }); }
+  if(calLastFocus && calLastFocus.focus && document.contains(calLastFocus)) calLastFocus.focus({ preventScroll:true });
+  calLastFocus = null;
+}
+function calSelectDay(d, scroll){
+  const s = calState;
+  s.sel = d; calRender('.js-calday[data-d="' + d + '"]');
+  if(scroll){ const dd = calEl.querySelector('.cp-day'); if(dd && window.innerWidth < 900) dd.scrollIntoView({ block:'start', behavior:'smooth' }); }
+}
+function calTemple(k){ return templeById(k) || (window.TEMPLES || []).find(function(t){ return t.name === k; }); }
+function calToggleDemo(){
+  const s = calState;
+  if(s.demo){ s.demo = false; return calRender('.js-caldemo'); }
+  calLoadDemo().then(function(ok){
+    if(!ok){ toast('示範資料載入失敗'); return; }
+    s.demo = true; calRender('.js-caldemo');
+  });
 }
 calEl.addEventListener('click', function(e){
   if(e.target === calEl){ calClose(); return; }                     /* 點面板外的暗色區 */
   const b = e.target.closest('button'); if(!b || b.disabled) return;
   const s = calState;
   if(b.classList.contains('js-calclose')) return calClose();
-  if(b.classList.contains('js-calprev')) return calShift(-1);
-  if(b.classList.contains('js-calnext')) return calShift(1);
-  if(b.classList.contains('js-caltoday')){ const t = twToday(); return calGo(t.y, t.m, t.d); }
-  if(b.classList.contains('js-calmode')){ s.mode = b.dataset.v; return calRender(); }
-  if(b.classList.contains('js-calview2')){ s.view = b.dataset.v; return calRender(); }
-  if(b.classList.contains('js-calday')){
-    s.sel = +b.dataset.d; calRender();
-    const d = calEl.querySelector('.cp-day'); if(d) d.scrollIntoView({ block:'nearest', behavior:'smooth' });
-    const nb = calEl.querySelector('.js-calday[data-d="' + s.sel + '"]'); if(nb) nb.focus({ preventScroll:true });
+  if(b.classList.contains('js-calprev')) return calShift(-1, '.js-calprev');
+  if(b.classList.contains('js-calnext')) return calShift(1, '.js-calnext');
+  if(b.classList.contains('js-caltoday')){ const t = twToday(); return calGo(t.y, t.m, t.d, '.js-calday[data-d="' + t.d + '"]'); }
+  if(b.classList.contains('js-calmode')){ s.mode = b.dataset.v; return calRender('.js-calmode[data-v="' + s.mode + '"]'); }
+  if(b.classList.contains('js-caldemo')) return calToggleDemo();
+  if(b.classList.contains('js-calday')) return calSelectDay(+b.dataset.d, true);
+  if(b.classList.contains('js-calmore')){
+    const box = document.getElementById(b.getAttribute('aria-controls'));
+    const open = b.getAttribute('aria-expanded') !== 'true';
+    b.setAttribute('aria-expanded', String(open)); b.textContent = open ? '收起活動資訊' : '查看活動';
+    if(box) box.hidden = !open;
     return;
   }
+  if(b.classList.contains('js-calnav')){ const g = calNav[+b.dataset.i]; if(g) navigate(g); return; }
   if(b.classList.contains('js-sharefav')) return shareFavs();
-  const t = b.dataset.name ? calTemple(b.dataset.name) : null; if(!t) return;
-  if(b.classList.contains('js-calnav')) return navigate(t);
-  if(b.classList.contains('js-calview')){ calClose(); openTempleByName(t.name); }
+  if(b.classList.contains('js-calview')){ const t = calTemple(b.dataset.k); if(t){ calClose(); openTempleByName(t.name); } }
+});
+calEl.addEventListener('keydown', function(e){
+  if(!calEl.classList.contains('on')) return;
+  if(e.key === 'Tab'){                                              /* 焦點留在月曆裡 */
+    const f = [].filter.call(calEl.querySelectorAll('button:not([disabled]):not([tabindex="-1"]),a[href]'), function(el){ return el.offsetParent !== null; });
+    if(!f.length) return;
+    if(e.shiftKey && document.activeElement === f[0]){ e.preventDefault(); f[f.length - 1].focus(); }
+    else if(!e.shiftKey && document.activeElement === f[f.length - 1]){ e.preventDefault(); f[0].focus(); }
+    return;
+  }
+  const b = e.target.closest && e.target.closest('.js-calday'); if(!b) return;
+  const s = calState, n = calDays(s.y, s.m), d = +b.dataset.d;
+  const mv = { ArrowLeft:-1, ArrowRight:1, ArrowUp:-7, ArrowDown:7 }[e.key];
+  if(mv){
+    e.preventDefault();
+    const nd = d + mv;
+    if(nd >= 1 && nd <= n) return calSelectDay(nd, false);
+    return;
+  }
+  if(e.key === 'Home'){ e.preventDefault(); return calSelectDay(1, false); }
+  if(e.key === 'End'){ e.preventDefault(); return calSelectDay(n, false); }
+  if(e.key === 'PageUp' || e.key === 'PageDown'){ e.preventDefault(); calShift(e.key === 'PageUp' ? -1 : 1); const c = calEl.querySelector('.js-calday.sel'); if(c) c.focus(); }
 });
 document.addEventListener('keydown', function(e){ if(e.key === 'Escape' && calEl.classList.contains('on')) calClose(); });
 function showCalendar(){
   closePanel(false);
+  if(!calState) calInit();
+  if(deepParam('demo') === '1' && !calState.demo){
+    calLoadDemo().then(function(ok){ calState.demo = ok; calOpen(); });
+    return;
+  }
   calOpen();
 }
 window.__fuanCal = { itemsForMonth: calItemsForMonth, open: calOpen, close: calClose, go: calGo,
-                     state: function(){ return calState; }, today: twToday, render: calRender, range:{ min:CAL_MIN, max:CAL_MAX } };
+                     state: function(){ return calState; }, today: twToday, render: calRender, range:{ min:CAL_MIN, max:CAL_MAX },
+                     loadDemo: calLoadDemo, templeKey: templeKey };
 
 /* 點行事曆裡的廟名 → 選中那間（不在 5 公里內也硬拉進來） */
 function openTempleByName(name){

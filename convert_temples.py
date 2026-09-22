@@ -28,7 +28,7 @@ convert_temples.py — 把內政部「全國宗教資訊系統資料－寺廟」
 import sys, re, json, csv, io, argparse, datetime
 import xml.etree.ElementTree as ET
 
-KEEP_FIELDS = ["url", "urlKind", "wiki", "fac", "parking", "open", "peak", "crowd", "story", "storySrc"]
+KEEP_FIELDS = ["id", "url", "urlKind", "wiki", "fac", "parking", "open", "peak", "crowd", "story", "storySrc"]
 
 # 欄位名關鍵字 → 我們的欄位。用「包含」比對，遇到 BOM、全半形、年份差異都還抓得到。
 FIELD_KEYS = {
