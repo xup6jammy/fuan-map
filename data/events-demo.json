@@ -1,35 +1,7 @@
 {
- "note": "【示範資料】展示用的虛構活動。宮廟 ID 以 tp- 開頭的是真實宮廟（照片為該廟實景、導航到參考宮廟）；demo- 開頭的是虛構宮廟（使用宮廟示意圖、不提供導航）。正式上線時改讀 data/events.json 即可。",
+ "note": "【示範資料】展示用的虛構活動。活動內容是編的；宮廟都是真實宮廟（tp- 開頭），圖片使用該廟自己的實景照片（img/*.jpg），導航到參考宮廟、非真實活動場地。正式上線時改讀 data/events.json 即可。",
  "anchorMonth": "2026-09",
- "temples": [
-  {
-   "id": "demo-qingguang",
-   "name": "晴光示範宮",
-   "fictional": true,
-   "city": "",
-   "dist": "示範區",
-   "addr": "虛構地點（示範用）",
-   "image": "img/demo-temple-1.svg"
-  },
-  {
-   "id": "demo-hean",
-   "name": "河岸示範廟",
-   "fictional": true,
-   "city": "",
-   "dist": "示範區",
-   "addr": "虛構地點（示範用）",
-   "image": "img/demo-temple-2.svg"
-  },
-  {
-   "id": "demo-zhulin",
-   "name": "竹林示範堂",
-   "fictional": true,
-   "city": "",
-   "dist": "示範區",
-   "addr": "虛構地點（示範用）",
-   "image": "img/demo-temple-3.svg"
-  }
- ],
+ "temples": [],
  "events": [
   {
    "id": "demo-202608-01",
@@ -51,8 +23,8 @@
   },
   {
    "id": "demo-202608-02",
-   "templeId": "demo-qingguang",
-   "templeName": "晴光示範宮",
+   "templeId": "tp-chenghuang-fucheng",
+   "templeName": "台北府城隍廟",
    "date": "2026-08-05",
    "start": "11:30",
    "end": "13:00",
@@ -65,7 +37,7 @@
     "志工量血壓、提醒回診",
     "餐後有簡單的伸展活動"
    ],
-   "place": "晴光示範宮 廟埕（虛構地點）"
+   "place": "台北府城隍廟 廟埕（參考地點）"
   },
   {
    "id": "demo-202608-03",
@@ -123,8 +95,8 @@
   },
   {
    "id": "demo-202608-06",
-   "templeId": "demo-hean",
-   "templeName": "河岸示範廟",
+   "templeId": "tp-yonglian",
+   "templeName": "蘆洲湧蓮寺",
    "date": "2026-08-15",
    "start": "10:00",
    "end": "16:00",
@@ -137,7 +109,7 @@
     "社區二手好物交換區",
     "自備購物袋可享攤商小回饋"
    ],
-   "place": "河岸示範廟 廟埕（虛構地點）"
+   "place": "蘆洲湧蓮寺 廟埕（參考地點）"
   },
   {
    "id": "demo-202608-07",
@@ -177,8 +149,8 @@
   },
   {
    "id": "demo-202608-09",
-   "templeId": "demo-zhulin",
-   "templeName": "竹林示範堂",
+   "templeId": "tp-wusheng",
+   "templeName": "新莊武聖廟",
    "date": "2026-08-22",
    "start": "19:00",
    "end": "21:00",
@@ -191,7 +163,7 @@
     "現場備有座位，也歡迎自備小椅",
     "演出中請留意通道淨空"
    ],
-   "place": "竹林示範堂 廟埕（虛構地點）"
+   "place": "新莊武聖廟 廟埕（參考地點）"
   },
   {
    "id": "demo-202608-10",
@@ -249,8 +221,8 @@
   },
   {
    "id": "demo-202609-13",
-   "templeId": "demo-qingguang",
-   "templeName": "晴光示範宮",
+   "templeId": "tp-confucius",
+   "templeName": "台北孔子廟",
    "date": "2026-09-06",
    "start": "14:00",
    "end": "16:00",
@@ -263,7 +235,7 @@
     "適合 5 歲以上孩童與家長同行",
     "完成作品可帶回家"
    ],
-   "place": "晴光示範宮 正殿前（虛構地點）"
+   "place": "台北孔子廟 正殿前（參考地點）"
   },
   {
    "id": "demo-202609-14",
@@ -303,8 +275,8 @@
   },
   {
    "id": "demo-202609-16",
-   "templeId": "demo-hean",
-   "templeName": "河岸示範廟",
+   "templeId": "tp-zhinan",
+   "templeName": "指南宮",
    "date": "2026-09-17",
    "start": "15:00",
    "end": "16:30",
@@ -317,7 +289,7 @@
     "介紹屋脊剪黏、門神彩繪與石雕",
     "導覽結束有 10 分鐘問答"
    ],
-   "place": "河岸示範廟 正殿前（虛構地點）"
+   "place": "指南宮 正殿前（參考地點）"
   },
   {
    "id": "demo-202609-17",
@@ -375,8 +347,8 @@
   },
   {
    "id": "demo-202609-20",
-   "templeId": "demo-zhulin",
-   "templeName": "竹林示範堂",
+   "templeId": "tp-jiying",
+   "templeName": "景美集應廟",
    "date": "2026-09-25",
    "start": "19:00",
    "end": "21:00",
@@ -389,7 +361,7 @@
     "現場備有座位，也歡迎自備小椅",
     "演出中請留意通道淨空"
    ],
-   "place": "竹林示範堂 廟埕（虛構地點）"
+   "place": "景美集應廟 廟埕（參考地點）"
   },
   {
    "id": "demo-202609-21",
@@ -465,8 +437,8 @@
   },
   {
    "id": "demo-202610-25",
-   "templeId": "demo-qingguang",
-   "templeName": "晴光示範宮",
+   "templeId": "tp-xiahai",
+   "templeName": "台北霞海城隍廟",
    "date": "2026-10-10",
    "start": "18:30",
    "end": "20:30",
@@ -479,7 +451,7 @@
     "現場備有座位，也歡迎自備小椅",
     "演出中請留意通道淨空"
    ],
-   "place": "晴光示範宮 廟埕（虛構地點）"
+   "place": "台北霞海城隍廟 廟埕（參考地點）"
   },
   {
    "id": "demo-202610-26",
@@ -519,8 +491,8 @@
   },
   {
    "id": "demo-202610-28",
-   "templeId": "demo-hean",
-   "templeName": "河岸示範廟",
+   "templeId": "tp-xianse",
+   "templeName": "三重先嗇宮",
    "date": "2026-10-17",
    "start": "14:00",
    "end": "15:30",
@@ -533,7 +505,7 @@
     "適合 5 歲以上孩童與家長同行",
     "完成作品可帶回家"
    ],
-   "place": "河岸示範廟 正殿前（虛構地點）"
+   "place": "三重先嗇宮 正殿前（參考地點）"
   },
   {
    "id": "demo-202610-29",
@@ -573,8 +545,8 @@
   },
   {
    "id": "demo-202610-31",
-   "templeId": "demo-zhulin",
-   "templeName": "竹林示範堂",
+   "templeId": "tp-qingshui",
+   "templeName": "艋舺清水巖祖師廟",
    "date": "2026-10-24",
    "start": "11:30",
    "end": "13:00",
@@ -587,7 +559,7 @@
     "志工量血壓、提醒回診",
     "餐後有簡單的伸展活動"
    ],
-   "place": "竹林示範堂 廟埕（虛構地點）"
+   "place": "艋舺清水巖祖師廟 廟埕（參考地點）"
   },
   {
    "id": "demo-202610-32",
