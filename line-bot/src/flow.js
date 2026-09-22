@@ -4,8 +4,16 @@
    handleEvent(event) 收一個 LINE webhook 事件，決定要回什麼、要不要推播，
    全部透過注入的 store（儲存）與 line（LINE API 封裝）完成；測試時兩個都用 mock。
 
-   流程（出事時要快，只問兩題）：
-     status（我平安／需要協助）→ location（傳送目前位置／在家／不提供）→ confirm（送出並通知家人）
+   流程（出事時要快）：
+     status（我平安／需要協助）
+       → location（分享目前位置／輸入地址或地標／使用示範位置／暫不提供）
+           ・分享目前位置：等 LINE 送來「位置訊息」才算收到；沒收到就停在這題，不會自己跳題
+           ・輸入地址或地標：step=location_text，下一則文字當位置
+       → loc_confirm（「獅仔收到的位置是：…」位置正確，繼續／重新提供位置）
+       → confirm（送出並通知家人）
+     ・重新提供位置：只回到 location，保留狀況（平安／求助）
+     ・暫不提供：記為未提供，清掉這份草稿之前選過／待確認的位置
+     ・每次產生一個新位置都換 locNonce：舊的確認卡（nonce 對不上）按了無效
    家人：預設就有。已配對的家人帳號會收到推播；沒有配對時推播到回報者自己的聊天室（Demo 用）。
    原則：
      ・按「送出並通知家人」前，內容只在 session:<userId>；按下才寫 report:<userId>（同一人一筆，覆蓋）
@@ -13,7 +21,7 @@
      ・webhookEventId 記錄過就跳過：LINE 重送不會重複記錄、重複通知
      ・同一次回報對同一位家人只推一次；失敗的可以按「再試一次」只補送失敗的
    ============================================================ */
-import { M, CMD, PAIR_JOIN_RE, HOME_LOC, DEFAULT_FAMILY_NAME, parsePb, text, familyNotifyText } from './messages.js';
+import { M, CMD, PAIR_JOIN_RE, DEMO_LOC, MANUAL_MIN, MANUAL_MAX, DEFAULT_FAMILY_NAME, parsePb, text, familyNotifyText } from './messages.js';
 
 const SESSION_TTL = 24 * 60 * 60 * 1000;
 const PAIR_TTL = 10 * 60 * 1000;
@@ -43,14 +51,16 @@ export function createBot({ store, line, now = () => Date.now(), rand = defaultR
   async function saveSession(uid, s) { s.updatedAt = now(); await store.set(S.session(uid), s, { ttlMs: SESSION_TTL }); }
   async function clearSession(uid) { await store.del(S.session(uid)); }
   async function startSession(uid) {
-    const s = { id: rand(), step: 'status', status: null, loc: null, createdAt: now() };
+    const s = { id: rand(), step: 'status', status: null, loc: null, pendingLoc: null, locNonce: null, createdAt: now() };
     await saveSession(uid, s);
     return s;
   }
   function promptFor(s) {
     if (s.step === 'status') return M.askStatus(s.id);
     if (s.step === 'location') return M.askLocation(s.id);
-    if (s.step === 'confirm') return M.askConfirm(s.id, s);
+    if (s.step === 'location_text') return M.askLocationText(s.id);
+    if (s.step === 'loc_confirm') return M.askLocConfirm(s.id, s.locNonce, s.pendingLoc);
+    if (s.step === 'confirm') return M.askConfirm(s.id, s.locNonce, s);
     return M.expired();
   }
   async function reprompt(uid, s, token, lead) {
@@ -97,7 +107,12 @@ export function createBot({ store, line, now = () => Date.now(), rand = defaultR
     if (m) return pairJoin(uid, token, m[1]);
     const s = await getSession(uid);
     if (!s || s.step === 'done') return { ignored: 'text outside session' };
-    await reprompt(uid, s, token, M.useButtons());
+    if (s.step === 'location_text') {
+      if (t.length < MANUAL_MIN || t.length > MANUAL_MAX) { await reprompt(uid, s, token, M.manualBad()); return { rejected: 'manual length' }; }
+      await setPendingLoc(uid, s, { source: 'manual', text: t });
+      await reply(token, promptFor(s)); return { step: s.step };
+    }
+    await reprompt(uid, s, token, s.step === 'location' ? M.locationUseButtons() : M.useButtons());
     return { reprompted: s.step };
   }
 
@@ -105,15 +120,29 @@ export function createBot({ store, line, now = () => Date.now(), rand = defaultR
   async function onLocation(uid, token, msg) {
     const s = await getSession(uid);
     if (!s || s.step === 'done') return { ignored: 'location outside session' };
-    if (s.step !== 'location') { await reprompt(uid, s, token, M.useButtons()); return { reprompted: s.step }; }
+    if (!LOC_STEPS.includes(s.step)) {
+      await reprompt(uid, s, token, s.step === 'confirm' ? M.locAlreadyConfirmed() : M.useButtons());
+      return { reprompted: s.step };
+    }
     const lat = Number(msg.latitude), lng = Number(msg.longitude);
-    if (!isFinite(lat) || !isFinite(lng)) { await reprompt(uid, s, token, text('這個位置讀不到座標，請再試一次。')); return { rejected: 'bad location' }; }
-    s.loc = { source: 'real', lat, lng, address: String(msg.address || '').slice(0, 100) };
-    s.step = 'confirm'; await saveSession(uid, s);
+    if (msg.latitude == null || msg.longitude == null || !isFinite(lat) || !isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) {
+      await reprompt(uid, s, token, text('這個位置讀不到座標，請再試一次，或改用其他方式。')); return { rejected: 'bad location' };
+    }
+    /* 只用 LINE 送來的欄位；沒有地址就留空，畫面上顯示經緯度，不自己補地址 */
+    await setPendingLoc(uid, s, {
+      source: 'real', lat, lng,
+      address: String(msg.address || '').trim().slice(0, 100),
+      title: String(msg.title || '').trim().slice(0, 60)
+    });
     await reply(token, promptFor(s)); return { step: s.step };
   }
 
-  const STEP_OF = { status: 'status', loc: 'location', confirm: 'confirm', redo: 'confirm' };
+  /* 位置階段：這三個 step 都還在「提供位置」這一題裡，可以隨時換方式 */
+  const LOC_STEPS = ['location', 'location_text', 'loc_confirm'];
+  async function setPendingLoc(uid, s, loc) {
+    s.pendingLoc = loc; s.loc = null; s.locNonce = rand(); s.step = 'loc_confirm';
+    await saveSession(uid, s);
+  }
 
   async function onPostback(uid, token, { a, s: sid, v }) {
     if (a === 'restart') { const s = await startSession(uid); await reply(token, M.askStatus(s.id)); return { started: s.id }; }
@@ -121,13 +150,15 @@ export function createBot({ store, line, now = () => Date.now(), rand = defaultR
     if (['pair_accept', 'pair_decline', 'unbind_family', 'unbind_owner', 'unbind_none'].includes(a)) return onPairPostback(uid, token, a, sid, v);
 
     const s = await getSession(uid);
+    /* 舊回報的按鈕：若現在有進行中的回報，不動它，直接重問目前這題（不叫人重新開始） */
+    if (s && s.id !== sid && s.step !== 'done') { await reprompt(uid, s, token, M.oldButton()); return { expired: true }; }
     if (!s || s.id !== sid) { await reply(token, M.expired()); return { expired: true }; }
-    const want = STEP_OF[a];
     /* 「再試一次」＝在 done 狀態再按 confirm：只補送失敗的 */
     if (a === 'confirm' && s.step === 'done') return sendToFamily(uid, token, s);
-    if (!want || s.step !== want) { await reprompt(uid, s, token, s.step === 'done' ? null : M.useButtons()); return { reprompted: s.step }; }
+    if (s.step === 'done') { await reprompt(uid, s, token, null); return { reprompted: s.step }; }
 
     if (a === 'status') {
+      if (s.step !== 'status') { await reprompt(uid, s, token, M.useButtons()); return { reprompted: s.step }; }
       if (v !== 'safe' && v !== 'help') return reprompt(uid, s, token, M.useButtons());
       s.status = v;
       if (v === 'safe') {
@@ -140,19 +171,42 @@ export function createBot({ store, line, now = () => Date.now(), rand = defaultR
       }
       s.step = 'location';
     } else if (a === 'loc') {
-      if (v === 'home') s.loc = { ...HOME_LOC };
-      else if (v === 'skip') s.loc = { source: 'none' };
+      /* 位置方式：只在位置階段有效；已按「位置正確，繼續」之後要先按「重新提供位置」 */
+      if (!LOC_STEPS.includes(s.step)) {
+        await reprompt(uid, s, token, s.step === 'confirm' ? M.locAlreadyConfirmed() : M.useButtons());
+        return { reprompted: s.step };
+      }
+      if (v === 'text') { s.pendingLoc = null; s.loc = null; s.locNonce = rand(); s.step = 'location_text'; }
+      else if (v === 'demo') { await setPendingLoc(uid, s, { ...DEMO_LOC }); await reply(token, promptFor(s)); return { step: s.step }; }
+      else if (v === 'skip') {
+        /* 暫不提供：記為未提供，清掉這份草稿之前選過／待確認的位置，直接到送出 */
+        s.pendingLoc = null; s.loc = { source: 'none' }; s.locNonce = rand(); s.step = 'confirm';
+      }
       else return reprompt(uid, s, token, M.useButtons());
-      s.step = 'confirm';
+    } else if (a === 'locok') {
+      if (s.step !== 'loc_confirm' || !s.pendingLoc || v !== s.locNonce) {
+        await reprompt(uid, s, token, M.staleLocCard()); return { stale: 'locok' };
+      }
+      s.loc = s.pendingLoc; s.pendingLoc = null; s.step = 'confirm';
+    } else if (a === 'locredo') {
+      /* 只重做位置：保留狀況，清掉位置 */
+      if (!['loc_confirm', 'confirm'].includes(s.step) || v !== s.locNonce) {
+        await reprompt(uid, s, token, M.staleLocCard()); return { stale: 'locredo' };
+      }
+      s.loc = null; s.pendingLoc = null; s.locNonce = rand(); s.step = 'location';
     } else if (a === 'redo') {
+      if (s.step !== 'confirm') { await reprompt(uid, s, token, M.useButtons()); return { reprompted: s.step }; }
       const n = await startSession(uid); await reply(token, M.askStatus(n.id)); return { started: n.id };
     } else if (a === 'confirm') {
+      if (s.step !== 'confirm' || !s.loc) { await reprompt(uid, s, token, M.useButtons()); return { reprompted: s.step }; }
       const report = { id: rand(), status: s.status, loc: s.loc || { source: 'none' }, confirmedAt: now(), sent: {} };
       await store.set(S.report(uid), report);
       s.step = 'done'; s.reportId = report.id; s.ownerName = await nameOf(uid, '');
       s.family = await familyOf(uid);
       await saveSession(uid, s);
       return sendToFamily(uid, token, s);
+    } else {
+      await reprompt(uid, s, token, M.useButtons()); return { reprompted: s.step };
     }
     await saveSession(uid, s);
     await reply(token, promptFor(s));

@@ -4,17 +4,22 @@
    全部寫死，不叫任何 AI 模型。
    每一題用 Flex Message 做「大按鈕」（Quick Reply 的字級 LINE 固定、不能放大），
    整格都能按、字級 xxl，長輩好點。
-   流程只有三步：狀況 → 位置 → 確認並通知家人（出事時要快，不問需求、人數）。
+   流程：狀況 → 位置（四種方式）→ 位置確認卡 → 確認並通知家人（出事時要快，不問需求、人數）。
+   注意：LINE 內建位置畫面（含右上角「分享」）是 LINE 原生介面，我們無法放大或修改；
+   這裡能做的只有在聊天室先講清楚「選好位置後要按右上角『分享』」，並提供不需要地圖的替代方式。
    Postback 的 data 格式：a=動作&s=對話代號&v=值
      s（session id）用來擋「過期按鈕」：舊對話的按鈕按下去，s 對不上就當過期。
    ============================================================ */
 
-export const HOME_LOC = { source: 'preset', text: '福安里福安街 1 號' };
+/* 示範位置：固定地址，任何畫面與家人通知都會標「示範位置」 */
+export const DEMO_LOC = { source: 'demo', text: '福安里福安街 1 號' };
+export const MANUAL_MIN = 2;
+export const MANUAL_MAX = 80;
 export const DEFAULT_FAMILY_NAME = '家人';
 /* LINE 官方 URL scheme：開啟「傳送位置」畫面，使用者自己確認後才送出位置訊息 */
 export const LOCATION_PICKER_URL = 'https://line.me/R/nv/location/';
 
-const C = { green: '#0C8F3B', red: '#B4362A', gray: '#5F5952', ink: '#1F1A17', soft: '#F7F5F0' };
+const C = { green: '#0C8F3B', red: '#B4362A', gray: '#5F5952', brown: '#8A6A3B', ink: '#1F1A17', soft: '#F7F5F0', warn: '#FFF4D6', warnInk: '#6B4A00' };
 
 /* ---------- 文字指令（完全比對，前後空白忽略）---------- */
 export const CMD = {
@@ -71,6 +76,7 @@ function rows(lines) {
 export function card(altText, title, buttons, opts = {}) {
   const body = [{ type: 'text', text: title, size: 'xl', weight: 'bold', color: C.ink, wrap: true }];
   if (opts.rows && opts.rows.length) body.push({ type: 'box', layout: 'vertical', spacing: 'md', margin: 'lg', paddingAll: '14px', backgroundColor: C.soft, cornerRadius: '12px', contents: rows(opts.rows) });
+  if (opts.tip) body.push({ type: 'box', layout: 'vertical', margin: 'lg', paddingAll: '14px', backgroundColor: C.warn, cornerRadius: '12px', contents: [{ type: 'text', text: opts.tip, size: 'lg', weight: 'bold', color: C.warnInk, wrap: true }] });
   if (opts.note) body.push({ type: 'text', text: opts.note, size: 'md', color: C.gray, wrap: true, margin: 'md' });
   if (buttons.length) body.push({ type: 'box', layout: 'vertical', spacing: 'lg', margin: 'xl', contents: buttons });
   const m = { type: 'flex', altText: altText.slice(0, 400), contents: { type: 'bubble', size: 'giga', body: { type: 'box', layout: 'vertical', paddingAll: '20px', contents: body } } };
@@ -90,10 +96,14 @@ export function fmtFull(ms) {
 /* ---------- 位置 ---------- */
 export function locLabel(loc) {
   if (!loc || loc.source === 'none') return '未提供';
-  if (loc.source === 'preset') return loc.text;
-  const addr = loc.address ? `${loc.address} ` : '';
-  return `${addr}(${Number(loc.lat).toFixed(5)}, ${Number(loc.lng).toFixed(5)})`;
+  if (loc.source === 'demo') return `${loc.text}（示範位置）`;
+  if (loc.source === 'manual') return `${loc.text}（自行輸入）`;
+  if (loc.source === 'preset') return loc.text;   // 舊版紀錄相容
+  return `${realPlace(loc)}（${coords(loc)}）`;
 }
+export function coords(loc) { return `${Number(loc.lat).toFixed(5)}, ${Number(loc.lng).toFixed(5)}`; }
+/* LINE 位置訊息有地址用地址、沒地址用地點名稱；兩者都沒有就只講「地圖上選的位置」，不補地址 */
+function realPlace(loc) { return loc.address || loc.title || '地圖上選的位置'; }
 export function mapUrl(loc) { return `https://www.google.com/maps?q=${Number(loc.lat).toFixed(5)},${Number(loc.lng).toFixed(5)}`; }
 function statusText(s) { return s === 'help' ? '需要協助' : '平安'; }
 
@@ -110,6 +120,31 @@ export function familyNotifyText(report, ownerName) {
   return lines.join('\n');
 }
 
+/* 位置題的 Quick Reply：LINE location action 只能放在 Quick Reply（Flex 按鈕不支援） */
+function locQuick(sid) {
+  return [
+    qrLocation('分享目前位置'),
+    qrPostback('輸入地址或地標', pb('loc', sid, 'text')),
+    qrPostback('使用示範位置', pb('loc', sid, 'demo')),
+    qrPostback('暫不提供', pb('loc', sid, 'skip'))
+  ];
+}
+function locDetail(loc) {
+  const big = t => ({ type: 'text', text: t, size: 'xxl', weight: 'bold', color: C.ink, wrap: true });
+  const small = t => ({ type: 'text', text: t, size: 'lg', color: C.gray, wrap: true });
+  if (loc.source === 'demo') return [
+    { type: 'text', text: '【示範位置】不是你的真實位置', size: 'lg', weight: 'bold', color: C.warnInk, wrap: true },
+    big(loc.text)];
+  if (loc.source === 'manual') return [big(loc.text), small('（你自己輸入的地址或地標）')];
+  const out = [];
+  if (loc.address) out.push(big(loc.address));
+  if (loc.title && loc.title !== loc.address) out.push(loc.address ? small(`地點：${loc.title}`) : big(loc.title));
+  if (!loc.address) out.push(small('（LINE 沒有提供地址，以下是經緯度）'));
+  out.push(small(`經緯度：${coords(loc)}`));
+  out.push(small('（你在 LINE 地圖分享的位置）'));
+  return out;
+}
+
 /* ---------- 每一題 ---------- */
 export const M = {
   askStatus(sid) {
@@ -119,16 +154,40 @@ export const M = {
     ]);
   },
   askLocation(sid) {
-    return card('你在哪裡？', '你現在在哪裡？', [
-      bigBtn('傳送目前位置', uriAction('傳送目前位置', LOCATION_PICKER_URL), C.green, '開啟地圖，確認後送出'),
-      bigBtn('在家', pbAction('在家', pb('loc', sid, 'home')), C.gray, HOME_LOC.text),
-      bigBtn('不提供', pbAction('不提供', pb('loc', sid, 'skip')), C.gray)
-    ], { quick: [qrLocation('傳送目前位置')] });
+    return card('方便告訴我你在哪裡嗎？', '方便告訴我你在哪裡嗎？', [
+      bigBtn('分享目前位置', uriAction('分享目前位置', LOCATION_PICKER_URL), C.green, '選好位置後，點右上角「分享」'),
+      bigBtn('輸入地址或地標', pbAction('輸入地址或地標', pb('loc', sid, 'text')), C.brown, '用打字的告訴獅仔'),
+      bigBtn('使用示範位置', pbAction('使用示範位置', pb('loc', sid, 'demo')), C.gray, `${DEMO_LOC.text}（示範）`),
+      bigBtn('暫不提供', pbAction('暫不提供', pb('loc', sid, 'skip')), C.gray, '不提供位置也可以繼續')
+    ], {
+      tip: '如果選擇分享位置，請在地圖選好位置後，再點右上角『分享』，獅仔才會收到喔。',
+      note: '回到聊天室還沒按「分享」也沒關係，可以再按一次，或改用其他方式。',
+      quick: locQuick(sid)
+    });
   },
-  askConfirm(sid, d) {
+  askLocationText(sid) {
+    return text('好，請直接打字告訴獅仔你的地址或附近地標。\n例如：「福安宮前面」、「中山路 100 號」。\n\n想換方式，也可以按下面的按鈕。',
+      locQuick(sid).filter(i => i.action.label !== '輸入地址或地標'));
+  },
+  /* 位置確認卡：只顯示收到的資料，示範位置明確標示 */
+  askLocConfirm(sid, nonce, loc) {
+    const body = [
+      { type: 'text', text: '獅仔收到的位置是：', size: 'xl', weight: 'bold', color: C.ink, wrap: true },
+      { type: 'box', layout: 'vertical', margin: 'lg', paddingAll: '16px', cornerRadius: '12px',
+        backgroundColor: loc.source === 'demo' ? C.warn : C.soft, spacing: 'sm', contents: locDetail(loc) }
+    ];
+    body.push({ type: 'box', layout: 'vertical', spacing: 'lg', margin: 'xl', contents: [
+      bigBtn('位置正確，繼續', pbAction('位置正確，繼續', pb('locok', sid, nonce)), C.green),
+      bigBtn('重新提供位置', pbAction('重新提供位置', pb('locredo', sid, nonce)), C.gray)
+    ] });
+    return { type: 'flex', altText: `獅仔收到的位置是：${locLabel(loc)}`.slice(0, 400),
+      contents: { type: 'bubble', size: 'giga', body: { type: 'box', layout: 'vertical', paddingAll: '20px', contents: body } } };
+  },
+  askConfirm(sid, nonce, d) {
     const help = d.status === 'help';
     return card(`${statusText(d.status)}・${locLabel(d.loc)}`, help ? '確認後立刻通知家人' : '確認後通知家人你平安', [
       bigBtn('送出並通知家人', pbAction('送出並通知家人', pb('confirm', sid)), help ? C.red : C.green),
+      bigBtn('重新提供位置', pbAction('重新提供位置', pb('locredo', sid, nonce)), C.gray, '只改位置，其他不變'),
       bigBtn('重新填寫', pbAction('重新填寫', pb('redo', sid)), C.gray)
     ], { rows: summaryRows(d) });
   },
@@ -147,6 +206,11 @@ export const M = {
     return card('按鈕已過期', '這個按鈕已經過期了', [bigBtn('重新開始', pbAction('重新開始', pb('restart', ''), '平安回報'), C.green)]);
   },
   useButtons() { return text('請按下面的按鈕。'); },
+  locationUseButtons() { return text('想用打字的，請先按「輸入地址或地標」；要分享位置，選好後記得按右上角「分享」。'); },
+  manualBad() { return text(`地址或地標請輸入 ${MANUAL_MIN}～${MANUAL_MAX} 個字。`); },
+  oldButton() { return text('這是之前回報的按鈕，已經過期了，不會影響這次的回報。請接著回答下面這一題：'); },
+  staleLocCard() { return text('這張位置卡片已經過期了，請看下面最新的訊息。'); },
+  locAlreadyConfirmed() { return text('位置已經確認過了。要換位置，請按「重新提供位置」。'); },
 
   /* ---------- 配對 ---------- */
   pairCode(code, minutes) {
